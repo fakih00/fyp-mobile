@@ -39,3 +39,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# backend sensitive files
+backend/.env
+backend/*.log

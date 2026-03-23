@@ -1,0 +1,17 @@
+
+Table: challenges
+ - id (int)
+ - title (varchar(255))
+ - description (text)
+ - type (enum('workout','nutrition','steps','streak','cardio','water'))
+ - points_reward (int)
+ - difficulty (enum('Easy','Medium','Hard'))
+ - duration (int)
+ - image (varchar(255))
+
+Table: user_challenges
+ - user_id (int)
+ - challenge_id (int)
+ - status (enum('joined','completed','failed'))
+ - progress (int)
+ - start_date (date)
