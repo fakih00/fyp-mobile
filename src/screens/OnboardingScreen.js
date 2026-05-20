@@ -1,4 +1,4 @@
-import React, { useState, useContext, useRef } from 'react';
+import React, { useState, useContext, useRef, useEffect } from 'react';
 import {
     View,
     Text,
@@ -7,44 +7,72 @@ import {
     Dimensions,
     TouchableOpacity,
     Animated,
+    Easing
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, FONTS, SIZES } from '../constants/Theme';
-import { AnimatedCard, GlassCard, AuraBackground } from '../components';
+import { COLORS } from '../constants/Theme';
+import { GlassCard } from '../components';
 import { StatusBar } from 'expo-status-bar';
 import { AppContext } from '../context/AppContext';
 import * as Haptics from 'expo-haptics';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const DATA = [
     {
         id: '1',
         tag: 'TRAINING',
         title: 'ELITE TRAINING',
-        desc: 'Advanced workout plans powered by AI to push your limits.',
-        color: '#10B981',
+        desc: 'Advanced workout plans powered by AI to push your physical limits.',
+        color: '#10B981', // Emerald
         type: 'workout'
     },
     {
         id: '2',
         tag: 'DIET',
         title: 'SMART NUTRITION',
-        desc: 'Personalized meal tracking and macro goals for your physique.',
-        color: '#3B82F6',
+        desc: 'Personalized meal tracking and precise macro goals for your physique.',
+        color: '#3B82F6', // Blue
         type: 'nutrition'
     },
     {
         id: '3',
         tag: 'SOCIAL',
         title: 'ELITE COMMUNITY',
-        desc: 'Compete with friends and climb the global leaderboards.',
-        color: '#F59E0B',
+        desc: 'Compete with your friends and climb the global leaderboards.',
+        color: '#F59E0B', // Amber
         type: 'social'
     },
 ];
+
+// Tactical Spring Button
+const SpringButton = ({ onPress, children, style, colors }) => {
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+
+    const handlePressIn = () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        Animated.spring(scaleAnim, { toValue: 0.9, useNativeDriver: true }).start();
+    };
+
+    const handlePressOut = () => {
+        Animated.spring(scaleAnim, { toValue: 1, friction: 4, tension: 40, useNativeDriver: true }).start();
+    };
+
+    return (
+        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+            <TouchableOpacity
+                onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut}
+                activeOpacity={0.9} style={[styles.actionBtn, style]}
+            >
+                <LinearGradient colors={colors.gradient} style={styles.actionGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+                    {children}
+                </LinearGradient>
+            </TouchableOpacity>
+        </Animated.View>
+    );
+};
 
 const VisualMockup = ({ type, color, themeColors }) => {
     const textColor = themeColors.isDark ? COLORS.white : COLORS.text;
@@ -53,11 +81,10 @@ const VisualMockup = ({ type, color, themeColors }) => {
     if (type === 'workout') {
         return (
             <View style={styles.mockupContainer}>
-                {/* Mini Workout Card */}
                 <GlassCard style={styles.miniCard}>
                     <View style={styles.miniHeader}>
                         <View style={[styles.miniIcon, { backgroundColor: color + '20' }]}>
-                            <Ionicons name="barbell" size={18} color={color} />
+                            <Ionicons name="barbell" size={20} color={color} />
                         </View>
                         <View>
                             <Text style={[styles.miniTitle, { color: textColor }]}>Chest & Triceps</Text>
@@ -71,8 +98,7 @@ const VisualMockup = ({ type, color, themeColors }) => {
                         <Text style={[styles.miniPercent, { color: color }]}>65%</Text>
                     </View>
                 </GlassCard>
-                {/* Decorative Badge */}
-                <View style={[styles.floatingBadge, { top: -20, right: -10, backgroundColor: themeColors.accent }]}>
+                <View style={[styles.floatingBadge, { top: -25, right: -15, backgroundColor: themeColors.accent }]}>
                     <Ionicons name="flash" size={12} color={COLORS.white} />
                     <Text style={styles.badgeText}>ELITE</Text>
                 </View>
@@ -83,28 +109,26 @@ const VisualMockup = ({ type, color, themeColors }) => {
     if (type === 'nutrition') {
         return (
             <View style={styles.mockupContainer}>
-                {/* Macro Pills */}
                 <View style={styles.macroGrid}>
-                    <GlassCard style={styles.macroPill}>
+                    <GlassCard style={[styles.macroPill, { width: 90 }]}>
                         <Text style={styles.macroVal}>165g</Text>
                         <Text style={[styles.macroLabel, { color: COLORS.protein }]}>PRO</Text>
                     </GlassCard>
-                    <GlassCard style={styles.macroPill}>
+                    <GlassCard style={[styles.macroPill, { width: 90, marginTop: 25 }]}>
                         <Text style={styles.macroVal}>220g</Text>
                         <Text style={[styles.macroLabel, { color: COLORS.carbs }]}>CARB</Text>
                     </GlassCard>
                 </View>
-                {/* Main Meal Preview */}
-                <GlassCard style={styles.miniCard}>
+                <GlassCard style={[styles.miniCard, { marginTop: -15, transform: [{ rotate: '-2deg' }] }]}>
                     <View style={styles.miniHeader}>
                         <View style={[styles.miniIcon, { backgroundColor: color + '20' }]}>
-                            <Ionicons name="restaurant" size={18} color={color} />
+                            <Ionicons name="restaurant" size={20} color={color} />
                         </View>
                         <View>
                             <Text style={[styles.miniTitle, { color: textColor }]}>Grilled Salmon</Text>
                             <Text style={[styles.miniSubtitle, { color: subText }]}>High Protein • Lunch</Text>
                         </View>
-                        <Ionicons name="checkmark-circle" size={20} color={color} style={{ marginLeft: 'auto' }} />
+                        <Ionicons name="checkmark-circle" size={22} color={color} style={{ marginLeft: 'auto' }} />
                     </View>
                 </GlassCard>
             </View>
@@ -114,17 +138,16 @@ const VisualMockup = ({ type, color, themeColors }) => {
     if (type === 'social') {
         return (
             <View style={styles.mockupContainer}>
-                {/* Mini Leaderboard */}
-                <GlassCard style={[styles.miniCard, { width: 220 }]}>
+                <GlassCard style={[styles.miniCard, { width: 240, padding: 20 }]}>
                     <View style={styles.rankItem}>
                         <View style={styles.rankBadge}>
-                            <Ionicons name="trophy" size={14} color="#F59E0B" />
+                            <Ionicons name="trophy" size={18} color="#F59E0B" />
                         </View>
-                        <View style={styles.rankAvatar} />
-                        <Text style={[styles.rankName, { color: textColor }]}>You</Text>
+                        <View style={[styles.rankAvatar, { backgroundColor: '#F59E0B20' }]} />
+                        <Text style={[styles.rankName, { color: textColor, fontSize: 16 }]}>You</Text>
                         <Text style={[styles.rankXP, { color: themeColors.accent }]}>12.4k XP</Text>
                     </View>
-                    <View style={[styles.rankItem, { opacity: 0.6 }]}>
+                    <View style={[styles.rankItem, { opacity: 0.5, marginTop: 15 }]}>
                         <Text style={[styles.rankNum, { color: subText }]}>02</Text>
                         <View style={[styles.rankAvatar, { backgroundColor: 'rgba(255,255,255,0.1)' }]} />
                         <Text style={[styles.rankName, { color: textColor }]}>K. Alex</Text>
@@ -147,6 +170,7 @@ const OnboardingScreen = ({ navigation }) => {
     const viewableItemsChanged = useRef(({ viewableItems }) => {
         if (viewableItems && viewableItems.length > 0) {
             setCurrentIndex(viewableItems[0].index);
+            Haptics.selectionAsync(); // Click when passing threshold
         }
     }).current;
 
@@ -156,7 +180,6 @@ const OnboardingScreen = ({ navigation }) => {
         if (currentIndex < DATA.length - 1) {
             slidesRef.current.scrollToIndex({ index: currentIndex + 1 });
         } else {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             navigation.navigate('Login');
         }
     };
@@ -166,36 +189,73 @@ const OnboardingScreen = ({ navigation }) => {
         navigation.navigate('Login');
     };
 
-    // Dynamic colors
     const textColor = themeColors.isDark ? COLORS.white : COLORS.text;
     const subTextColor = themeColors.isDark ? 'rgba(255,255,255,0.6)' : 'rgba(15,23,42,0.6)';
 
-    const renderItem = ({ item }) => (
-        <View style={styles.slide}>
-            {/* Visual Section */}
-            <AnimatedCard style={styles.visualContainer} delay={200}>
-                <VisualMockup type={item.type} color={item.color} themeColors={themeColors} />
-            </AnimatedCard>
+    // Live interpolated background array matching slide colors
+    const bgColors = DATA.map(item => item.color + (themeColors.isDark ? '25' : '15')); // 25 alpha tint
+    const dynamicBgColor = scrollX.interpolate({
+        inputRange: DATA.map((_, i) => i * width),
+        outputRange: bgColors,
+        extrapolate: 'clamp',
+    });
 
-            {/* Content Section */}
-            <AnimatedCard style={styles.contentContainer} delay={400}>
-                <View style={styles.infoWrapper}>
-                    <View style={[styles.tagPill, { backgroundColor: item.color + '15' }]}>
-                        <Text style={[styles.tagText, { color: item.color }]}>{item.tag}</Text>
-                    </View>
+    const renderItem = ({ item, index }) => {
+        const inputRange = [
+            (index - 1) * width,
+            index * width,
+            (index + 1) * width
+        ];
 
-                    <GlassCard style={styles.textCard}>
+        // Slide Physics
+        const textScale = scrollX.interpolate({ inputRange, outputRange: [0.8, 1, 0.8], extrapolate: 'clamp' });
+        const textOpacity = scrollX.interpolate({ inputRange, outputRange: [0, 1, 0], extrapolate: 'clamp' });
+        const textTranslateY = scrollX.interpolate({ inputRange, outputRange: [50, 0, 50], extrapolate: 'clamp' });
+
+        // Deep Visual Parallax
+        const visualTranslateX = scrollX.interpolate({ inputRange, outputRange: [width * 0.4, 0, -width * 0.4], extrapolate: 'clamp' });
+        const visualTranslateY = scrollX.interpolate({ inputRange, outputRange: [-20, 0, 20], extrapolate: 'clamp' });
+        const visualRotate = scrollX.interpolate({ inputRange, outputRange: ['-10deg', '0deg', '10deg'], extrapolate: 'clamp' });
+        const visualScale = scrollX.interpolate({ inputRange, outputRange: [0.7, 1.1, 0.7], extrapolate: 'clamp' });
+        
+        return (
+            <View style={styles.slide}>
+                {/* 3D Visual Section */}
+                <Animated.View style={[styles.visualContainer, { 
+                    transform: [
+                        { translateX: visualTranslateX },
+                        { translateY: visualTranslateY },
+                        { scale: visualScale },
+                        { rotate: visualRotate }
+                    ]
+                }]}>
+                    <VisualMockup type={item.type} color={item.color} themeColors={themeColors} />
+                </Animated.View>
+
+                {/* Scaling Content Section */}
+                <Animated.View style={[styles.contentContainer, { 
+                    opacity: textOpacity, 
+                    transform: [{ scale: textScale }, { translateY: textTranslateY }] 
+                }]}>
+                    <View style={styles.infoWrapper}>
+                        <View style={[styles.tagPill, { backgroundColor: item.color + '20' }]}>
+                            <Text style={[styles.tagText, { color: item.color }]}>{item.tag}</Text>
+                        </View>
+
                         <Text style={[styles.slideTitle, { color: textColor }]}>{item.title}</Text>
                         <Text style={[styles.slideDesc, { color: subTextColor }]}>{item.desc}</Text>
-                    </GlassCard>
-                </View>
-            </AnimatedCard>
-        </View>
-    );
+                    </View>
+                </Animated.View>
+            </View>
+        );
+    };
 
     return (
-        <AuraBackground style={styles.container}>
+        <View style={[styles.container, { backgroundColor: themeColors.background || COLORS.background }]}>
             <StatusBar style={themeColors.isDark ? "light" : "dark"} />
+            
+            {/* Dynamic Interpolated Aurora Tint Layer */}
+            <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: dynamicBgColor }]} />
 
             <SafeAreaView style={styles.safeArea}>
                 <FlatList
@@ -207,297 +267,106 @@ const OnboardingScreen = ({ navigation }) => {
                     bounces={false}
                     keyExtractor={(item) => item.id}
                     onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
-                        useNativeDriver: false,
+                        useNativeDriver: false, // Must be false for color interpolation
                     })}
-                    scrollEventThrottle={32}
+                    scrollEventThrottle={16} // 60fps tracking
                     onViewableItemsChanged={viewableItemsChanged}
                     viewabilityConfig={viewConfig}
                     ref={slidesRef}
                 />
 
                 <View style={styles.footer}>
-                    {/* Pagination */}
+                    {/* Living Pagination */}
                     <View style={styles.pagination}>
                         {DATA.map((_, i) => {
                             const inputRange = [(i - 1) * width, i * width, (i + 1) * width];
-                            const dotWidth = scrollX.interpolate({
-                                inputRange,
-                                outputRange: [8, 20, 8],
-                                extrapolate: 'clamp',
-                            });
-                            const opacity = scrollX.interpolate({
-                                inputRange,
-                                outputRange: [0.3, 1, 0.3],
-                                extrapolate: 'clamp',
-                            });
+                            const dotWidth = scrollX.interpolate({ inputRange, outputRange: [8, 25, 8], extrapolate: 'clamp' });
+                            const opacity = scrollX.interpolate({ inputRange, outputRange: [0.3, 1, 0.3], extrapolate: 'clamp' });
+                            const color = scrollX.interpolate({ inputRange, outputRange: ['#ffffff50', DATA[i].color, '#ffffff50'], extrapolate: 'clamp' });
 
                             return (
                                 <Animated.View
-                                    style={[
-                                        styles.dot,
-                                        { width: dotWidth, opacity, backgroundColor: themeColors.accent },
-                                    ]}
+                                    style={[styles.dot, { width: dotWidth, opacity, backgroundColor: "white" }]}
                                     key={i.toString()}
                                 />
                             );
                         })}
                     </View>
 
-                    {/* Buttons */}
+                    {/* Action Block */}
                     <View style={styles.buttonContainer}>
-                        <TouchableOpacity style={styles.skipBtn} onPress={skip}>
+                        <TouchableOpacity style={styles.skipBtn} onPress={skip} hitSlop={{top: 15, bottom: 15, left: 15, right: 15}}>
                             <Text style={[styles.skipText, { color: subTextColor }]}>SKIP</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.nextBtn} onPress={scrollTo}>
-                            <LinearGradient
-                                colors={themeColors.gradient}
-                                style={styles.nextGrad}
-                            >
-                                <Text style={styles.nextText}>
-                                    {currentIndex === DATA.length - 1 ? 'GET STARTED' : 'CONTINUE'}
-                                </Text>
-                                <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
-                            </LinearGradient>
-                        </TouchableOpacity>
+                        <SpringButton onPress={scrollTo} colors={themeColors}>
+                            <Text style={styles.nextText}>
+                                {currentIndex === DATA.length - 1 ? 'GET STARTED' : 'CONTINUE'}
+                            </Text>
+                            <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
+                        </SpringButton>
                     </View>
                 </View>
             </SafeAreaView>
-        </AuraBackground>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    safeArea: {
-        flex: 1,
-    },
-    slide: {
-        width,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 25,
-    },
-    visualContainer: {
-        height: 220,
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: '100%',
-        backgroundColor: 'transparent',
-        marginBottom: 30,
-    },
-    mockupContainer: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: '100%',
-    },
-    miniCard: {
-        padding: 16,
-        width: 260,
-        borderRadius: 24,
-    },
-    miniHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    miniIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 14,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    miniTitle: {
-        fontSize: 14,
-        fontWeight: '900',
-    },
-    miniSubtitle: {
-        fontSize: 10,
-        fontWeight: '600',
-    },
-    miniProgressContainer: {
-        marginTop: 15,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-    },
-    miniProgressBar: {
-        flex: 1,
-        height: 4,
-        borderRadius: 2,
-    },
-    miniProgressFill: {
-        height: '100%',
-        borderRadius: 2,
-    },
-    miniPercent: {
-        fontSize: 10,
-        fontWeight: '900',
-    },
-    floatingBadge: {
-        position: 'absolute',
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
-        gap: 4,
-        elevation: 5,
-    },
-    badgeText: {
-        fontSize: 8,
-        fontWeight: '900',
-        color: COLORS.white,
-    },
-    macroGrid: {
-        flexDirection: 'row',
-        gap: 10,
-        marginBottom: 10,
-    },
-    macroPill: {
-        paddingVertical: 10,
-        paddingHorizontal: 15,
-        alignItems: 'center',
-        borderRadius: 18,
-    },
-    macroVal: {
-        fontSize: 14,
-        fontWeight: '900',
-        color: COLORS.white,
-    },
-    macroLabel: {
-        fontSize: 8,
-        fontWeight: '900',
-    },
-    rankItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-        paddingVertical: 8,
-    },
-    rankBadge: {
-        width: 24,
-        height: 24,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    rankAvatar: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: 'rgba(255,255,255,0.2)',
-    },
-    rankName: {
-        fontSize: 12,
-        fontWeight: '900',
-        flex: 1,
-    },
-    rankXP: {
-        fontSize: 10,
-        fontWeight: '900',
-    },
-    rankNum: {
-        fontSize: 10,
-        fontWeight: '900',
-        width: 24,
-        textAlign: 'center',
-    },
-    contentContainer: {
-        width: '100%',
-        backgroundColor: 'transparent',
-    },
-    infoWrapper: {
-        alignItems: 'center',
-    },
-    tagPill: {
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 10,
-        marginBottom: 12,
-    },
-    tagText: {
-        fontSize: 10,
-        fontWeight: '900',
-        letterSpacing: 2,
-    },
-    textCard: {
-        padding: 30,
-        borderRadius: 40,
-        width: '100%',
-        alignItems: 'center',
-    },
-    slideTitle: {
-        fontSize: 32,
-        fontWeight: '900',
-        marginBottom: 15,
-        textAlign: 'center',
-        letterSpacing: -0.5,
-    },
-    slideDesc: {
-        fontSize: 16,
-        textAlign: 'center',
-        lineHeight: 24,
-        fontWeight: '500',
-    },
-    footer: {
-        height: 160,
-        justifyContent: 'space-between',
-        paddingHorizontal: 25,
-        paddingBottom: 20,
-    },
-    pagination: {
-        flexDirection: 'row',
-        height: 50,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    dot: {
-        height: 6,
-        borderRadius: 3,
-        marginHorizontal: 4,
-    },
-    buttonContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    skipBtn: {
-        paddingHorizontal: 10,
-    },
-    skipText: {
-        fontSize: 13,
-        fontWeight: '900',
-        letterSpacing: 1.5,
-    },
-    nextBtn: {
-        height: 60,
-        minWidth: 170,
-        borderRadius: 22,
-        overflow: 'hidden',
-        elevation: 8,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.2,
-        shadowRadius: 12,
-    },
-    nextGrad: {
-        flex: 1,
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 25,
-        gap: 12,
-    },
-    nextText: {
-        color: COLORS.white,
-        fontSize: 15,
-        fontWeight: '900',
-        letterSpacing: 1.5,
-    },
+    container: { flex: 1 },
+    safeArea: { flex: 1 },
+    slide: { width, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 25 },
+    
+    // Abstracted Parallax Views
+    visualContainer: { height: height * 0.35, justifyContent: 'center', alignItems: 'center', width: '100%', marginBottom: 30 },
+    contentContainer: { width: '100%' },
+    
+    // Mockup UI
+    mockupContainer: { justifyContent: 'center', alignItems: 'center', width: '100%' },
+    miniCard: { padding: 20, width: 280, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    miniHeader: { flexDirection: 'row', alignItems: 'center', gap: 15 },
+    miniIcon: { width: 44, height: 44, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+    miniTitle: { fontSize: 16, fontWeight: '900' },
+    miniSubtitle: { fontSize: 12, fontWeight: '600' },
+    miniProgressContainer: { marginTop: 20, flexDirection: 'row', alignItems: 'center', gap: 10 },
+    miniProgressBar: { flex: 1, height: 6, borderRadius: 3 },
+    miniProgressFill: { height: '100%', borderRadius: 3 },
+    miniPercent: { fontSize: 12, fontWeight: '900' },
+    floatingBadge: { position: 'absolute', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, gap: 4, elevation: 15, shadowColor: '#000', shadowOffset:{width:0, height:5}, shadowOpacity: 0.3, shadowRadius: 10 },
+    badgeText: { fontSize: 10, fontWeight: '900', color: COLORS.white },
+    
+    macroGrid: { flexDirection: 'row', gap: 15, marginBottom: 15 },
+    macroPill: { paddingVertical: 15, paddingHorizontal: 20, alignItems: 'center', borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    macroVal: { fontSize: 18, fontWeight: '900', color: COLORS.white },
+    macroLabel: { fontSize: 10, fontWeight: '900', marginTop: 4 },
+    
+    rankItem: { flexDirection: 'row', alignItems: 'center', gap: 15, paddingVertical: 10 },
+    rankBadge: { width: 30, height: 30, justifyContent: 'center', alignItems: 'center' },
+    rankAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.1)' },
+    rankName: { fontSize: 14, fontWeight: '900', flex: 1 },
+    rankXP: { fontSize: 12, fontWeight: '900' },
+    rankNum: { fontSize: 12, fontWeight: '900', width: 30, textAlign: 'center' },
+    
+    // Slide Data
+    infoWrapper: { alignItems: 'flex-start', paddingHorizontal: 10 },
+    tagPill: { paddingHorizontal: 15, paddingVertical: 6, borderRadius: 12, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+    tagText: { fontSize: 11, fontWeight: '900', letterSpacing: 2 },
+    slideTitle: { fontSize: 40, fontWeight: '900', marginBottom: 15, letterSpacing: -1, lineHeight: 45 },
+    slideDesc: { fontSize: 16, lineHeight: 26, fontWeight: '500' },
+    
+    // Footer Blocks
+    footer: { height: 160, justifyContent: 'flex-end', paddingHorizontal: 30, paddingBottom: 30 },
+    pagination: { flexDirection: 'row', height: 40, justifyContent: 'flex-start', alignItems: 'center', marginBottom: 20 },
+    dot: { height: 6, borderRadius: 3, marginHorizontal: 4 },
+    
+    buttonContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    skipBtn: { padding: 10 },
+    skipText: { fontSize: 14, fontWeight: '900', letterSpacing: 1.5 },
+    
+    // Spring Btn
+    actionBtn: { height: 65, minWidth: 180, borderRadius: 25, overflow: 'hidden', elevation: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20 },
+    actionGrad: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 25, gap: 12 },
+    nextText: { color: COLORS.white, fontSize: 16, fontWeight: '900', letterSpacing: 1.5 },
 });
 
 export default OnboardingScreen;

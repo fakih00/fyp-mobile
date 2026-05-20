@@ -176,11 +176,10 @@ const GeneratingPlanScreen = ({ navigation, route }) => {
                     </View>
 
                     <Text style={[styles.title, { color: textColor }]}>AI SYSTEM ACTIVE</Text>
-
                     <Animated.View style={{ opacity: fadeAnim, alignItems: 'center' }}>
-                        <Ionicons name={LOADING_PHASES[phaseIndex].icon} size={28} color={subTextColor} style={styles.phaseIcon} />
+                        <Ionicons name={String(LOADING_PHASES[phaseIndex].icon)} size={28} color={subTextColor} style={styles.phaseIcon} />
                         <Text style={[styles.phaseText, { color: subTextColor }]}>
-                            {LOADING_PHASES[phaseIndex].text}...
+                            {`${LOADING_PHASES[phaseIndex].text}...`}
                         </Text>
                     </Animated.View>
 

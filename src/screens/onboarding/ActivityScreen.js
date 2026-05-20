@@ -1,61 +1,81 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Modal, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { 
+    View, 
+    Text, 
+    StyleSheet, 
+    TouchableOpacity, 
+    ScrollView, 
+    Dimensions, 
+    Modal, 
+    ActivityIndicator,
+    Platform
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
-import { COLORS, FONTS, SIZES } from '../../constants/Theme';
-import { AnimatedCard } from '../../components';
+import { COLORS } from '../../constants/Theme';
 import { StatusBar } from 'expo-status-bar';
+import { api } from '../../services/api';
 
 const { width, height: screenHeight } = Dimensions.get('window');
 
 const ActivityScreen = ({ navigation, route }) => {
     const { userData } = route.params || {};
-    const [selectedLevel, setSelectedLevel] = useState(null);
-    const [loading, setLoading] = useState(false);
+    
+    // Status states for UI
     const [prediction, setPrediction] = useState(null);
     const [showModal, setShowModal] = useState(false);
+    const [errorMsg, setErrorMsg] = useState('');
 
-    // Import API
-    const { api } = require('../../services/api');
-    const { AppContext } = require('../../context/AppContext'); // Import Context
+    useEffect(() => {
+        // Start Auto-Process immediately
+        runAutomatedAnalysis();
+    }, []);
 
-    const LEVELS = [
-        { id: 'sedentary', title: 'Resting State', desc: 'Minimal physical exertion. Focus on base health.', icon: 'bed' },
-        { id: 'light', title: 'Active Lifestyle', desc: '1-3 sessions per week. Foundation building.', icon: 'walk' },
-        { id: 'active', title: 'High Performance', desc: '3-5 sessions per week. Advanced metabolic load.', icon: 'bicycle' },
-        { id: 'very_active', title: 'Elite Athlete', desc: '6-7 sessions per week. Maximum physiological demand.', icon: 'bolt' },
-    ];
+    const calculateActivityLevel = (data) => {
+        const days = data.training_days_per_week || parseInt(data.training_frequency || 0) || 3;
+        const job = data.job_type || 'desk';
+        const steps = data.steps_estimate || 5000;
 
-    const handleComplete = async () => { // Async
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        if (selectedLevel) {
-            setLoading(true);
+        // Base points
+        let score = 0;
+        
+        // Training frequency points
+        if (days >= 5) score += 3;
+        else if (days >= 3) score += 2;
+        else if (days >= 1) score += 1;
 
-            // Map Frontend IDs to Database ENUMs
-            const ACTIVITY_MAP = {
-                'sedentary': 'sedentary',
-                'light': 'lightly_active',
-                'active': 'moderately_active',
-                'very_active': 'very_active'
-            };
+        // Lifestyle points
+        if (job === 'active' || steps >= 10000) score += 1;
+        if (steps > 15000) score += 1; // Extremely active
+
+        // Map to DB Enum
+        if (score >= 4) return 'very_active';
+        if (score === 3) return 'moderately_active';
+        if (score >= 1) return 'lightly_active';
+        
+        // Safety Fallback
+        return 'sedentary';
+    };
+
+    const runAutomatedAnalysis = async () => {
+        try {
+            // Determine activity level algorithmically based on prior screens
+            const calculatedActivity = calculateActivityLevel(userData);
 
             const GOAL_MAP = {
                 'lose_weight': 'lose_weight',
                 'build_muscle': 'gain_muscle',
                 'keep_fit': 'maintain',
-                'gain_weight': 'gain_muscle' // Mapping gain_weight to gain_muscle for now
+                'gain_weight': 'gain_muscle' 
             };
-
-            const dbActivity = ACTIVITY_MAP[selectedLevel] || 'sedentary';
             const dbGoal = GOAL_MAP[userData.goal] || 'maintain';
 
-            const finalProfile = { ...userData, activityLevel: dbActivity, goal: dbGoal };
+            const finalProfile = { ...userData, activityLevel: calculatedActivity, goal: dbGoal };
 
             // Submit to Backend
-            // updateUser needs user_id in body
             const res = await api.post('updateUser', {
                 age: finalProfile.age,
                 weight: finalProfile.weight,
@@ -68,7 +88,6 @@ const ActivityScreen = ({ navigation, route }) => {
                 dislikes: userData.dislikes || '',
                 allergies: userData.allergies || '',
                 meals_per_day: userData.meals_per_day || 4,
-                // New Fields
                 body_fat: userData.body_fat || null,
                 waist_size: userData.waist_size || null,
                 job_type: userData.job_type || 'desk',
@@ -80,22 +99,31 @@ const ActivityScreen = ({ navigation, route }) => {
             if (res.status === 200) {
                 // Fetch AI Suggestion
                 const suggestRes = await api.getSuggestedGoalWeight();
+                
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                
                 if (suggestRes.status === 200) {
                     setPrediction(suggestRes.data);
-                    setShowModal(true);
+                    setShowModal(true); // Show instantly without artificial timeout
                 } else {
-                    // Fallback to finishing if AI fails
+                    // Fallback completely to finishing if AI prediction fails
                     finishOnboarding(finalProfile);
                 }
+
             } else {
-                setLoading(false);
-                alert(res.data.message || "Failed to save profile. Please try again.");
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                setErrorMsg(res.data.message || "Failed to save profile. Please try again.");
             }
+        } catch (e) {
+            console.error("Analysis Error:", e);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            setErrorMsg("An unexpected network error occurred.");
         }
     };
 
     const finishOnboarding = async (user, suggestedWeight = null) => {
-        setLoading(true);
+        // Safe navigation cleanup for the AI modal acceptance
+        setShowModal(false);
 
         if (suggestedWeight) {
             await api.post('updateUser', {
@@ -123,7 +151,7 @@ const ActivityScreen = ({ navigation, route }) => {
         <View style={styles.container}>
             <StatusBar style="dark" />
             <LinearGradient
-                colors={['#F8FAFC', '#ECFDF5']}
+                colors={['#F8FAFC', '#ECFDF5']} // Matching the LifestyleScreen background seamlessly
                 style={StyleSheet.absoluteFill}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -133,92 +161,28 @@ const ActivityScreen = ({ navigation, route }) => {
                 <View style={styles.header}>
                     <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
                         <BlurView intensity={40} tint="light" style={styles.backBlur}>
-                            <Ionicons name="chevron-back" size={24} color={COLORS.text} />
+                            <Ionicons name="chevron-back" size={24} color="#0F172A" />
                         </BlurView>
                     </TouchableOpacity>
-
-                    <View style={styles.progressTrack}>
-                        <View style={[styles.progressFill, { width: '100%' }]} />
-                    </View>
                 </View>
-
-                <AnimatedCard delay={100} style={styles.titleSection}>
-                    <Text style={styles.title}>ENERGY EXPENDITURE</Text>
-                    <Text style={styles.subtitle}>Specify your current activity frequency to calibrate your daily macro-nutrient allowances.</Text>
-                </AnimatedCard>
-
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.listContainer}>
-                    {LEVELS.map((level, index) => (
-                        <TouchableOpacity
-                            key={level.id}
-                            onPress={() => {
-                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                setSelectedLevel(level.id);
-                            }}
-                            activeOpacity={0.9}
-                            style={styles.levelWrapper}
-                        >
-                            <AnimatedCard delay={200 + index * 100} style={[
-                                styles.levelCard,
-                                selectedLevel === level.id && styles.selectedLevelCard
-                            ]}>
-                                <View style={[
-                                    styles.iconBox,
-                                    selectedLevel === level.id && styles.selectedIconBox
-                                ]}>
-                                    <Ionicons
-                                        name={level.icon}
-                                        size={26}
-                                        color={selectedLevel === level.id ? COLORS.white : '#10B981'}
-                                    />
-                                </View>
-
-                                <View style={styles.textStack}>
-                                    <Text style={[
-                                        styles.levelTitle,
-                                        selectedLevel === level.id && styles.selectedLevelTitle
-                                    ]}>{level.title.toUpperCase()}</Text>
-                                    <Text style={styles.levelDesc}>{level.desc}</Text>
-                                </View>
-
-                                {selectedLevel === level.id && (
-                                    <View style={styles.checkIcon}>
-                                        <LinearGradient
-                                            colors={['#10B981', '#059669']}
-                                            style={styles.checkGrad}
-                                        >
-                                            <Ionicons name="checkmark" size={16} color={COLORS.white} />
-                                        </LinearGradient>
-                                    </View>
-                                )}
-                            </AnimatedCard>
+                {errorMsg ? (
+                    <View style={styles.errorContainer}>
+                        <Ionicons name="warning" size={60} color="#EF4444" />
+                        <Text style={styles.errorTitle}>Analysis Failed</Text>
+                        <Text style={styles.errorText}>{errorMsg || ''}</Text>
+                        <TouchableOpacity style={styles.retryBtn} onPress={() => { setErrorMsg(''); runAutomatedAnalysis(); }}>
+                            <Text style={styles.retryBtnText}>RETRY</Text>
                         </TouchableOpacity>
-                    ))}
-                </ScrollView>
-
-                <View style={styles.footer}>
-                    <TouchableOpacity
-                        style={[styles.nextBtn, !selectedLevel && styles.disabledBtn]}
-                        onPress={handleComplete}
-                        disabled={!selectedLevel || loading}
-                    >
-                        <LinearGradient
-                            colors={['#10B981', '#059669']}
-                            style={styles.btnGrad}
-                        >
-                            {loading ? (
-                                <ActivityIndicator color={COLORS.white} />
-                            ) : (
-                                <>
-                                    <Text style={styles.btnText}>FINISH SETUP</Text>
-                                    <Ionicons name="checkmark-circle" size={20} color={COLORS.white} />
-                                </>
-                            )}
-                        </LinearGradient>
-                    </TouchableOpacity>
-                </View>
+                    </View>
+                ) : (
+                    <View style={styles.processingContainer}>
+                        <ActivityIndicator size="large" color="#10B981" />
+                        <Text style={styles.processingText}>Synchronizing Profile...</Text>
+                    </View>
+                )}
             </SafeAreaView>
 
+            {/* AI Goal Discovery Modal */}
             <Modal visible={showModal} transparent animationType="slide">
                 <View style={styles.modalOverlay}>
                     <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} />
@@ -237,15 +201,15 @@ const ActivityScreen = ({ navigation, route }) => {
 
                             <View style={styles.statsRow}>
                                 <View style={styles.statItem}>
-                                    <Text style={styles.statVal}>{prediction?.estimated_current_bf}%</Text>
+                                    <Text style={styles.statVal}>{prediction ? `${prediction.estimated_current_bf}%` : '-'}</Text>
                                     <Text style={styles.statLab}>EST. BODY FAT</Text>
                                 </View>
                                 <View style={styles.statItem}>
-                                    <Text style={styles.statVal}>{prediction?.target_bf}%</Text>
+                                    <Text style={styles.statVal}>{prediction ? `${prediction.target_bf}%` : '-'}</Text>
                                     <Text style={styles.statLab}>TARGET BF</Text>
                                 </View>
                                 <View style={styles.statItem}>
-                                    <Text style={styles.statVal}>{prediction?.lbm}kg</Text>
+                                    <Text style={styles.statVal}>{prediction ? `${prediction.lbm}kg` : '-'}</Text>
                                     <Text style={styles.statLab}>LEAN MASS</Text>
                                 </View>
                             </View>
@@ -288,153 +252,68 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginTop: 10,
-        marginBottom: 35,
-        paddingHorizontal: 30,
+        paddingHorizontal: 20,
+        paddingTop: 10,
     },
     backBtn: {
         width: 44,
         height: 44,
-        borderRadius: 14,
+        borderRadius: 22,
         overflow: 'hidden',
     },
     backBlur: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.4)',
     },
-    progressTrack: {
+    processingContainer: {
         flex: 1,
-        height: 6,
-        backgroundColor: '#E2E8F0',
-        borderRadius: 3,
-        marginLeft: 25,
-        overflow: 'hidden',
-    },
-    progressFill: {
-        height: '100%',
-        backgroundColor: '#10B981',
-        borderRadius: 3,
-    },
-    titleSection: {
-        backgroundColor: 'transparent',
-        elevation: 0,
+        justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 30,
-        paddingHorizontal: 30,
     },
-    title: {
-        fontSize: 28,
-        fontWeight: '900',
-        color: '#0F172A',
-        letterSpacing: -0.5,
-        textAlign: 'center',
-        marginBottom: 15,
-    },
-    subtitle: {
-        fontSize: 15,
+    processingText: {
+        marginTop: 20,
+        fontSize: 14,
         color: '#64748B',
-        textAlign: 'center',
-        lineHeight: 24,
-        paddingHorizontal: 10,
-    },
-    listContainer: {
-        paddingHorizontal: 30,
-        gap: 15,
-        paddingBottom: 40,
-    },
-    levelWrapper: {
-        width: '100%',
-    },
-    levelCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: COLORS.white,
-        borderRadius: 30,
-        padding: 20,
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-        elevation: 4,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-    },
-    selectedLevelCard: {
-        borderColor: '#10B981',
-        backgroundColor: '#ECFDF5',
-    },
-    iconBox: {
-        width: 60,
-        height: 60,
-        borderRadius: 20,
-        backgroundColor: '#F8FAFC',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 20,
-    },
-    selectedIconBox: {
-        backgroundColor: '#10B981',
-    },
-    textStack: {
-        flex: 1,
-    },
-    levelTitle: {
-        fontSize: 15,
-        fontWeight: '900',
-        color: '#0F172A',
-        letterSpacing: 1,
-        marginBottom: 4,
-    },
-    selectedLevelTitle: {
-        color: '#059669',
-    },
-    levelDesc: {
-        fontSize: 12,
-        color: '#64748B',
-        lineHeight: 18,
-    },
-    checkIcon: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        overflow: 'hidden',
-        marginLeft: 10,
-    },
-    checkGrad: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    footer: {
-        paddingHorizontal: 30,
-        paddingTop: 10,
-        paddingBottom: 30,
-    },
-    nextBtn: {
-        height: 65,
-        borderRadius: 22,
-        overflow: 'hidden',
-    },
-    disabledBtn: {
-        opacity: 0.3,
-    },
-    btnGrad: {
-        flex: 1,
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 12,
-    },
-    btnText: {
-        fontSize: 15,
-        fontWeight: '900',
-        color: COLORS.white,
+        fontWeight: '700',
         letterSpacing: 1.5,
+        textTransform: 'uppercase',
     },
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 30,
+    },
+    errorTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#0F172A',
+        marginTop: 20,
+        marginBottom: 10,
+    },
+    errorText: {
+        fontSize: 14,
+        color: '#64748B',
+        textAlign: 'center',
+        marginBottom: 30,
+        lineHeight: 22,
+    },
+    retryBtn: {
+        backgroundColor: '#10B981',
+        paddingHorizontal: 40,
+        paddingVertical: 15,
+        borderRadius: 20,
+    },
+    retryBtnText: {
+        color: '#FFF',
+        fontWeight: '800',
+        fontSize: 14,
+        letterSpacing: 1,
+    },
+    
+    // Modal Styles
     modalOverlay: {
         flex: 1,
         justifyContent: 'flex-end',
