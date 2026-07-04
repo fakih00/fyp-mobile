@@ -52,6 +52,7 @@ const AIChatScreen = ({ navigation }) => {
     const sendMessage = async (text) => {
         const messageText = text || inputText;
         if (messageText.trim().length === 0) return;
+        console.log("Sending chat message query to Gemini Coach backend: ", messageText);
 
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
