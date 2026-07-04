@@ -9,6 +9,7 @@ class PredictionAI {
         });
 
         $n = count($history);
+        // Validate dataset size is sufficient for linear regression
         if ($n < 2) {
             $msg = "Need at least 2 data points for prediction.";
             if ($profile && $profile['suggested_goal_weight']) {
