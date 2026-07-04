@@ -70,7 +70,14 @@ class UserController extends BaseController {
                     "dislikes" => $row['dislikes'],
                     "allergies" => $row['allergies'],
                     "meals_per_day" => $row['meals_per_day'],
-                    "avatar" => $row['avatar']
+                    "avatar" => $row['avatar'],
+                    "injuries" => $row['injuries'] ?? null,
+                    "pain_points" => $row['pain_points'] ?? null,
+                    "strong_side" => $row['strong_side'] ?? null,
+                    "posture_problems" => $row['posture_problems'] ?? null,
+                    "mobility_limitations" => $row['mobility_limitations'] ?? null,
+                    "avoid_areas" => $row['avoid_areas'] ?? null,
+                    "chronic_pain" => $row['chronic_pain'] ?? null
                 ],
                 "stats" => [
                     "workouts" => $workoutsCount,
@@ -113,12 +120,16 @@ class UserController extends BaseController {
             'training_days_per_week', 'training_intensity',
             'likes', 'dislikes', 'allergies', 'meals_per_day', 'avatar',
             'body_fat', 'waist_size', 'job_type', 'steps_estimate', 
-            'sleep_hours', 'stress_level', 'suggested_goal_weight'
+            'sleep_hours', 'stress_level', 'suggested_goal_weight',
+            'injuries', 'pain_points', 'strong_side', 'posture_problems',
+            'mobility_limitations', 'avoid_areas', 'chronic_pain'
         ];
 
         // String fields that need sanitization
         $textFields = ['gender', 'goal', 'activity_level', 'training_location', 
-                       'training_intensity', 'likes', 'dislikes', 'allergies', 'job_type', 'avatar'];
+                       'training_intensity', 'likes', 'dislikes', 'allergies', 'job_type', 'avatar',
+                       'injuries', 'pain_points', 'strong_side', 'posture_problems',
+                       'mobility_limitations', 'avoid_areas', 'chronic_pain'];
         $data = $this->sanitizeFields($data, $textFields);
 
         $updates = [];
@@ -283,6 +294,12 @@ class UserController extends BaseController {
         $updateStmt = $this->db->prepare($updateQuery);
         
         if ($updateStmt->execute([$level, $xp, $points, $user_id])) {
+            if ($levelUp) {
+                // Check level-based achievements after leveling up
+                require_once __DIR__ . '/AchievementController.php';
+                $achCtrl = new AchievementController($this->db);
+                $achCtrl->checkAndAward($user_id, 'level');
+            }
             return [
                 "message" => $levelUp ? "Congratulations! You reached level $level!" : "XP added successfully",
                 "level" => $level,

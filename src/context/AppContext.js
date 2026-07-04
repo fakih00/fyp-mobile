@@ -45,7 +45,7 @@ export const AppProvider = ({ children }) => {
         checkNotifications();
 
         const res = await api.getUser();
-        if (res.status === 200) {
+        if (res.status === 200 && res.data && res.data.profile) {
             const userData = res.data.profile;
             setUser(prev => ({
                 ...prev,
@@ -60,19 +60,19 @@ export const AppProvider = ({ children }) => {
         }
 
         const chalRes = await api.getChallenges();
-        if (chalRes.status === 200) {
+        if (chalRes.status === 200 && chalRes.data) {
             // Transform if necessary, or just set
             // setChallenges(chalRes.data.records); // Logic depends on data shape
         }
 
         const workRes = await api.getWorkouts();
-        if (workRes.status === 200) {
+        if (workRes.status === 200 && workRes.data) {
             // The backend returns the plan_data which is already an array as per AI service
             setWorkouts(workRes.data);
         }
 
         const nutRes = await api.getNutritionPlan();
-        if (nutRes.status === 200) {
+        if (nutRes.status === 200 && nutRes.data) {
             setMeals(nutRes.data.meals || []);
             setNutritionGoal(nutRes.data.calories || 2200);
             setIsRecomp(nutRes.data.is_recomp || false);
@@ -126,6 +126,10 @@ export const AppProvider = ({ children }) => {
     // Actions
     const toggleWorkoutComplete = (id) => {
         setWorkouts(prev => prev.map(w => w.id === id ? { ...w, completed: !w.completed } : w));
+    };
+
+    const replaceMealInContext = (newMeal) => {
+        setMeals(prev => prev.map(m => m.id === newMeal.id ? newMeal : m));
     };
 
     const toggleMealComplete = (id) => {
@@ -414,6 +418,7 @@ export const AppProvider = ({ children }) => {
         activeWorkout,
         toggleWorkoutComplete,
         toggleMealComplete,
+        replaceMealInContext,
         joinChallenge,
         redeemItem,
         addFriend,

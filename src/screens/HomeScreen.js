@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState, useCallback } from 'react';
+import React, { useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
     View,
@@ -10,7 +10,8 @@ import {
     Dimensions,
     Animated,
     ActivityIndicator,
-    Alert
+    Alert,
+    Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,7 +28,7 @@ import { Pedometer } from 'expo-sensors'; // Import Pedometer
 const { width } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation }) => {
-    const { user, colors: themeColors, unreadCount, checkNotifications } = useContext(AppContext);
+    const { user, setUser, colors: themeColors, unreadCount, checkNotifications } = useContext(AppContext);
     const [pulseAnim] = useState(new Animated.Value(1));
     const [headerFadeAnim] = useState(new Animated.Value(0));
     const [headerSlideAnim] = useState(new Animated.Value(-20));
@@ -43,6 +44,19 @@ const HomeScreen = ({ navigation }) => {
     const [initialSteps, setInitialSteps] = useState(0);
     const [sessionSteps, setSessionSteps] = useState(0);
     const [pedometerAvailable, setPedometerAvailable] = useState('checking');
+
+    // Daily Quests states
+    const [quests, setQuests] = useState([]);
+    const [questsLoading, setQuestsLoading] = useState(true);
+    const [claimingQuestId, setClaimingQuestId] = useState(null);
+    const [showQuestModal, setShowQuestModal] = useState(false);
+    const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
+
+    // Animated values for quest button and modal
+    const questBtnPulse = useRef(new Animated.Value(1)).current;
+    const questBtnGlow = useRef(new Animated.Value(0)).current;
+    const modalSlide = useRef(new Animated.Value(500)).current;
+    const modalFade = useRef(new Animated.Value(0)).current;
 
     // Fetch data when screen comes into focus
     useFocusEffect(
@@ -82,6 +96,19 @@ const HomeScreen = ({ navigation }) => {
 
                     // Check for new notifications
                     checkNotifications();
+
+                    // Fetch Daily Quests
+                    setQuestsLoading(true);
+                    try {
+                        const questsRes = await api.getDailyQuests();
+                        if (questsRes.status === 200) {
+                            setQuests(questsRes.data || []);
+                        }
+                    } catch (e) {
+                        console.error("Fetch daily quests error:", e);
+                    } finally {
+                        setQuestsLoading(false);
+                    }
                 } else {
                     console.log("No user_id in context yet.");
                 }
@@ -286,18 +313,47 @@ const HomeScreen = ({ navigation }) => {
                             </View>
                         </View>
 
-                        <TouchableOpacity
-                            style={styles.headerActionBtn}
-                            onPress={() => {
-                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                navigation.navigate('Notifications');
-                            }}
-                        >
-                            <BlurView intensity={30} tint="light" style={styles.iconBlur}>
-                                <Ionicons name="notifications" size={20} color={COLORS.white} />
-                            </BlurView>
-                            {unreadCount > 0 && <View style={styles.notifDot} />}
-                        </TouchableOpacity>
+                        <View style={styles.headerActionsContainer}>
+                            {/* Animated Quest Button */}
+                            <TouchableOpacity
+                                style={styles.headerQuestBtnContainer}
+                                onPress={openQuestModal}
+                            >
+                                <Animated.View style={{ transform: [{ scale: questBtnPulse }], flex: 1, width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
+                                    {/* Glow halo around the button when hasClaimable is true */}
+                                    {hasClaimable && (
+                                        <Animated.View style={[
+                                            styles.headerQuestGlow,
+                                            { opacity: questBtnGlow.interpolate({ inputRange: [0, 1], outputRange: [0.2, 0.65] }) }
+                                        ]} />
+                                    )}
+                                    <View style={styles.headerQuestBtnInner}>
+                                        <BlurView intensity={30} tint="light" style={styles.iconBlur}>
+                                            <Ionicons
+                                                name="flash"
+                                                size={20}
+                                                color={hasClaimable ? "#F59E0B" : COLORS.white}
+                                            />
+                                        </BlurView>
+                                    </View>
+                                    {hasClaimable && <View style={[styles.notifDot, { backgroundColor: '#F59E0B', borderColor: themeColors.gradient[0] || '#064E3B' }]} />}
+                                </Animated.View>
+                            </TouchableOpacity>
+
+                            {/* Notifications Button */}
+                            <TouchableOpacity
+                                style={styles.headerActionBtn}
+                                onPress={() => {
+                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                    navigation.navigate('Notifications');
+                                }}
+                            >
+                                <BlurView intensity={30} tint="light" style={styles.iconBlur}>
+                                    <Ionicons name="notifications" size={20} color={COLORS.white} />
+                                </BlurView>
+                                {unreadCount > 0 && <View style={[styles.notifDot, { borderColor: themeColors.gradient[0] || '#064E3B' }]} />}
+                            </TouchableOpacity>
+                        </View>
                     </Animated.View>
                 </SafeAreaView>
             </View>
@@ -419,6 +475,278 @@ const HomeScreen = ({ navigation }) => {
         </View>
     );
 
+    const handleClaimQuest = async (questId) => {
+        setClaimingQuestId(questId);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        try {
+            const res = await api.claimDailyQuest(questId);
+            if (res.status === 200) {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                // Update local user stats in Context
+                const { user_stats } = res.data;
+                setUser(prev => ({
+                    ...prev,
+                    level: user_stats.level,
+                    xp: user_stats.xp,
+                    points: user_stats.points,
+                    nextLevelXp: user_stats.nextLevelXp
+                }));
+                // Alert or reward popup
+                Alert.alert(
+                    "Quest Claimed! 🎉",
+                    `You earned +${res.data.xp_reward} XP and +${res.data.points_reward} PTS!`
+                );
+                // Refresh quests list
+                const questsRes = await api.getDailyQuests();
+                if (questsRes.status === 200) {
+                    setQuests(questsRes.data || []);
+                }
+            } else {
+                Alert.alert("Claim Failed", res.data.message || "Failed to claim reward.");
+            }
+        } catch (err) {
+            console.error("Claim quest error:", err);
+            Alert.alert("Claim Failed", "A network error occurred.");
+        } finally {
+            setClaimingQuestId(null);
+        }
+    };
+
+    // ─── Countdown timer to midnight ────────────────────────────────────────────
+    useEffect(() => {
+        const updateCountdown = () => {
+            const now = new Date();
+            const midnight = new Date();
+            midnight.setHours(24, 0, 0, 0);
+            const diff = midnight - now;
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            setTimeLeft({ hours, minutes, seconds });
+        };
+        updateCountdown();
+        const timer = setInterval(updateCountdown, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    // ─── Quest button animations ────────────────────────────────────────────────
+    useEffect(() => {
+        // Pulse loop
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(questBtnPulse, { toValue: 1.06, duration: 900, useNativeDriver: true }),
+                Animated.timing(questBtnPulse, { toValue: 1, duration: 900, useNativeDriver: true }),
+            ])
+        ).start();
+        // Glow loop
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(questBtnGlow, { toValue: 1, duration: 1400, useNativeDriver: true }),
+                Animated.timing(questBtnGlow, { toValue: 0, duration: 1400, useNativeDriver: true }),
+            ])
+        ).start();
+    }, []);
+
+    const openQuestModal = () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        setShowQuestModal(true);
+        Animated.parallel([
+            Animated.spring(modalSlide, { toValue: 0, friction: 8, tension: 50, useNativeDriver: true }),
+            Animated.timing(modalFade, { toValue: 1, duration: 250, useNativeDriver: true })
+        ]).start();
+    };
+
+    const closeQuestModal = () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Animated.parallel([
+            Animated.timing(modalSlide, { toValue: 500, duration: 280, useNativeDriver: true }),
+            Animated.timing(modalFade, { toValue: 0, duration: 220, useNativeDriver: true })
+        ]).start(() => {
+            setShowQuestModal(false);
+        });
+    };
+
+    // How many quests are done?
+    const questsDone = quests.filter(q => q.claimed === 1).length;
+    const questsTotal = quests.length;
+    const hasClaimable = quests.some(q => (q.completed === 1 || q.current_value >= q.target_value) && q.claimed !== 1);
+
+    const getQuestIcon = (type) => {
+        const map = { steps: 'footsteps', water: 'water', workout: 'barbell', meal: 'restaurant' };
+        return map[type] || 'ribbon';
+    };
+    const getQuestColor = (type) => {
+        const map = { steps: '#3B82F6', water: '#10B981', workout: '#EF4444', meal: '#F59E0B' };
+        return map[type] || (themeColors.accent || COLORS.primary);
+    };
+
+    // ─── Quest Modal ────────────────────────────────────────────────────────────
+    const renderQuestModal = () => {
+        return (
+            <Modal
+                visible={showQuestModal}
+                transparent
+                animationType="none"
+                onRequestClose={closeQuestModal}
+                statusBarTranslucent
+            >
+                <Animated.View style={[styles.questModalOverlay, { opacity: modalFade }]}>
+                    <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeQuestModal} activeOpacity={1} />
+
+                    <Animated.View style={[styles.questModalSheet, { transform: [{ translateY: modalSlide }] }]}>
+                        {/* Handle */}
+                        <View style={styles.questModalHandle} />
+
+                        {/* Close Button */}
+                        <TouchableOpacity style={styles.questModalCloseBtn} onPress={closeQuestModal}>
+                            <Ionicons name="close" size={20} color="rgba(0, 0, 0, 0.6)" />
+                        </TouchableOpacity>
+
+                        {/* Header */}
+                        <LinearGradient
+                            colors={['#F59E0B20', '#8B5CF610']}
+                            style={styles.questModalHeader}
+                            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                        >
+                            <View style={styles.questModalTitleGrp}>
+                                <View style={styles.questModalIconCircle}>
+                                    <Ionicons name="alarm-outline" size={20} color="#F59E0B" />
+                                </View>
+                                <View>
+                                    <Text style={styles.questModalTitle}>DAILY MISSIONS</Text>
+                                    <Text style={styles.questModalSub}>{questsDone} of {questsTotal} completed</Text>
+                                </View>
+                            </View>
+
+                            {/* Countdown */}
+                            <View style={styles.questModalTimerBox}>
+                                <Text style={styles.questModalTimerLabel}>RESETS IN</Text>
+                                <View style={styles.questModalTimerRow}>
+                                    {[timeLeft.hours, timeLeft.minutes, timeLeft.seconds].map((val, i) => (
+                                        <React.Fragment key={i}>
+                                            <View style={styles.timerSegment}>
+                                                <Text style={styles.timerSegmentVal}>{String(val).padStart(2, '0')}</Text>
+                                                <Text style={styles.timerSegmentLbl}>{['H', 'M', 'S'][i]}</Text>
+                                            </View>
+                                            {i < 2 && <Text style={styles.timerColon}>:</Text>}
+                                        </React.Fragment>
+                                    ))}
+                                </View>
+                            </View>
+                        </LinearGradient>
+
+                        {/* Total XP available */}
+                        <View style={styles.questTotalRow}>
+                            <View style={styles.questTotalChip}>
+                                <Ionicons name="flash" size={12} color="#F59E0B" />
+                                <Text style={styles.questTotalChipTxt}>
+                                    {quests.reduce((s, q) => s + q.xp_reward, 0)} XP available today
+                                </Text>
+                            </View>
+                            <View style={[styles.questTotalChip, { borderColor: '#10B98140' }]}>
+                                <Ionicons name="star" size={12} color="#10B981" />
+                                <Text style={[styles.questTotalChipTxt, { color: '#10B981' }]}>
+                                    {quests.reduce((s, q) => s + q.points_reward, 0)} PTS available
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Quest list */}
+                        <ScrollView
+                            style={styles.questModalScroll}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={{ paddingBottom: 40 }}
+                        >
+                            {questsLoading ? (
+                                <ActivityIndicator color="#F59E0B" style={{ marginTop: 30 }} />
+                            ) : quests.length === 0 ? (
+                                <View style={styles.questEmptyState}>
+                                    <Text style={styles.questEmptyIcon}>⚡</Text>
+                                    <Text style={styles.questEmptyTxt}>No missions today yet</Text>
+                                </View>
+                            ) : quests.map((quest) => {
+                                const progressPercent = Math.min((quest.current_value / quest.target_value) * 100, 100);
+                                const isCompleted = quest.completed === 1 || quest.current_value >= quest.target_value;
+                                const isClaimed = quest.claimed === 1;
+                                const iconName = getQuestIcon(quest.quest_type);
+                                const iconColor = getQuestColor(quest.quest_type);
+
+                                return (
+                                    <View key={quest.id} style={[
+                                        styles.questItem,
+                                        isClaimed && styles.questItemClaimed
+                                    ]}>
+                                        <View style={styles.questTopRow}>
+                                            <View style={[styles.questIconBox, { backgroundColor: iconColor + '18' }]}>
+                                                <Ionicons name={iconName} size={20} color={isClaimed ? '#10B981' : iconColor} />
+                                            </View>
+                                            <View style={styles.questTextStack}>
+                                                <Text style={[styles.questTitle, isClaimed && { color: '#94A3B8' }]}>
+                                                    {quest.title}
+                                                </Text>
+                                                <Text style={styles.questDesc}>{quest.description}</Text>
+                                            </View>
+                                            <View style={styles.questRewardBox}>
+                                                <Text style={[styles.questRewardText, isClaimed && { color: '#94A3B8' }]}>+{quest.xp_reward} XP</Text>
+                                                <Text style={[styles.questRewardSub, isClaimed && { color: '#CBD5E1' }]}>+{quest.points_reward} PTS</Text>
+                                            </View>
+                                        </View>
+
+                                        <View style={styles.questProgressRow}>
+                                            <View style={styles.questBarBg}>
+                                                <LinearGradient
+                                                    colors={isClaimed ? ['#10B981', '#059669'] : [iconColor, iconColor + 'AA']}
+                                                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                                                    style={[styles.questBarFill, { width: `${progressPercent}%` }]}
+                                                />
+                                            </View>
+                                            <Text style={styles.questProgressText}>
+                                                {quest.current_value.toLocaleString()} / {quest.target_value.toLocaleString()}
+                                            </Text>
+                                        </View>
+
+                                        <View style={styles.questActionContainer}>
+                                            {isClaimed ? (
+                                                <View style={styles.claimedBadge}>
+                                                    <Ionicons name="checkmark-circle" size={14} color="#10B981" />
+                                                    <Text style={styles.claimedText}>CLAIMED ✓</Text>
+                                                </View>
+                                            ) : isCompleted ? (
+                                                <TouchableOpacity
+                                                    style={styles.claimButton}
+                                                    onPress={() => handleClaimQuest(quest.id)}
+                                                    disabled={claimingQuestId === quest.id}
+                                                >
+                                                    {claimingQuestId === quest.id ? (
+                                                        <ActivityIndicator size="small" color={COLORS.white} />
+                                                    ) : (
+                                                        <LinearGradient
+                                                            colors={['#F59E0B', '#EF4444']}
+                                                            style={styles.claimGrad}
+                                                            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                                                        >
+                                                            <Text style={styles.claimButtonText}>CLAIM REWARD</Text>
+                                                            <Ionicons name="gift" size={14} color={COLORS.white} style={{ marginLeft: 5 }} />
+                                                        </LinearGradient>
+                                                    )}
+                                                </TouchableOpacity>
+                                            ) : (
+                                                <View style={styles.inProgressBadge}>
+                                                    <Ionicons name="time-outline" size={12} color="#64748B" />
+                                                    <Text style={styles.inProgressText}>{Math.round(progressPercent)}% • IN PROGRESS</Text>
+                                                </View>
+                                            )}
+                                        </View>
+                                    </View>
+                                );
+                            })}
+                        </ScrollView>
+                    </Animated.View>
+                </Animated.View>
+            </Modal>
+        );
+    };
+
     return (
         <AuraBackground style={styles.container}>
             {renderHeader()}
@@ -426,36 +754,91 @@ const HomeScreen = ({ navigation }) => {
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollPadding}>
                 {renderUserDashboard()}
 
-                {/* AI COACH SECTION */}
-                <AnimatedCard delay={100} style={styles.aiSectionElite}>
-                    <TouchableOpacity
-                        activeOpacity={0.9}
-                        onPress={() => {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                            navigation.navigate('AIChat');
-                        }}
+                {/* UNIFIED ELITE AI SUITE */}
+                <AnimatedCard delay={100} style={styles.aiSuiteCard}>
+                    <LinearGradient
+                        colors={['#EBFDF5', '#FFFCF9']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.aiSuiteGradient}
                     >
-                        <LinearGradient
-                            colors={['#064E3B', '#065F46']}
-                            style={styles.aiCardElite}
-                        >
-                            <View style={styles.aiIconWrapper}>
-                                <BlurView intensity={30} tint="light" style={styles.aiBlurIcon}>
-                                    <Ionicons name="sparkles" size={24} color="#10B981" />
+                        <View style={styles.aiSuiteHeader}>
+                            <View style={styles.aiSuiteHeaderTitleRow}>
+                                <Ionicons name="sparkles" size={18} color="#10B981" />
+                                <Text style={styles.aiSuiteTitle}>ELITE AI SUITE</Text>
+                            </View>
+                            <View style={styles.aiSuiteBadge}>
+                                <Text style={styles.aiSuiteBadgeTxt}>ACTIVE INSTANCE</Text>
+                            </View>
+                        </View>
+
+                        <Text style={styles.aiSuiteDesc}>
+                            Access real-time athletic intelligence, biomechanical injury tracking, and custom competition strategies.
+                        </Text>
+
+                        <View style={styles.aiSuiteGrid}>
+                            {/* AI Coach */}
+                            <TouchableOpacity
+                                style={styles.aiSuiteGridItem}
+                                activeOpacity={0.85}
+                                onPress={() => {
+                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                    navigation.navigate('AIChat');
+                                }}
+                            >
+                                <BlurView intensity={20} tint="light" style={styles.aiSuiteItemBlur}>
+                                    <View style={[styles.aiSuiteIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.12)' }]}>
+                                        <Ionicons name="sparkles" size={20} color="#10B981" />
+                                    </View>
+                                    <Text style={styles.aiSuiteItemName}>AI Coach</Text>
+                                    <Text style={styles.aiSuiteItemSub}>Real-Time Insight</Text>
                                 </BlurView>
-                                <Animated.View style={[styles.aiPulseElite, { transform: [{ scale: pulseAnim }] }]} />
-                            </View>
-                            <View style={styles.aiContentElite}>
-                                <View style={styles.aiBadge}>
-                                    <Text style={styles.aiBadgeText}>ELITE INSIGHT</Text>
-                                </View>
-                                <Text style={styles.aiMsgElite}>
-                                    "{dashboardData?.ai_message || "Ready to crush your goals today?"}"
-                                </Text>
-                            </View>
-                            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.4)" />
-                        </LinearGradient>
-                    </TouchableOpacity>
+                            </TouchableOpacity>
+
+                            {/* AI Body Recovery */}
+                            <TouchableOpacity
+                                style={styles.aiSuiteGridItem}
+                                activeOpacity={0.85}
+                                onPress={() => {
+                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                    navigation.navigate('BodyRecovery');
+                                }}
+                            >
+                                <BlurView intensity={20} tint="light" style={styles.aiSuiteItemBlur}>
+                                    <View style={[styles.aiSuiteIconBox, { backgroundColor: 'rgba(239, 68, 68, 0.12)' }]}>
+                                        <Ionicons name="pulse" size={20} color="#EF4444" />
+                                    </View>
+                                    <Text style={styles.aiSuiteItemName}>Recovery</Text>
+                                    <Text style={styles.aiSuiteItemSub}>Rehab Scanner</Text>
+                                </BlurView>
+                            </TouchableOpacity>
+
+                            {/* AI Competition Prep */}
+                            <TouchableOpacity
+                                style={styles.aiSuiteGridItem}
+                                activeOpacity={0.85}
+                                onPress={() => {
+                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                    navigation.navigate('CompetitionPrep');
+                                }}
+                            >
+                                <BlurView intensity={20} tint="light" style={styles.aiSuiteItemBlur}>
+                                    <View style={[styles.aiSuiteIconBox, { backgroundColor: 'rgba(245, 158, 11, 0.12)' }]}>
+                                        <Ionicons name="trophy" size={20} color="#F59E0B" />
+                                    </View>
+                                    <Text style={styles.aiSuiteItemName}>Competition</Text>
+                                    <Text style={styles.aiSuiteItemSub}>Arena Prep</Text>
+                                </BlurView>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Coaching Message */}
+                        <View style={styles.aiSuiteQuoteBox}>
+                            <Text style={styles.aiSuiteQuoteTxt}>
+                                "{dashboardData?.ai_message || "Ready to crush your goals today?"}"
+                            </Text>
+                        </View>
+                    </LinearGradient>
                 </AnimatedCard>
 
                 {/* NEXT UP SECTION */}
@@ -647,6 +1030,7 @@ const HomeScreen = ({ navigation }) => {
                 </TouchableOpacity>
 
             </ScrollView>
+            {renderQuestModal()}
         </AuraBackground>
     );
 };
@@ -1274,6 +1658,837 @@ const styles = StyleSheet.create({
     shopDescElite: {
         fontSize: 12,
         color: '#065F46',
+        fontWeight: '600',
+    },
+    // ─── Quest Floating Button ─────────────────────────────────────
+    questBtnWrapper: {
+        marginHorizontal: 20,
+        marginTop: 16,
+        marginBottom: 16,
+    },
+    questBtnHalo: {
+        position: 'absolute',
+        top: -10,
+        left: -10,
+        right: -10,
+        bottom: -10,
+        borderRadius: 36,
+        backgroundColor: '#F59E0B',
+    },
+    questBtnGrad: {
+        borderRadius: 24,
+        paddingVertical: 16,
+        paddingHorizontal: 18,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        elevation: 12,
+        shadowColor: '#F59E0B',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.45,
+        shadowRadius: 16,
+    },
+    questBtnLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        flex: 1,
+    },
+    questBtnIconCircle: {
+        width: 44,
+        height: 44,
+        borderRadius: 15,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    questBtnTextStack: {
+        flex: 1,
+        gap: 6,
+    },
+    questBtnLabel: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: '#FFF',
+        letterSpacing: 0.8,
+    },
+    questBtnProgressRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    questBtnBarBg: {
+        flex: 1,
+        height: 5,
+        backgroundColor: 'rgba(255,255,255,0.25)',
+        borderRadius: 3,
+        overflow: 'hidden',
+    },
+    questBtnBarFill: {
+        height: '100%',
+        backgroundColor: '#FFF',
+        borderRadius: 3,
+    },
+    questBtnProgressTxt: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: 'rgba(255,255,255,0.8)',
+    },
+    questBtnRight: {
+        alignItems: 'flex-end',
+        gap: 6,
+        marginLeft: 10,
+    },
+    questClaimDot: {
+        backgroundColor: '#FFF',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 10,
+    },
+    questClaimDotTxt: {
+        fontSize: 9,
+        fontWeight: '900',
+        color: '#EF4444',
+        letterSpacing: 0.5,
+    },
+    questTimerBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    questTimerTxt: {
+        fontSize: 11,
+        fontWeight: '900',
+        color: 'rgba(255,255,255,0.75)',
+        fontVariant: ['tabular-nums'],
+    },
+
+    // ─── Quest Modal Sheet ────────────────────────────────────────
+    questModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.55)',
+        justifyContent: 'flex-end',
+    },
+    questModalSheet: {
+        backgroundColor: '#F8FAFC',
+        borderTopLeftRadius: 36,
+        borderTopRightRadius: 36,
+        maxHeight: '88%',
+        paddingTop: 12,
+        elevation: 30,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -10 },
+        shadowOpacity: 0.2,
+        shadowRadius: 20,
+    },
+    questModalHandle: {
+        width: 44,
+        height: 5,
+        backgroundColor: '#CBD5E1',
+        borderRadius: 3,
+        alignSelf: 'center',
+        marginBottom: 16,
+    },
+    questModalHeader: {
+        marginHorizontal: 20,
+        borderRadius: 24,
+        padding: 18,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 14,
+        borderWidth: 1,
+        borderColor: '#F59E0B30',
+    },
+    questModalTitleGrp: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    questModalIconCircle: {
+        width: 42,
+        height: 42,
+        borderRadius: 14,
+        backgroundColor: '#F59E0B20',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#F59E0B40',
+    },
+    questModalTitle: {
+        fontSize: 15,
+        fontWeight: '900',
+        color: '#0F172A',
+        letterSpacing: 0.5,
+    },
+    questModalSub: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#64748B',
+        marginTop: 2,
+    },
+    questModalTimerBox: {
+        alignItems: 'flex-end',
+        gap: 4,
+    },
+    questModalTimerLabel: {
+        fontSize: 8,
+        fontWeight: '900',
+        color: '#94A3B8',
+        letterSpacing: 1.5,
+    },
+    questModalTimerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 2,
+    },
+    timerSegment: {
+        alignItems: 'center',
+        backgroundColor: '#1E293B',
+        borderRadius: 8,
+        paddingHorizontal: 7,
+        paddingVertical: 4,
+        minWidth: 30,
+    },
+    timerSegmentVal: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: '#F59E0B',
+        fontVariant: ['tabular-nums'],
+    },
+    timerSegmentLbl: {
+        fontSize: 7,
+        fontWeight: '900',
+        color: '#64748B',
+        letterSpacing: 0.5,
+    },
+    timerColon: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: '#F59E0B',
+        marginBottom: 8,
+    },
+    questTotalRow: {
+        flexDirection: 'row',
+        gap: 10,
+        marginHorizontal: 20,
+        marginBottom: 12,
+    },
+    questTotalChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        paddingHorizontal: 12,
+        paddingVertical: 7,
+        borderRadius: 12,
+        backgroundColor: '#FFF9ED',
+        borderWidth: 1,
+        borderColor: '#F59E0B40',
+    },
+    questTotalChipTxt: {
+        fontSize: 11,
+        fontWeight: '800',
+        color: '#F59E0B',
+    },
+    questModalScroll: {
+        paddingHorizontal: 20,
+    },
+    questEmptyState: {
+        alignItems: 'center',
+        paddingTop: 40,
+        gap: 10,
+    },
+    questEmptyIcon: {
+        fontSize: 40,
+    },
+    questEmptyTxt: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#94A3B8',
+    },
+
+    // ─── Quest Items (inside modal) ────────────────────────────────
+    questItem: {
+        backgroundColor: '#FFF',
+        borderRadius: 22,
+        padding: 16,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+    },
+    questItemClaimed: {
+        backgroundColor: '#F0FDF4',
+        borderColor: '#BBF7D0',
+    },
+    questTopRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    questIconBox: {
+        width: 42,
+        height: 42,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    questTextStack: {
+        flex: 1,
+        gap: 3,
+    },
+    questTitle: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: '#0F172A',
+    },
+    questDesc: {
+        fontSize: 11,
+        color: '#64748B',
+        fontWeight: '500',
+        lineHeight: 16,
+    },
+    questRewardBox: {
+        alignItems: 'flex-end',
+        gap: 2,
+    },
+    questRewardText: {
+        fontSize: 12,
+        fontWeight: '900',
+        color: '#10B981',
+    },
+    questRewardSub: {
+        fontSize: 9,
+        fontWeight: '800',
+        color: '#F59E0B',
+    },
+    questProgressRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 14,
+        gap: 10,
+    },
+    questBarBg: {
+        flex: 1,
+        height: 7,
+        backgroundColor: '#F1F5F9',
+        borderRadius: 4,
+        overflow: 'hidden',
+    },
+    questBarFill: {
+        height: '100%',
+        borderRadius: 4,
+    },
+    questProgressText: {
+        fontSize: 10,
+        fontWeight: '800',
+        color: '#475569',
+        width: 75,
+        textAlign: 'right',
+    },
+    questActionContainer: {
+        alignItems: 'flex-end',
+        marginTop: 12,
+    },
+    claimButton: {
+        borderRadius: 12,
+        overflow: 'hidden',
+    },
+    claimGrad: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 9,
+        gap: 6,
+    },
+    claimButtonText: {
+        fontSize: 11,
+        fontWeight: '900',
+        color: '#FFF',
+        letterSpacing: 0.5,
+    },
+    claimedBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(16, 185, 129, 0.12)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 10,
+        gap: 5,
+    },
+    claimedText: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#10B981',
+        letterSpacing: 0.5,
+    },
+    inProgressBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 10,
+        gap: 5,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    inProgressText: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: '#64748B',
+    },
+    headerActionsContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    headerQuestBtnContainer: {
+        width: 50,
+        height: 50,
+        position: 'relative',
+    },
+    headerQuestBtnInner: {
+        width: 50,
+        height: 50,
+        borderRadius: 18,
+        overflow: 'hidden',
+        borderWidth: 1.5,
+        borderColor: 'rgba(255,255,255,0.3)',
+        backgroundColor: 'rgba(255,255,255,0.1)',
+    },
+    // ─── Quest Modal Sheet ────────────────────────────────────────
+    questModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'flex-end',
+    },
+    questModalSheet: {
+        backgroundColor: '#FFFCF9', // Ivory White surface color matching theme
+        borderTopLeftRadius: 36,
+        borderTopRightRadius: 36,
+        maxHeight: '88%',
+        paddingTop: 12,
+        elevation: 30,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        borderWidth: 1.5,
+        borderColor: 'rgba(0,0,0,0.06)',
+        borderBottomWidth: 0,
+        position: 'relative',
+    },
+    questModalHandle: {
+        width: 44,
+        height: 5,
+        backgroundColor: '#CBD5E1',
+        borderRadius: 3,
+        alignSelf: 'center',
+        marginBottom: 16,
+    },
+    questModalCloseBtn: {
+        position: 'absolute',
+        top: 14,
+        right: 18,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: 'rgba(0, 0, 0, 0.05)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 20,
+    },
+    questModalHeader: {
+        marginHorizontal: 20,
+        borderRadius: 24,
+        padding: 18,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 14,
+        borderWidth: 1,
+        borderColor: '#F59E0B30',
+    },
+    questModalTitleGrp: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    questModalIconCircle: {
+        width: 42,
+        height: 42,
+        borderRadius: 14,
+        backgroundColor: '#F59E0B20',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#F59E0B40',
+    },
+    questModalTitle: {
+        fontSize: 15,
+        fontWeight: '900',
+        color: '#0F172A',
+        letterSpacing: 0.5,
+    },
+    questModalSub: {
+        fontSize: 11,
+        fontWeight: '600',
+        color: '#64748B',
+        marginTop: 2,
+    },
+    questModalTimerBox: {
+        alignItems: 'flex-end',
+        gap: 4,
+    },
+    questModalTimerLabel: {
+        fontSize: 8,
+        fontWeight: '900',
+        color: '#94A3B8',
+        letterSpacing: 1.5,
+    },
+    questModalTimerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 2,
+    },
+    timerSegment: {
+        alignItems: 'center',
+        backgroundColor: '#1E293B',
+        borderRadius: 8,
+        paddingHorizontal: 7,
+        paddingVertical: 4,
+        minWidth: 30,
+    },
+    timerSegmentVal: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: '#F59E0B',
+        fontVariant: ['tabular-nums'],
+    },
+    timerSegmentLbl: {
+        fontSize: 7,
+        fontWeight: '900',
+        color: '#64748B',
+        letterSpacing: 0.5,
+    },
+    timerColon: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: '#F59E0B',
+        marginBottom: 8,
+    },
+    questTotalRow: {
+        flexDirection: 'row',
+        gap: 10,
+        marginHorizontal: 20,
+        marginBottom: 12,
+    },
+    questTotalChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        paddingHorizontal: 12,
+        paddingVertical: 7,
+        borderRadius: 12,
+        backgroundColor: '#FFF9ED',
+        borderWidth: 1,
+        borderColor: '#F59E0B40',
+    },
+    questTotalChipTxt: {
+        fontSize: 11,
+        fontWeight: '800',
+        color: '#F59E0B',
+    },
+    questModalScroll: {
+        paddingHorizontal: 20,
+    },
+    questEmptyState: {
+        alignItems: 'center',
+        paddingTop: 40,
+        gap: 10,
+    },
+    questEmptyIcon: {
+        fontSize: 40,
+    },
+    questEmptyTxt: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#94A3B8',
+    },
+    questItem: {
+        backgroundColor: '#FFF',
+        borderRadius: 22,
+        padding: 16,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+    },
+    questItemClaimed: {
+        backgroundColor: '#F0FDF4',
+        borderColor: '#BBF7D0',
+    },
+    questTopRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    questIconBox: {
+        width: 42,
+        height: 42,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    questTextStack: {
+        flex: 1,
+        gap: 3,
+    },
+    questTitle: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: '#0F172A',
+    },
+    questDesc: {
+        fontSize: 11,
+        color: '#64748B',
+        fontWeight: '500',
+        lineHeight: 16,
+    },
+    questRewardBox: {
+        alignItems: 'flex-end',
+        gap: 2,
+    },
+    questRewardText: {
+        fontSize: 12,
+        fontWeight: '900',
+        color: '#10B981',
+    },
+    questRewardSub: {
+        fontSize: 9,
+        fontWeight: '800',
+        color: '#F59E0B',
+    },
+    questProgressRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 14,
+        gap: 10,
+    },
+    questBarBg: {
+        flex: 1,
+        height: 7,
+        backgroundColor: '#F1F5F9',
+        borderRadius: 4,
+        overflow: 'hidden',
+    },
+    questBarFill: {
+        height: '100%',
+        borderRadius: 4,
+    },
+    questProgressText: {
+        fontSize: 10,
+        fontWeight: '800',
+        color: '#475569',
+        width: 75,
+        textAlign: 'right',
+    },
+    questActionContainer: {
+        alignItems: 'flex-end',
+        marginTop: 12,
+    },
+    claimButton: {
+        borderRadius: 12,
+        overflow: 'hidden',
+    },
+    claimGrad: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 9,
+        gap: 6,
+    },
+    claimButtonText: {
+        fontSize: 11,
+        fontWeight: '900',
+        color: '#FFF',
+        letterSpacing: 0.5,
+    },
+    claimedBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(16, 185, 129, 0.12)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 10,
+        gap: 5,
+    },
+    claimedText: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#10B981',
+        letterSpacing: 0.5,
+    },
+    inProgressBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 10,
+        gap: 5,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    inProgressText: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: '#64748B',
+    },
+    headerActionsContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    headerQuestBtnContainer: {
+        width: 50,
+        height: 50,
+        position: 'relative',
+    },
+    headerQuestBtnInner: {
+        width: 50,
+        height: 50,
+        borderRadius: 18,
+        overflow: 'hidden',
+        borderWidth: 1.5,
+        borderColor: 'rgba(255,255,255,0.3)',
+        backgroundColor: 'rgba(255,255,255,0.1)',
+    },
+    headerQuestGlow: {
+        position: 'absolute',
+        top: -4,
+        left: -4,
+        right: -4,
+        bottom: -4,
+        borderRadius: 22,
+        backgroundColor: '#F59E0B',
+    },
+    aiSuiteCard: {
+        marginHorizontal: 20,
+        marginTop: 15,
+        marginBottom: 20,
+        borderRadius: 24,
+        overflow: 'hidden',
+        borderWidth: 1.5,
+        borderColor: 'rgba(16, 185, 129, 0.15)',
+        elevation: 8,
+        shadowColor: 'rgba(16, 185, 129, 0.2)',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+    },
+    aiSuiteGradient: {
+        padding: 16,
+    },
+    aiSuiteHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    aiSuiteHeaderTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    aiSuiteTitle: {
+        fontSize: 13,
+        fontWeight: '900',
+        color: '#065F46',
+        letterSpacing: 1.2,
+    },
+    aiSuiteBadge: {
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(16, 185, 129, 0.25)',
+    },
+    aiSuiteBadgeTxt: {
+        fontSize: 8,
+        fontWeight: '900',
+        color: '#065F46',
+        letterSpacing: 0.5,
+    },
+    aiSuiteDesc: {
+        fontSize: 11,
+        color: '#475569',
+        lineHeight: 16,
+        marginBottom: 16,
+        fontWeight: '600',
+    },
+    aiSuiteGrid: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: 8,
+        marginBottom: 12,
+    },
+    aiSuiteGridItem: {
+        flex: 1,
+        borderRadius: 16,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(16, 185, 129, 0.12)',
+    },
+    aiSuiteItemBlur: {
+        paddingVertical: 14,
+        paddingHorizontal: 8,
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    },
+    aiSuiteIconBox: {
+        width: 38,
+        height: 38,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    aiSuiteItemName: {
+        fontSize: 11,
+        fontWeight: '800',
+        color: '#0F172A',
+        textAlign: 'center',
+    },
+    aiSuiteItemSub: {
+        fontSize: 8,
+        color: '#64748B',
+        marginTop: 2,
+        textAlign: 'center',
+        fontWeight: '600',
+    },
+    aiSuiteQuoteBox: {
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(16, 185, 129, 0.1)',
+        paddingTop: 12,
+        marginTop: 4,
+    },
+    aiSuiteQuoteTxt: {
+        fontSize: 11,
+        fontStyle: 'italic',
+        color: '#334155',
+        lineHeight: 16,
+        textAlign: 'center',
         fontWeight: '600',
     },
 });

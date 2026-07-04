@@ -79,6 +79,24 @@ const ProgressScreen = ({ navigation }) => {
     const [auditResult, setAuditResult] = useState(null);
     const [floatingAnim] = useState(new Animated.Value(0));
 
+    // AI Progress Audit
+    const [generatingAudit, setGeneratingAudit] = useState(false);
+    const [auditData, setAuditData] = useState(null);
+
+    // AI Trajectory Simulator
+    const [trajSteps, setTrajSteps] = useState(8000);
+    const [trajSleep, setTrajSleep] = useState(7);
+    const [trajStress, setTrajStress] = useState('medium');
+    const [trajWorkoutDays, setTrajWorkoutDays] = useState(3);
+    const [trajCalorieDelta, setTrajCalorieDelta] = useState(-300);
+    const [simulatingTrajectory, setSimulatingTrajectory] = useState(false);
+    const [trajectoryResult, setTrajectoryResult] = useState(null);
+
+    // AI Daily Bio-Advisory
+    const [loadingBioAdvisory, setLoadingBioAdvisory] = useState(false);
+    const [bioAdvisoryData, setBioAdvisoryData] = useState(null);
+    const [bioAdvisoryLoaded, setBioAdvisoryLoaded] = useState(false);
+
     // Live Steps State
     const [sessionSteps, setSessionSteps] = useState(0);
 
@@ -503,193 +521,167 @@ const ProgressScreen = ({ navigation }) => {
         }
     };
 
-    const renderScenarioModeler = () => {
-        const scenariosData = stats?.scenarios;
-        if (!scenariosData || Object.keys(scenariosData).length === 0) return null;
-
-        const scenarios = [
-            {
-                id: 'elite',
-                label: scenariosData.elite.label,
-                title: scenariosData.elite.title,
-                weeks: scenariosData.elite.weeks,
-                date: scenariosData.elite.date,
-                color: '#10B981',
-                icon: 'rocket',
-                description: 'Optimized metabolic environment. Peak execution.',
-                confidence: 94
-            },
-            {
-                id: 'current',
-                label: scenariosData.current.label,
-                title: scenariosData.current.title,
-                weeks: scenariosData.current.weeks,
-                date: scenariosData.current.date,
-                color: '#3B82F6',
-                icon: 'trending-up',
-                description: 'Based on your actual biometric stability & effort.',
-                confidence: 81
-            },
-            {
-                id: 'maintenance',
-                label: scenariosData.steady.label,
-                title: scenariosData.steady.title,
-                weeks: scenariosData.steady.weeks,
-                date: scenariosData.steady.date,
-                color: '#94A3B8',
-                icon: 'walk',
-                description: 'A sustainable path prioritizing social flexibility.',
-                confidence: 88
+    const handleGenerateAudit = async () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        setGeneratingAudit(true);
+        try {
+            const res = await api.getProgressAudit();
+            if (res.status === 200) {
+                setAuditData(res.data);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } else {
+                alert(res.data?.message || "Failed to generate AI Audit. Please try again.");
             }
-        ];
-
-        return (
-            <View style={styles.sectionElite}>
-                <View style={[styles.sectionHeaderElite, { paddingHorizontal: 20 }]}>
-                    <View>
-                        <Text style={styles.sectionTitleElite}>AI Scenario Modeler</Text>
-                        <Text style={styles.sectionSubTitleElite}>PROBABILISTIC GOAL FORECASTING</Text>
-                    </View>
-                    <View style={styles.eliteBadge}>
-                        <Text style={styles.eliteBadgeText}>QUANTUM ENGINE</Text>
-                    </View>
-                </View>
-
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.scenarioScroll}
-                >
-                    {scenarios.map(sc => {
-                        const targetDate = new Date(sc.date);
-                        const dateString = targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-                        return (
-                            <GlassCard key={sc.id} style={styles.scenarioCardElite}>
-                                <View style={styles.scenarioHeaderElite}>
-                                    <View style={[styles.scenarioIconBoxElite, { backgroundColor: sc.color + '15' }]}>
-                                        <Ionicons name={sc.icon} size={18} color={sc.color} />
-                                    </View>
-                                    <View style={styles.scenarioLabelGroupElite}>
-                                        <Text style={[styles.scenarioTagElite, { color: sc.color }]}>{sc.label}</Text>
-                                        <Text style={styles.scenarioTitleElite}>{sc.title}</Text>
-                                    </View>
-                                </View>
-
-                                <View style={styles.scenarioDataHeroElite}>
-                                    <Text style={styles.scenarioLargeVal}>{sc.weeks}<Text style={styles.scenarioLargeUnit}>WKS</Text></Text>
-                                    <View style={styles.scenarioDateBoxElite}>
-                                        <Text style={styles.scenarioDateLabelElite}>ETA</Text>
-                                        <Text style={styles.scenarioDateValElite}>{dateString.toUpperCase()}</Text>
-                                    </View>
-                                </View>
-
-                                <View style={styles.scenarioDividerElite} />
-
-                                <Text style={styles.scenarioDescElite}>{sc.description}</Text>
-
-                                <View style={styles.scenarioConfidenceElite}>
-                                    <Text style={styles.confidenceLab}>CONFIDENCE</Text>
-                                    <View style={styles.confidenceTrack}>
-                                        <View style={[styles.confidenceFill, { width: `${sc.confidence}%`, backgroundColor: sc.color }]} />
-                                    </View>
-                                    <Text style={styles.confidenceVal}>{sc.confidence}%</Text>
-                                </View>
-                            </GlassCard>
-                        );
-                    })}
-                </ScrollView>
-            </View>
-        );
+        } catch (err) {
+            console.error("AI Audit Error:", err);
+            alert("Connection error. Could not reach the AI Coach.");
+        } finally {
+            setGeneratingAudit(false);
+        }
     };
 
-    const renderPerformanceHub = () => {
-        const readinessData = stats?.readiness || { score: 0, label: 'SCANNING...', factors: [] };
-        const isPlateau = stats?.plateau_risk || false;
-        const weeklyProgress = stats?.weekly_progress || 0;
+    const handleSimulateTrajectory = async () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        setSimulatingTrajectory(true);
+        try {
+            const res = await api.simulateTrajectory({
+                steps: trajSteps,
+                sleep: trajSleep,
+                stress: trajStress,
+                workout_days: trajWorkoutDays,
+                calorie_delta: trajCalorieDelta,
+            });
+            if (res.status === 200) {
+                setTrajectoryResult(res.data);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } else {
+                alert(res.data?.message || "Could not simulate trajectory. Try again.");
+            }
+        } catch (err) {
+            console.error("Trajectory Simulation Error:", err);
+            alert("Connection error. Could not reach the AI Engine.");
+        } finally {
+            setSimulatingTrajectory(false);
+        }
+    };
 
+    const handleLoadBioAdvisory = async () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setLoadingBioAdvisory(true);
+        try {
+            const res = await api.getDailyBioAdvisory();
+            if (res.status === 200) {
+                setBioAdvisoryData(res.data);
+                setBioAdvisoryLoaded(true);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } else {
+                alert(res.data?.message || "Could not load daily advisory.");
+            }
+        } catch (err) {
+            console.error("Bio Advisory Error:", err);
+        } finally {
+            setLoadingBioAdvisory(false);
+        }
+    };
+
+
+
+    const renderProgressAudit = () => {
         return (
             <View style={styles.sectionElite}>
-                <View style={[styles.sectionHeaderElite, { paddingHorizontal: 20 }]}>
+                <View style={styles.sectionHeaderElite}>
                     <View>
-                        <Text style={styles.sectionTitleElite}>AI Performance Hub</Text>
-                        <Text style={styles.sectionSubTitleElite}>NEURAL DIAGNOSTICS & READINESS</Text>
+                        <Text style={styles.sectionTitleElite}>AI Progress Audit</Text>
+                        <Text style={styles.sectionSubTitleElite}>BIO-METRIC PATHWAY EVALUATION</Text>
                     </View>
-                    <View style={styles.eliteBadge}>
-                        <Text style={styles.eliteBadgeText}>ACTIVE MONITOR</Text>
+                    <View style={[styles.eliteBadge, { backgroundColor: '#10B98115' }]}>
+                        <Text style={[styles.eliteBadgeText, { color: '#10B981' }]}>COACH INTELLIGENCE</Text>
                     </View>
                 </View>
 
-                <View style={styles.hubContainerElite}>
-                    {/* Readiness Gauge */}
-                    <GlassCard style={styles.readinessCardElite}>
-                        <View style={styles.gaugeContainerElite}>
-                            <Svg width={100} height={100} viewBox="0 0 100 100">
-                                <Circle
-                                    cx="50"
-                                    cy="50"
-                                    r="44"
-                                    stroke="rgba(226, 232, 240, 0.4)"
-                                    strokeWidth="8"
-                                    fill="transparent"
-                                />
-                                <Circle
-                                    cx="50"
-                                    cy="50"
-                                    r="44"
-                                    stroke={readinessData.score > 75 ? '#10B981' : (readinessData.score > 50 ? '#F59E0B' : '#EF4444')}
-                                    strokeWidth="8"
-                                    fill="transparent"
-                                    strokeDasharray={`${(readinessData.score / 100) * 276.32} 276.32`}
-                                    strokeLinecap="round"
-                                    transform="rotate(-90 50 50)"
-                                />
-                                <View style={styles.gaugeContentElite}>
-                                    <Text style={styles.gaugeValElite}>{readinessData.score}</Text>
-                                    <Text style={styles.gaugeLabElite}>READINESS</Text>
-                                </View>
-                            </Svg>
+                {!auditData ? (
+                    <GlassCard style={styles.auditTriggerCard}>
+                        <View style={styles.auditTriggerContent}>
+                            <View style={styles.auditTriggerIconBox}>
+                                <Ionicons name="sparkles" size={28} color="#10B981" />
+                            </View>
+                            <Text style={styles.auditTriggerTitle}>Request AI Progress Audit</Text>
+                            <Text style={styles.auditTriggerDesc}>
+                                Let Gemini analyze your workouts, nutrition logs, sleep, stress, and weight changes to generate a custom performance report.
+                            </Text>
+                            <TouchableOpacity 
+                                style={[styles.auditBtn, { backgroundColor: '#10B981' }]} 
+                                onPress={handleGenerateAudit}
+                                disabled={generatingAudit}
+                            >
+                                {generatingAudit ? (
+                                    <ActivityIndicator size="small" color="#FFF" />
+                                ) : (
+                                    <>
+                                        <Ionicons name="analytics" size={16} color="#FFF" style={{ marginRight: 6 }} />
+                                        <Text style={styles.auditBtnText}>RUN AI DIAGNOSTICS</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
                         </View>
-                        <View style={styles.readinessInfoElite}>
-                            <Text style={styles.readinessTitleElite}>{readinessData.label.toUpperCase()}</Text>
-                            <View style={styles.readinessFactorRow}>
-                                {readinessData.factors.map((f, i) => (
-                                    <View key={i} style={styles.factorPillElite}>
-                                        <Text style={styles.factorTextElite}>{f.toUpperCase()}</Text>
+                    </GlassCard>
+                ) : (
+                    <View style={styles.auditContainer}>
+                        <GlassCard style={styles.auditReportCard}>
+                            <View style={styles.auditReportHeader}>
+                                <View style={[styles.statusBadge, { backgroundColor: auditData.status === 'On Track' ? '#D1FAE5' : (auditData.status === 'Stalled' ? '#FEF3C7' : '#FEE2E2') }]}>
+                                    <Text style={[styles.statusBadgeText, { color: auditData.status === 'On Track' ? '#065F46' : (auditData.status === 'Stalled' ? '#92400E' : '#991B1B') }]}>
+                                        STATUS: {auditData.status?.toUpperCase() || 'UNKNOWN'}
+                                    </Text>
+                                </View>
+                                <TouchableOpacity style={styles.refreshAuditBtn} onPress={handleGenerateAudit} disabled={generatingAudit}>
+                                    {generatingAudit ? (
+                                        <ActivityIndicator size="small" color="#10B981" />
+                                    ) : (
+                                        <Ionicons name="refresh" size={16} color="#64748B" />
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+
+                            <Text style={styles.auditSummaryText}>"{auditData.summary}"</Text>
+
+                            {/* Accomplishments */}
+                            <View style={styles.auditSubSection}>
+                                <Text style={styles.auditSectionSubTitle}>KEY ACCOMPLISHMENTS</Text>
+                                {(auditData.accomplishments || []).map((item, idx) => (
+                                    <View key={idx} style={styles.auditItemRow}>
+                                        <Ionicons name="checkmark-circle" size={16} color="#10B981" style={{ marginRight: 8 }} />
+                                        <Text style={styles.auditItemText}>{item}</Text>
                                     </View>
                                 ))}
                             </View>
-                        </View>
-                    </GlassCard>
 
-                    {/* Plateau Detection */}
-                    <GlassCard style={styles.plateauCardElite}>
-                        <View style={styles.plateauHeaderElite}>
-                            <View style={[styles.plateauIconBox, { backgroundColor: isPlateau ? '#EF444415' : '#10B98115' }]}>
-                                <Ionicons name={isPlateau ? "alert-circle" : "analytics"} size={20} color={isPlateau ? "#EF4444" : "#10B981"} />
+                            {/* Concerns */}
+                            {(auditData.concerns || []).length > 0 && (
+                                <View style={styles.auditSubSection}>
+                                    <Text style={[styles.auditSectionSubTitle, { color: '#EF4444' }]}>AREAS OF ATTENTION</Text>
+                                    {(auditData.concerns || []).map((item, idx) => (
+                                        <View key={idx} style={styles.auditItemRow}>
+                                            <Ionicons name="alert-circle" size={16} color="#EF4444" style={{ marginRight: 8 }} />
+                                            <Text style={styles.auditItemText}>{item}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            )}
+
+                            {/* Recommendations */}
+                            <View style={styles.auditSubSection}>
+                                <Text style={[styles.auditSectionSubTitle, { color: '#3B82F6' }]}>COACH RECOMMENDATIONS</Text>
+                                {(auditData.recommendations || []).map((item, idx) => (
+                                    <View key={idx} style={styles.auditItemRow}>
+                                        <Ionicons name="arrow-forward-circle" size={16} color="#3B82F6" style={{ marginRight: 8 }} />
+                                        <Text style={styles.auditItemText}>{item}</Text>
+                                    </View>
+                                ))}
                             </View>
-                            <Text style={[styles.plateauStatusText, { color: isPlateau ? "#EF4444" : "#10B981" }]}>
-                                {isPlateau ? 'PLATEAU ALERT' : 'PROGRESS STABLE'}
-                            </Text>
-                        </View>
-
-                        <View style={styles.plateauBodyElite}>
-                            <Text style={styles.plateauTitleElite}>Weight Velocity</Text>
-                            <View style={styles.plateauMetricRow}>
-                                <Text style={styles.plateauValueElite}>{weeklyProgress > 0 ? '+' : ''}{weeklyProgress}%</Text>
-                                <Text style={styles.plateauUnitElite}>7D TREND</Text>
-                            </View>
-                        </View>
-
-                        <View style={styles.plateauFooterElite}>
-                            <Text style={styles.plateauDescElite}>
-                                {isPlateau
-                                    ? 'Metabolic adaptation detected. AI suggests a structural shift.'
-                                    : 'Your physiological trajectory remains in the optimal efficiency zone.'}
-                            </Text>
-                        </View>
-                    </GlassCard>
-                </View>
+                        </GlassCard>
+                    </View>
+                )}
             </View>
         );
     };
@@ -867,6 +859,297 @@ const ProgressScreen = ({ navigation }) => {
                     <View style={[styles.recoveryStatusDot, { backgroundColor: recoveryColor }]} />
                     <Text style={[styles.recoveryStatusText, { color: recoveryColor }]}>{recoveryStatus}</Text>
                 </View>
+            </View>
+        );
+    };
+
+    // ─── AI Trajectory Simulator ──────────────────────────────────────
+    const renderTrajectorySimulator = () => {
+        const plateauColors = { Low: '#10B981', Medium: '#F59E0B', High: '#EF4444' };
+        const stepsOptions = [3000, 5000, 8000, 10000, 12000, 15000];
+        const sleepOptions = [4, 5, 6, 7, 8, 9];
+        const stressOptions = ['low', 'medium', 'high'];
+        const workoutOptions = [1, 2, 3, 4, 5, 6];
+        const calorieOptions = [-700, -500, -300, 0, 200, 400];
+
+        const efficiencyColor = trajectoryResult
+            ? (trajectoryResult.efficiency_score >= 75 ? '#10B981' : trajectoryResult.efficiency_score >= 50 ? '#F59E0B' : '#EF4444')
+            : '#64748B';
+
+        return (
+            <View style={styles.sectionElite}>
+                <View style={styles.sectionHeaderElite}>
+                    <View>
+                        <Text style={styles.sectionTitleElite}>AI Trajectory Simulator</Text>
+                        <Text style={styles.sectionSubTitleElite}>30-DAY WEIGHT PROJECTION ENGINE</Text>
+                    </View>
+                    <View style={[styles.eliteBadge, { backgroundColor: '#6366F115' }]}>
+                        <Text style={[styles.eliteBadgeText, { color: '#6366F1' }]}>GEMINI AI</Text>
+                    </View>
+                </View>
+
+                <GlassCard style={styles.trajCard}>
+                    {/* Daily Steps */}
+                    <Text style={styles.trajLabel}>DAILY STEPS TARGET</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }} contentContainerStyle={{ paddingRight: 8 }}>
+                        {stepsOptions.map(s => (
+                            <TouchableOpacity
+                                key={s}
+                                style={[styles.trajPill, trajSteps === s && styles.trajPillActive]}
+                                onPress={() => { Haptics.selectionAsync(); setTrajSteps(s); setTrajectoryResult(null); }}
+                            >
+                                <Text style={[styles.trajPillText, trajSteps === s && styles.trajPillTextActive]}>
+                                    {s >= 1000 ? `${(s/1000).toFixed(0)}k` : s}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+
+                    {/* Sleep */}
+                    <Text style={styles.trajLabel}>SLEEP HOURS / NIGHT</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }} contentContainerStyle={{ paddingRight: 8 }}>
+                        {sleepOptions.map(h => (
+                            <TouchableOpacity
+                                key={h}
+                                style={[styles.trajPill, trajSleep === h && styles.trajPillActive]}
+                                onPress={() => { Haptics.selectionAsync(); setTrajSleep(h); setTrajectoryResult(null); }}
+                            >
+                                <Text style={[styles.trajPillText, trajSleep === h && styles.trajPillTextActive]}>{h}h</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+
+                    {/* Stress */}
+                    <Text style={styles.trajLabel}>STRESS LEVEL</Text>
+                    <View style={[styles.stressRow, { marginBottom: 14 }]}>
+                        {stressOptions.map(s => (
+                            <TouchableOpacity
+                                key={s}
+                                style={[styles.trajStressBtn, trajStress === s && {
+                                    backgroundColor: s === 'low' ? '#10B981' : s === 'medium' ? '#F59E0B' : '#EF4444',
+                                    borderColor: s === 'low' ? '#10B981' : s === 'medium' ? '#F59E0B' : '#EF4444',
+                                }]}
+                                onPress={() => { Haptics.selectionAsync(); setTrajStress(s); setTrajectoryResult(null); }}
+                            >
+                                <Text style={[styles.trajStressBtnText, trajStress === s && { color: '#FFF' }]}>{s.toUpperCase()}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+
+                    {/* Workout Days */}
+                    <Text style={styles.trajLabel}>WORKOUT DAYS / WEEK</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }} contentContainerStyle={{ paddingRight: 8 }}>
+                        {workoutOptions.map(d => (
+                            <TouchableOpacity
+                                key={d}
+                                style={[styles.trajPill, trajWorkoutDays === d && styles.trajPillActive]}
+                                onPress={() => { Haptics.selectionAsync(); setTrajWorkoutDays(d); setTrajectoryResult(null); }}
+                            >
+                                <Text style={[styles.trajPillText, trajWorkoutDays === d && styles.trajPillTextActive]}>{d}d</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+
+                    {/* Calorie Delta */}
+                    <Text style={styles.trajLabel}>CALORIE ADJUSTMENT (vs Maintenance)</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }} contentContainerStyle={{ paddingRight: 8 }}>
+                        {calorieOptions.map(c => (
+                            <TouchableOpacity
+                                key={c}
+                                style={[styles.trajPill, trajCalorieDelta === c && styles.trajPillActive, c < 0 && { borderColor: '#10B981' }]}
+                                onPress={() => { Haptics.selectionAsync(); setTrajCalorieDelta(c); setTrajectoryResult(null); }}
+                            >
+                                <Text style={[styles.trajPillText, trajCalorieDelta === c && styles.trajPillTextActive]}>
+                                    {c > 0 ? `+${c}` : c} kcal
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+
+                    {/* Simulate Button */}
+                    <TouchableOpacity
+                        style={[styles.trajSimulateBtn, simulatingTrajectory && { opacity: 0.7 }]}
+                        onPress={handleSimulateTrajectory}
+                        disabled={simulatingTrajectory}
+                    >
+                        {simulatingTrajectory ? (
+                            <ActivityIndicator size="small" color="#FFF" />
+                        ) : (
+                            <>
+                                <Ionicons name="pulse" size={18} color="#FFF" style={{ marginRight: 8 }} />
+                                <Text style={styles.trajSimulateBtnText}>SIMULATE 30-DAY TRAJECTORY</Text>
+                            </>
+                        )}
+                    </TouchableOpacity>
+                </GlassCard>
+
+                {/* Results */}
+                {trajectoryResult && (
+                    <GlassCard style={styles.trajResultCard}>
+                        {/* Header Row */}
+                        <View style={styles.trajResultHeader}>
+                            <Text style={styles.trajResultTitle}>Projected Outcome</Text>
+                            <TouchableOpacity onPress={() => setTrajectoryResult(null)}>
+                                <Ionicons name="close-circle" size={20} color="#94A3B8" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Big stat row */}
+                        <View style={styles.trajStatRow}>
+                            <View style={styles.trajStatBox}>
+                                <Text style={styles.trajStatValue}>{trajectoryResult.predicted_weight?.toFixed(1) ?? '--'}</Text>
+                                <Text style={styles.trajStatUnit}>kg in 30d</Text>
+                            </View>
+                            <View style={[styles.trajStatBox, { borderLeftWidth: 1, borderLeftColor: '#E2E8F0' }]}>
+                                <Text style={[styles.trajStatValue, { color: (trajectoryResult.weekly_change ?? 0) < 0 ? '#10B981' : '#EF4444' }]}>
+                                    {(trajectoryResult.weekly_change ?? 0) > 0 ? '+' : ''}{trajectoryResult.weekly_change?.toFixed(2) ?? '--'}
+                                </Text>
+                                <Text style={styles.trajStatUnit}>kg / week</Text>
+                            </View>
+                            <View style={[styles.trajStatBox, { borderLeftWidth: 1, borderLeftColor: '#E2E8F0' }]}>
+                                <Text style={[styles.trajStatValue, { color: efficiencyColor }]}>
+                                    {trajectoryResult.efficiency_score ?? '--'}
+                                </Text>
+                                <Text style={styles.trajStatUnit}>efficiency</Text>
+                            </View>
+                        </View>
+
+                        {/* ETA + Plateau Risk */}
+                        <View style={styles.trajTagRow}>
+                            <View style={styles.trajTag}>
+                                <Ionicons name="calendar" size={13} color="#6366F1" style={{ marginRight: 4 }} />
+                                <Text style={styles.trajTagText}>
+                                    {trajectoryResult.days_to_goal ? `Goal in ~${trajectoryResult.days_to_goal}d` : 'Goal >90 days'}
+                                </Text>
+                            </View>
+                            <View style={[styles.trajTag, { backgroundColor: `${plateauColors[trajectoryResult.plateau_risk] ?? '#94A3B8'}18` }]}>
+                                <Ionicons name="warning" size={13} color={plateauColors[trajectoryResult.plateau_risk] ?? '#94A3B8'} style={{ marginRight: 4 }} />
+                                <Text style={[styles.trajTagText, { color: plateauColors[trajectoryResult.plateau_risk] ?? '#94A3B8' }]}>
+                                    {trajectoryResult.plateau_risk ?? 'Unknown'} Plateau Risk
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Analysis */}
+                        <Text style={styles.trajAnalysisText}>{trajectoryResult.analysis}</Text>
+
+                        {/* Key Factors */}
+                        {(trajectoryResult.key_factors || []).length > 0 && (
+                            <View style={styles.trajFactorsBox}>
+                                <Text style={styles.trajFactorsTitle}>KEY DRIVING FACTORS</Text>
+                                {(trajectoryResult.key_factors || []).map((f, i) => (
+                                    <View key={i} style={styles.trajFactorRow}>
+                                        <View style={styles.trajFactorDot} />
+                                        <Text style={styles.trajFactorText}>{f}</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
+                    </GlassCard>
+                )}
+            </View>
+        );
+    };
+
+    // ─── AI Daily Bio-Advisory ────────────────────────────────────────
+    const renderBioAdvisory = () => {
+        const statusColorMap = {
+            green: '#10B981',
+            yellow: '#F59E0B',
+            red: '#EF4444',
+            blue: '#3B82F6',
+        };
+        const statusBgMap = {
+            green: '#ECFDF5',
+            yellow: '#FEF3C7',
+            red: '#FEF2F2',
+            blue: '#EFF6FF',
+        };
+
+        const statusColor = statusColorMap[bioAdvisoryData?.status_color] ?? '#6366F1';
+        const statusBg = statusBgMap[bioAdvisoryData?.status_color] ?? '#EEF2FF';
+
+        return (
+            <View style={styles.sectionElite}>
+                <View style={styles.sectionHeaderElite}>
+                    <View>
+                        <Text style={styles.sectionTitleElite}>AI Daily Bio-Advisory</Text>
+                        <Text style={styles.sectionSubTitleElite}>PERSONALIZED MORNING BRIEFING</Text>
+                    </View>
+                    <View style={[styles.eliteBadge, { backgroundColor: '#F59E0B15' }]}>
+                        <Text style={[styles.eliteBadgeText, { color: '#F59E0B' }]}>DAILY AI</Text>
+                    </View>
+                </View>
+
+                {!bioAdvisoryLoaded ? (
+                    <GlassCard style={styles.bioTriggerCard}>
+                        <View style={styles.bioTriggerInner}>
+                            <LinearGradient
+                                colors={['#6366F1', '#8B5CF6']}
+                                style={styles.bioTriggerIconBox}
+                                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                            >
+                                <Ionicons name="sunny" size={26} color="#FFF" />
+                            </LinearGradient>
+                            <Text style={styles.bioTriggerTitle}>Get Today's Bio-Advisory</Text>
+                            <Text style={styles.bioTriggerDesc}>
+                                Gemini analyzes your sleep, steps, and stress from yesterday to generate 3 hyper-personalized action tips for today.
+                            </Text>
+                            <TouchableOpacity
+                                style={styles.bioLoadBtn}
+                                onPress={handleLoadBioAdvisory}
+                                disabled={loadingBioAdvisory}
+                            >
+                                {loadingBioAdvisory ? (
+                                    <ActivityIndicator size="small" color="#FFF" />
+                                ) : (
+                                    <>
+                                        <Ionicons name="flash" size={16} color="#FFF" style={{ marginRight: 6 }} />
+                                        <Text style={styles.bioLoadBtnText}>GENERATE MORNING BRIEF</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </GlassCard>
+                ) : (
+                    <View>
+                        {/* Status Banner */}
+                        <View style={[styles.bioStatusBanner, { backgroundColor: statusBg, borderColor: `${statusColor}30` }]}>
+                            <View style={[styles.bioStatusDot, { backgroundColor: statusColor }]} />
+                            <Text style={[styles.bioStatusText, { color: statusColor }]}>
+                                {bioAdvisoryData?.morning_status?.toUpperCase() ?? 'STATUS UNKNOWN'}
+                            </Text>
+                            <TouchableOpacity
+                                style={styles.bioRefreshBtn}
+                                onPress={handleLoadBioAdvisory}
+                                disabled={loadingBioAdvisory}
+                            >
+                                {loadingBioAdvisory
+                                    ? <ActivityIndicator size="small" color={statusColor} />
+                                    : <Ionicons name="refresh" size={16} color="#64748B" />
+                                }
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Advisory Cards */}
+                        {(bioAdvisoryData?.advisories ?? []).map((item, idx) => (
+                            <GlassCard key={idx} style={styles.bioAdvisoryCard}>
+                                <View style={styles.bioAdvisoryRow}>
+                                    <View style={[styles.bioAdvisoryIconBox, { backgroundColor: `${item.color}18` }]}>
+                                        <Ionicons name={item.icon ?? 'star'} size={22} color={item.color ?? '#6366F1'} />
+                                    </View>
+                                    <View style={styles.bioAdvisoryContent}>
+                                        <Text style={[styles.bioAdvisoryCategory, { color: item.color ?? '#6366F1' }]}>
+                                            {item.category}
+                                        </Text>
+                                        <Text style={styles.bioAdvisoryTitle}>{item.title}</Text>
+                                        <Text style={styles.bioAdvisoryAdvice}>{item.advice}</Text>
+                                    </View>
+                                </View>
+                            </GlassCard>
+                        ))}
+                    </View>
+                )}
             </View>
         );
     };
@@ -1475,8 +1758,9 @@ const ProgressScreen = ({ navigation }) => {
                 </View>
 
                 {renderPatternRecognition()}
-                {renderPerformanceHub()}
-                {renderScenarioModeler()}
+                {renderProgressAudit()}
+                {renderTrajectorySimulator()}
+                {renderBioAdvisory()}
                 {renderCoachIntelligence()}
                 <View style={styles.sectionHeaderElite}>
                     <Text style={styles.sectionTitleElite}>Activity Timeline</Text>
@@ -3425,6 +3709,397 @@ const styles = StyleSheet.create({
         marginTop: 30,
         paddingBottom: 10,
     },
+    // AI Progress Audit Styles
+    auditTriggerCard: {
+        marginHorizontal: 20,
+        padding: 24,
+        borderRadius: 24,
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: 'rgba(16, 185, 129, 0.15)',
+        elevation: 4,
+    },
+    auditTriggerContent: {
+        alignItems: 'center',
+        gap: 12,
+    },
+    auditTriggerIconBox: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: '#10B98115',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    auditTriggerTitle: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#0F172A',
+        textAlign: 'center',
+    },
+    auditTriggerDesc: {
+        fontSize: 13,
+        color: '#64748B',
+        textAlign: 'center',
+        lineHeight: 20,
+        paddingHorizontal: 10,
+        marginBottom: 10,
+    },
+    auditBtn: {
+        paddingVertical: 14,
+        paddingHorizontal: 28,
+        borderRadius: 18,
+        flexDirection: 'row',
+        alignItems: 'center',
+        elevation: 3,
+    },
+    auditBtnText: {
+        fontSize: 13,
+        fontWeight: '900',
+        color: '#FFFFFF',
+        letterSpacing: 1,
+    },
+    auditContainer: {
+        paddingHorizontal: 20,
+    },
+    auditReportCard: {
+        padding: 22,
+        borderRadius: 24,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        elevation: 3,
+    },
+    auditReportHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    statusBadge: {
+        paddingVertical: 5,
+        paddingHorizontal: 12,
+        borderRadius: 10,
+    },
+    statusBadgeText: {
+        fontSize: 11,
+        fontWeight: '900',
+        letterSpacing: 0.5,
+    },
+    refreshAuditBtn: {
+        padding: 8,
+        backgroundColor: '#F1F5F9',
+        borderRadius: 10,
+    },
+    auditSummaryText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#334155',
+        fontStyle: 'italic',
+        lineHeight: 22,
+        marginBottom: 20,
+    },
+    auditSubSection: {
+        marginBottom: 18,
+        gap: 8,
+    },
+    auditSectionSubTitle: {
+        fontSize: 11,
+        fontWeight: '900',
+        color: '#0F172A',
+        letterSpacing: 1.5,
+        marginBottom: 4,
+    },
+    auditItemRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 6,
+        gap: 10,
+    },
+    auditItemText: {
+        fontSize: 13,
+        fontWeight: '500',
+        color: '#475569',
+        flex: 1,
+        lineHeight: 18,
+    },
+
+    // ─── Trajectory Simulator ──────────────────────────────────────
+    trajCard: {
+        padding: 18,
+        marginBottom: 12,
+    },
+    trajLabel: {
+        fontSize: 10,
+        fontWeight: '700',
+        letterSpacing: 1.2,
+        color: '#94A3B8',
+        marginBottom: 8,
+    },
+    trajPill: {
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 20,
+        borderWidth: 1.5,
+        borderColor: '#E2E8F0',
+        backgroundColor: '#F8FAFC',
+        marginRight: 8,
+    },
+    trajPillActive: {
+        backgroundColor: '#6366F1',
+        borderColor: '#6366F1',
+    },
+    trajPillText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#475569',
+    },
+    trajPillTextActive: {
+        color: '#FFF',
+    },
+    trajStressBtn: {
+        flex: 1,
+        paddingVertical: 10,
+        borderRadius: 10,
+        borderWidth: 1.5,
+        borderColor: '#E2E8F0',
+        backgroundColor: '#F8FAFC',
+        alignItems: 'center',
+        marginHorizontal: 3,
+    },
+    trajStressBtnText: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#64748B',
+        letterSpacing: 0.8,
+    },
+    trajSimulateBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#6366F1',
+        borderRadius: 14,
+        paddingVertical: 14,
+        shadowColor: '#6366F1',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    trajSimulateBtnText: {
+        fontSize: 13,
+        fontWeight: '800',
+        color: '#FFF',
+        letterSpacing: 1,
+    },
+    trajResultCard: {
+        padding: 18,
+        marginBottom: 12,
+    },
+    trajResultHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    trajResultTitle: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#1E293B',
+    },
+    trajStatRow: {
+        flexDirection: 'row',
+        marginBottom: 14,
+        backgroundColor: '#F8FAFC',
+        borderRadius: 12,
+        paddingVertical: 12,
+    },
+    trajStatBox: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    trajStatValue: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: '#1E293B',
+    },
+    trajStatUnit: {
+        fontSize: 11,
+        color: '#94A3B8',
+        fontWeight: '500',
+        marginTop: 2,
+    },
+    trajTagRow: {
+        flexDirection: 'row',
+        gap: 8,
+        marginBottom: 14,
+        flexWrap: 'wrap',
+    },
+    trajTag: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#EEF2FF',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 20,
+    },
+    trajTagText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#6366F1',
+    },
+    trajAnalysisText: {
+        fontSize: 13,
+        color: '#475569',
+        lineHeight: 20,
+        marginBottom: 14,
+        fontStyle: 'italic',
+    },
+    trajFactorsBox: {
+        backgroundColor: '#F8FAFC',
+        borderRadius: 10,
+        padding: 12,
+    },
+    trajFactorsTitle: {
+        fontSize: 10,
+        fontWeight: '700',
+        letterSpacing: 1.2,
+        color: '#94A3B8',
+        marginBottom: 8,
+    },
+    trajFactorRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        marginBottom: 6,
+    },
+    trajFactorDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#6366F1',
+        marginTop: 5,
+        marginRight: 8,
+    },
+    trajFactorText: {
+        fontSize: 13,
+        color: '#374151',
+        fontWeight: '500',
+        flex: 1,
+        lineHeight: 18,
+    },
+
+    // ─── Bio-Advisory ─────────────────────────────────────────────
+    bioTriggerCard: {
+        marginBottom: 12,
+    },
+    bioTriggerInner: {
+        padding: 20,
+        alignItems: 'center',
+    },
+    bioTriggerIconBox: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 14,
+    },
+    bioTriggerTitle: {
+        fontSize: 17,
+        fontWeight: '700',
+        color: '#1E293B',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    bioTriggerDesc: {
+        fontSize: 13,
+        color: '#64748B',
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 20,
+    },
+    bioLoadBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#6366F1',
+        borderRadius: 14,
+        paddingVertical: 13,
+        paddingHorizontal: 28,
+        shadowColor: '#6366F1',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    bioLoadBtnText: {
+        fontSize: 13,
+        fontWeight: '800',
+        color: '#FFF',
+        letterSpacing: 1,
+    },
+    bioStatusBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: 12,
+        borderWidth: 1,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        marginBottom: 12,
+    },
+    bioStatusDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginRight: 10,
+    },
+    bioStatusText: {
+        fontSize: 13,
+        fontWeight: '800',
+        letterSpacing: 1,
+        flex: 1,
+    },
+    bioRefreshBtn: {
+        padding: 4,
+    },
+    bioAdvisoryCard: {
+        padding: 16,
+        marginBottom: 10,
+    },
+    bioAdvisoryRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+    },
+    bioAdvisoryIconBox: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 14,
+    },
+    bioAdvisoryContent: {
+        flex: 1,
+    },
+    bioAdvisoryCategory: {
+        fontSize: 10,
+        fontWeight: '700',
+        letterSpacing: 1.2,
+        marginBottom: 3,
+    },
+    bioAdvisoryTitle: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#1E293B',
+        marginBottom: 5,
+    },
+    bioAdvisoryAdvice: {
+        fontSize: 13,
+        color: '#475569',
+        lineHeight: 19,
+    },
 });
 
 export default ProgressScreen;
+

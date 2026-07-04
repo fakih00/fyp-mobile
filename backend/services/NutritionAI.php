@@ -40,7 +40,19 @@ class NutritionAI {
 
         if ($isRecomp) return round($tdee - 250);
         if ($goal === 'lose_weight') return round($tdee - 500);
-        if ($goal === 'gain_muscle') return round($tdee + 250);
+        if ($goal === 'gain_muscle' || $goal === 'gain_weight') return round($tdee + 250);
+
+        // Sport-specific calorie adjustments
+        if (in_array($goal, ['running', 'cycling', 'swimming'])) {
+            return round($tdee + 350);
+        }
+        if (in_array($goal, ['boxing', 'martial_arts'])) {
+            return round($tdee + 250);
+        }
+        if ($goal === 'yoga_flexibility') {
+            return round($tdee - 100);
+        }
+
         return round($tdee);
     }
 
@@ -76,9 +88,34 @@ class NutritionAI {
 
         // Calculate macro targets locally (reliable math)
         $isRecomp = ($weight > $targetWeight) && ($goal === 'gain_muscle');
-        $p_ratio  = $isRecomp ? 0.40 : 0.30;
-        $c_ratio  = $isRecomp ? 0.35 : 0.40;
-        $f_ratio  = $isRecomp ? 0.25 : 0.30;
+        
+        // Define macro ratios based on goals
+        if ($isRecomp) {
+            $p_ratio  = 0.40;
+            $c_ratio  = 0.35;
+            $f_ratio  = 0.25;
+        } elseif (in_array($goal, ['running', 'cycling', 'swimming'])) {
+            // Endurance sports: high carb, moderate protein, low-moderate fat
+            $p_ratio  = 0.25;
+            $c_ratio  = 0.55;
+            $f_ratio  = 0.20;
+        } elseif (in_array($goal, ['boxing', 'martial_arts'])) {
+            // Combat sports: higher protein and carbs for energy/muscle maintenance
+            $p_ratio  = 0.40;
+            $c_ratio  = 0.40;
+            $f_ratio  = 0.20;
+        } elseif ($goal === 'yoga_flexibility') {
+            // Mind-body flexibility: balanced/clean macros
+            $p_ratio  = 0.30;
+            $c_ratio  = 0.40;
+            $f_ratio  = 0.30;
+        } else {
+            // General / default macro ratios
+            $p_ratio  = 0.30;
+            $c_ratio  = 0.40;
+            $f_ratio  = 0.30;
+        }
+
         $p_total  = round(($calories * $p_ratio) / 4);
         $c_total  = round(($calories * $c_ratio) / 4);
         $f_total  = round(($calories * $f_ratio) / 9);
@@ -154,6 +191,53 @@ class NutritionAI {
         return count($allMeals) > 0 ? $allMeals : null;
     }
 
+    public function replaceMealWithHint($mealToReplace, $hint) {
+        if (!$this->gemini->isAvailable()) {
+            return null;
+        }
+
+        $cals = $mealToReplace['calories'];
+        $pro = $mealToReplace['protein'];
+        $carb = $mealToReplace['carbs'];
+        $fat = $mealToReplace['fats'];
+        $type = $mealToReplace['type'];
+
+        $prompt = "You're a nutritionist. Replace this meal with something else based on the user's hint.\n"
+            . "Target: {$cals} kcal | Protein {$pro}g | Carbs {$carb}g | Fats {$fat}g\n"
+            . "Meal Type: {$type}\n"
+            . "User Hint: \"{$hint}\"\n"
+            . "Rules:\n"
+            . "1. ONLY RAW JSON OBJECT (not an array).\n"
+            . "2. Use keys: t=type, n=name, i=ingredients (minimized).\n"
+            . "3. Format: {\"t\":\"Breakfast\",\"n\":\"Oats\",\"i\":[\"80g oats\",\"30g whey\"]}";
+
+        $geminiSuggestion = $this->gemini->askForJson($prompt);
+
+        if (!is_array($geminiSuggestion) || empty($geminiSuggestion['n'])) {
+            return null;
+        }
+
+        $ingredients = $geminiSuggestion['i'] ?? ($geminiSuggestion['ingredients'] ?? ["See recipe"]);
+        if (!is_array($ingredients)) {
+            $ingredients = [$ingredients];
+        }
+
+        return [
+            "id"           => $mealToReplace['id'],
+            "day"          => $mealToReplace['day'],
+            "type"         => $geminiSuggestion['t'] ?? $type,
+            "name"         => $geminiSuggestion['n'] ?? "New Meal",
+            "calories"     => $cals,
+            "protein"      => $pro,
+            "carbs"        => $carb,
+            "fats"         => $fat,
+            "ingredients"  => $ingredients,
+            "instructions" => $geminiSuggestion['instructions'] ?? "Follow standard healthy preparation methods.",
+            "image"        => "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&q=80&sig=" . md5($geminiSuggestion['n'] ?? time()),
+            "completed"    => false,
+        ];
+    }
+
 
     private function getMealStructure(int $count): array {
         $presets = [
@@ -202,9 +286,27 @@ class NutritionAI {
         $targetWeight = $profile['target_weight'] ?? $profile['suggested_goal_weight'] ?? 70;
         $goal = $profile['goal'];
         $isRecomp = ($weight > $targetWeight) && ($goal === 'gain_muscle');
-
-        if ($isRecomp) { $p_ratio = 0.40; $c_ratio = 0.35; $f_ratio = 0.25; }
-        else           { $p_ratio = 0.30; $c_ratio = 0.40; $f_ratio = 0.30; }
+        if ($isRecomp) {
+            $p_ratio = 0.40;
+            $c_ratio = 0.35;
+            $f_ratio = 0.25;
+        } elseif (in_array($goal, ['running', 'cycling', 'swimming'])) {
+            $p_ratio = 0.25;
+            $c_ratio = 0.55;
+            $f_ratio = 0.20;
+        } elseif (in_array($goal, ['boxing', 'martial_arts'])) {
+            $p_ratio = 0.40;
+            $c_ratio = 0.40;
+            $f_ratio = 0.20;
+        } elseif ($goal === 'yoga_flexibility') {
+            $p_ratio = 0.30;
+            $c_ratio = 0.40;
+            $f_ratio = 0.30;
+        } else {
+            $p_ratio = 0.30;
+            $c_ratio = 0.40;
+            $f_ratio = 0.30;
+        }
 
         $p_target_total = ($calories * $p_ratio) / 4;
         $c_target_total = ($calories * $c_ratio) / 4;

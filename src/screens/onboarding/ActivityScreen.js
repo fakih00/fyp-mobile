@@ -65,17 +65,22 @@ const ActivityScreen = ({ navigation, route }) => {
             // Determine activity level algorithmically based on prior screens
             const calculatedActivity = calculateActivityLevel(userData);
 
-            const GOAL_MAP = {
-                'lose_weight': 'lose_weight',
-                'build_muscle': 'gain_muscle',
-                'keep_fit': 'maintain',
-                'gain_weight': 'gain_muscle' 
+            // Only remap the 4 legacy display-name goals to their DB equivalents.
+            // All new sport goals (boxing, running, swimming, cycling, martial_arts,
+            // yoga_flexibility, keep_fit, gain_weight) are stored exactly as picked
+            // because the DB ENUM was already expanded to include them.
+            const LEGACY_GOAL_MAP = {
+                'build_muscle': 'build_muscle',  // already correct
+                'lose_weight':  'lose_weight',   // already correct
+                'keep_fit':     'keep_fit',      // already correct
+                'gain_weight':  'gain_weight',   // already correct
             };
-            const dbGoal = GOAL_MAP[userData.goal] || 'maintain';
+            // Pass the goal through as-is (sport goals go straight to DB).
+            // LEGACY_GOAL_MAP is only here for documentation; we keep the raw value.
+            const dbGoal = userData.goal || 'lose_weight';
 
             const finalProfile = { ...userData, activityLevel: calculatedActivity, goal: dbGoal };
 
-            // Submit to Backend
             const res = await api.post('updateUser', {
                 age: finalProfile.age,
                 weight: finalProfile.weight,
@@ -85,6 +90,7 @@ const ActivityScreen = ({ navigation, route }) => {
                 activity_level: finalProfile.activityLevel,
                 training_location: userData.training_location || 'gym',
                 training_days_per_week: userData.training_days_per_week || 3,
+                training_intensity: userData.training_intensity || 'moderate',
                 dislikes: userData.dislikes || '',
                 allergies: userData.allergies || '',
                 meals_per_day: userData.meals_per_day || 4,
@@ -93,7 +99,14 @@ const ActivityScreen = ({ navigation, route }) => {
                 job_type: userData.job_type || 'desk',
                 steps_estimate: userData.steps_estimate || 5000,
                 sleep_hours: userData.sleep_hours || 7,
-                stress_level: userData.stress_level || 'medium'
+                stress_level: userData.stress_level || 'medium',
+                injuries: userData.injuries || '',
+                pain_points: userData.pain_points || '',
+                strong_side: userData.strong_side || '',
+                posture_problems: userData.posture_problems || '',
+                mobility_limitations: userData.mobility_limitations || '',
+                avoid_areas: userData.avoid_areas || '',
+                chronic_pain: userData.chronic_pain || ''
             });
 
             if (res.status === 200) {

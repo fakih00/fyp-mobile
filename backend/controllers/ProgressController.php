@@ -584,6 +584,159 @@ class ProgressController extends BaseController {
         $this->jsonResponse($history);
     }
 
+    public function get30DayWorkoutHistory() {
+        $user_id = $this->requireAuth();
+        
+        $stmt = $this->db->prepare("SELECT plan_data, date_generated FROM workouts WHERE user_id = ? ORDER BY date_generated DESC");
+        $stmt->execute([$user_id]);
+        $plans = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $history = [];
+        $today = new DateTime();
+        $today->setTime(0, 0, 0);
+
+        for ($i = 0; $i < 30; $i++) {
+            $date = clone $today;
+            $date->modify("-{$i} days");
+            $dateStr = $date->format('Y-m-d');
+            $dayName = $date->format('l');
+
+            $activePlan = null;
+            foreach ($plans as $plan) {
+                if ($plan['date_generated'] <= $dateStr) {
+                    $activePlan = $plan;
+                    break;
+                }
+            }
+
+            if (!$activePlan && count($plans) > 0) {
+                // If the date is before the first plan was generated, use the oldest plan
+                $activePlan = end($plans);
+            }
+
+            if ($activePlan) {
+                $planData = json_decode($activePlan['plan_data'], true);
+                if (is_array($planData)) {
+                    $workoutFound = false;
+                    foreach ($planData as $w) {
+                        if (isset($w['day']) && $w['day'] === $dayName) {
+                            $workoutFound = true;
+                            $history[] = [
+                                'date' => $dateStr,
+                                'day' => $dayName,
+                                'title' => $w['title'] ?? 'Workout',
+                                'completed' => !empty($w['completed']),
+                                'type' => 'workout'
+                            ];
+                            break;
+                        }
+                    }
+                    if (!$workoutFound) {
+                        $history[] = [
+                            'date' => $dateStr,
+                            'day' => $dayName,
+                            'title' => 'Rest Day',
+                            'completed' => true,
+                            'type' => 'rest'
+                        ];
+                    }
+                }
+            } else {
+                $history[] = [
+                    'date' => $dateStr,
+                    'day' => $dayName,
+                    'title' => 'No Plan',
+                    'completed' => false,
+                    'type' => 'none'
+                ];
+            }
+        }
+
+        $this->jsonResponse($history);
+    }
+
+    public function get30DayMealHistory() {
+        $user_id = $this->requireAuth();
+
+        $stmt = $this->db->prepare("SELECT meal_data, date_generated FROM nutrition_plans WHERE user_id = ? ORDER BY date_generated DESC");
+        $stmt->execute([$user_id]);
+        $plans = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $history = [];
+        $today = new DateTime();
+        $today->setTime(0, 0, 0);
+
+        for ($i = 0; $i < 30; $i++) {
+            $date = clone $today;
+            $date->modify("-{$i} days");
+            $dateStr = $date->format('Y-m-d');
+            $dayName = $date->format('l');
+
+            $activePlan = null;
+            foreach ($plans as $plan) {
+                if ($plan['date_generated'] <= $dateStr) {
+                    $activePlan = $plan;
+                    break;
+                }
+            }
+            if (!$activePlan && count($plans) > 0) {
+                $activePlan = end($plans);
+            }
+
+            if ($activePlan) {
+                $mealData = json_decode($activePlan['meal_data'], true);
+                if (is_array($mealData)) {
+                    $dayMeals = array_filter($mealData, fn($m) => ($m['day'] ?? '') === $dayName);
+                    $dayMeals = array_values($dayMeals);
+
+                    if (count($dayMeals) > 0) {
+                        $totalCals = array_sum(array_column($dayMeals, 'calories'));
+                        $loggedCount = count(array_filter($dayMeals, fn($m) => !empty($m['completed'])));
+                        $totalCount = count($dayMeals);
+
+                        $history[] = [
+                            'date'        => $dateStr,
+                            'day'         => $dayName,
+                            'total_meals' => $totalCount,
+                            'logged'      => $loggedCount,
+                            'missed'      => $totalCount - $loggedCount,
+                            'total_cals'  => $totalCals,
+                            'meals'       => array_map(fn($m) => [
+                                'name'      => $m['name'] ?? 'Meal',
+                                'type'      => $m['type'] ?? 'meal',
+                                'calories'  => $m['calories'] ?? 0,
+                                'protein'   => $m['protein'] ?? 0,
+                                'completed' => !empty($m['completed']),
+                            ], $dayMeals),
+                        ];
+                    } else {
+                        $history[] = [
+                            'date'        => $dateStr,
+                            'day'         => $dayName,
+                            'total_meals' => 0,
+                            'logged'      => 0,
+                            'missed'      => 0,
+                            'total_cals'  => 0,
+                            'meals'       => [],
+                        ];
+                    }
+                }
+            } else {
+                $history[] = [
+                    'date'        => $dateStr,
+                    'day'         => $dayName,
+                    'total_meals' => 0,
+                    'logged'      => 0,
+                    'missed'      => 0,
+                    'total_cals'  => 0,
+                    'meals'       => [],
+                ];
+            }
+        }
+
+        $this->jsonResponse($history);
+    }
+
     public function checkWeightLogged() {
         $user_id = $this->requireAuth();
 
@@ -598,6 +751,7 @@ class ProgressController extends BaseController {
     public function logDailyPulse() {
         $user_id = $this->requireAuth();
         $data = $this->getRequestData();
+
 
         $weight = $data->weight ?? 0;
         $sleep = $data->sleep ?? 0;
@@ -881,5 +1035,180 @@ class ProgressController extends BaseController {
             $this->errorResponse("Invalid type.", 400);
         }
     }
+
+    public function getProgressAudit() {
+        $user_id = $this->requireAuth();
+
+        // 1. Fetch user profile
+        $stmtP = $this->db->prepare("SELECT goal, target_weight, meals_per_day, training_days_per_week, height, weight FROM user_profiles WHERE user_id = ?");
+        $stmtP->execute([$user_id]);
+        $profile = $stmtP->fetch(PDO::FETCH_ASSOC);
+        if (!$profile) $this->errorResponse("User profile not found", 404);
+
+        $mealsPerDay = (int)($profile['meals_per_day'] ?? 4);
+        $trainingDays = (int)($profile['training_days_per_week'] ?? 3);
+
+        // 2. Fetch daily_logs over the last 7 days (weights, sleep, stress, steps)
+        $sevenDaysAgo = date('Y-m-d', strtotime('-7 days'));
+        $stmtLogs = $this->db->prepare("SELECT date_logged, weight, sleep_hours, stress_level, steps FROM daily_logs WHERE user_id = ? AND date_logged >= ? ORDER BY date_logged ASC");
+        $stmtLogs->execute([$user_id, $sevenDaysAgo]);
+        $userLogs = $stmtLogs->fetchAll(PDO::FETCH_ASSOC);
+
+        // 3. Fetch weight history
+        $stmtW = $this->db->prepare("SELECT weight, date_logged FROM progress WHERE user_id = ? AND date_logged >= ? ORDER BY date_logged ASC");
+        $stmtW->execute([$user_id, $sevenDaysAgo]);
+        $weightHistory = $stmtW->fetchAll(PDO::FETCH_ASSOC);
+
+        // Calculate workout adherence
+        $stmtWorkout = $this->db->prepare("SELECT plan_data FROM workouts WHERE user_id = ? ORDER BY date_generated DESC LIMIT 1");
+        $stmtWorkout->execute([$user_id]);
+        $wRow = $stmtWorkout->fetch(PDO::FETCH_ASSOC);
+        $wAdherence = 0;
+        if ($wRow) {
+            $plan = json_decode($wRow['plan_data'], true);
+            $doneW = 0;
+            if (is_array($plan)) {
+                foreach ($plan as $day) {
+                    if (isset($day['completed']) && $day['completed']) $doneW++;
+                }
+            }
+            $expectedW = max($trainingDays, 1);
+            $wAdherence = ($doneW / $expectedW) * 100;
+        }
+
+        // Calculate nutrition adherence
+        $stmtNut = $this->db->prepare("SELECT meal_data FROM nutrition_plans WHERE user_id = ? ORDER BY date_generated DESC LIMIT 1");
+        $stmtNut->execute([$user_id]);
+        $nRow = $stmtNut->fetch(PDO::FETCH_ASSOC);
+        $nAdherence = 0;
+        if ($nRow) {
+            $plan = json_decode($nRow['meal_data'], true);
+            $doneM = 0;
+            if (is_array($plan)) {
+                foreach ($plan as $meal) {
+                    if (isset($meal['completed']) && $meal['completed']) $doneM++;
+                }
+            }
+            $expectedM = $mealsPerDay * 7;
+            if ($expectedM <= 0) $expectedM = 28;
+            $nAdherence = ($doneM / $expectedM) * 100;
+        }
+
+        $wAdherence = min($wAdherence, 100);
+        $nAdherence = min($nAdherence, 100);
+
+        require_once __DIR__ . '/../services/ProgressAI.php';
+        $ai = new ProgressAI();
+        $audit = $ai->generateProgressAudit(
+            $userLogs, 
+            $profile, 
+            $weightHistory, 
+            [
+                'workout' => $wAdherence, 
+                'nutrition' => $nAdherence
+            ]
+        );
+
+        $this->jsonResponse($audit);
+    }
+
+    public function simulateTrajectory() {
+        $user_id = $this->requireAuth();
+        $data = $this->getRequestData();
+
+        // Validate inputs
+        $steps       = isset($data->steps) ? (int)$data->steps : 8000;
+        $sleep       = isset($data->sleep) ? (float)$data->sleep : 7;
+        $stress      = isset($data->stress) ? $data->stress : 'medium';
+        $workoutDays = isset($data->workout_days) ? (int)$data->workout_days : 3;
+        $calorieDelta = isset($data->calorie_delta) ? (int)$data->calorie_delta : -300;
+
+        // Fetch user profile for current weight, target, goal
+        $stmtP = $this->db->prepare("SELECT weight, target_weight, goal FROM user_profiles WHERE user_id = ?");
+        $stmtP->execute([$user_id]);
+        $profile = $stmtP->fetch(PDO::FETCH_ASSOC);
+        if (!$profile) $this->errorResponse("User profile not found", 404);
+
+        $currentWeight = floatval($profile['weight'] ?? 75);
+        $targetWeight  = floatval($profile['target_weight'] ?? 70);
+        $goal          = $profile['goal'] ?? 'fat loss';
+
+        $scenario = [
+            'steps'        => $steps,
+            'sleep'        => $sleep,
+            'stress'       => $stress,
+            'workout_days' => $workoutDays,
+            'calorie_delta'=> $calorieDelta,
+        ];
+
+        require_once __DIR__ . '/../services/ProgressAI.php';
+        $ai = new ProgressAI();
+        $result = $ai->generateTrajectorySimulation($currentWeight, $targetWeight, $goal, $scenario);
+
+        $this->jsonResponse($result);
+    }
+
+    public function getDailyBioAdvisory() {
+        $user_id = $this->requireAuth();
+
+        // Fetch user profile
+        $stmtP = $this->db->prepare("SELECT goal, target_weight, meals_per_day, training_days_per_week FROM user_profiles WHERE user_id = ?");
+        $stmtP->execute([$user_id]);
+        $profile = $stmtP->fetch(PDO::FETCH_ASSOC);
+        if (!$profile) $this->errorResponse("User profile not found", 404);
+
+        // Fetch yesterday's log
+        $yesterday = date('Y-m-d', strtotime('-1 day'));
+        $stmtLog = $this->db->prepare("SELECT weight, sleep_hours, stress_level, steps FROM daily_logs WHERE user_id = ? AND date_logged = ?");
+        $stmtLog->execute([$user_id, $yesterday]);
+        $yesterdayLog = $stmtLog->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        // Calculate 7-day adherences for context
+        $sevenDaysAgo = date('Y-m-d', strtotime('-7 days'));
+        $trainingDays = (int)($profile['training_days_per_week'] ?? 3);
+        $mealsPerDay  = (int)($profile['meals_per_day'] ?? 4);
+
+        $stmtW = $this->db->prepare("SELECT plan_data FROM workouts WHERE user_id = ? ORDER BY date_generated DESC LIMIT 1");
+        $stmtW->execute([$user_id]);
+        $wRow = $stmtW->fetch(PDO::FETCH_ASSOC);
+        $wAdherence = 0;
+        if ($wRow) {
+            $plan = json_decode($wRow['plan_data'], true);
+            $done = 0;
+            if (is_array($plan)) {
+                foreach ($plan as $day) {
+                    if (!empty($day['completed'])) $done++;
+                }
+            }
+            $wAdherence = min(100, ($done / max($trainingDays, 1)) * 100);
+        }
+
+        $stmtN = $this->db->prepare("SELECT meal_data FROM nutrition_plans WHERE user_id = ? ORDER BY date_generated DESC LIMIT 1");
+        $stmtN->execute([$user_id]);
+        $nRow = $stmtN->fetch(PDO::FETCH_ASSOC);
+        $nAdherence = 0;
+        if ($nRow) {
+            $plan = json_decode($nRow['meal_data'], true);
+            $done = 0;
+            if (is_array($plan)) {
+                foreach ($plan as $meal) {
+                    if (!empty($meal['completed'])) $done++;
+                }
+            }
+            $expectedM = max($mealsPerDay * 7, 1);
+            $nAdherence = min(100, ($done / $expectedM) * 100);
+        }
+
+        require_once __DIR__ . '/../services/ProgressAI.php';
+        $ai = new ProgressAI();
+        $result = $ai->generateBioAdvisory(
+            $yesterdayLog,
+            $profile,
+            ['workout_adherence' => $wAdherence, 'nutrition_adherence' => $nAdherence]
+        );
+
+        $this->jsonResponse($result);
+    }
 }
 ?>
+

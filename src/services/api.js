@@ -1,7 +1,7 @@
 // Replace with your computer's local IP if testing on a physical device.
 // For Android Emulator, use 'http://10.0.2.2:8000/api'
 // For iOS Simulator, use 'http://localhost:8000/api'
-const BASE_URL = 'http://192.168.0.108:8000/api';
+const BASE_URL = 'http://192.168.10.173:8000/api';
 
 // Internal token store — set after login, cleared on logout
 let _token = null;
@@ -161,6 +161,10 @@ export const api = {
         return this.post('generatePlan');
     },
 
+    async replaceMeal(mealId, hint) {
+        return this.post('replaceMeal', { meal_id: mealId, hint });
+    },
+
     async updateWorkoutProgress(day, exerciseId, completed) {
         return this.post('updateWorkoutProgress', {
             day: day,
@@ -179,6 +183,14 @@ export const api = {
 
     async getSuggestedGoalWeight() {
         return this.get('getSuggestedGoalWeight');
+    },
+
+    async get30DayWorkoutHistory() {
+        return this.get('get30DayWorkoutHistory');
+    },
+
+    async get30DayMealHistory() {
+        return this.get('get30DayMealHistory');
     },
 
     // ─── User & Profile ───────────────────────────────────────────
@@ -367,6 +379,18 @@ export const api = {
         return this.get('auditProgress');
     },
 
+    async getProgressAudit() {
+        return this.get('getProgressAudit');
+    },
+
+    async simulateTrajectory(scenario) {
+        return this.post('simulateTrajectory', scenario);
+    },
+
+    async getDailyBioAdvisory() {
+        return this.get('getDailyBioAdvisory');
+    },
+
     // ─── AI Chat ──────────────────────────────────────────────────
     /**
      * Send a message to the Gemini AI Coach.
@@ -375,5 +399,72 @@ export const api = {
      */
     async aiChat(message, history = []) {
         return this.post('aiChat', { message, history });
+    },
+
+    // ─── AI Injury & Recovery ─────────────────────────────────────
+    /**
+     * Generate an AI-powered soft-tissue recovery plan.
+     * @param {Object} injuryAnswers - Questionnaire answers
+     */
+    async generateRecoveryPlan(injuryAnswers) {
+        return this.post('generateRecoveryPlan', injuryAnswers);
+    },
+
+    /**
+     * Retrieve latest recovery plan.
+     */
+    async getRecoveryPlan() {
+        return this.get('getRecoveryPlan');
+    },
+
+    /**
+     * Update checkboxes and body parts visual status progress.
+     */
+    async updateRecoveryProgress(planId, completedItems, bodyPartsStatus) {
+        return this.post('updateRecoveryProgress', {
+            plan_id: planId,
+            completed_items: completedItems,
+            body_parts_status: bodyPartsStatus
+        });
+    },
+
+    // ─── AI Competition Prep ──────────────────────────────────────
+    /**
+     * Generate an AI-powered competition preparation plan.
+     * @param {Object} formAnswers - Questionnaire answers
+     */
+    async generateCompetitionPlan(formAnswers) {
+        return this.post('generateCompetitionPlan', formAnswers);
+    },
+
+    /**
+     * Retrieve latest competition preparation plan.
+     */
+    async getCompetitionPlan() {
+        return this.get('getCompetitionPlan');
+    },
+
+    /**
+     * Update completed milestones for competition preparation.
+     */
+    async updateCompetitionProgress(planId, completedMilestones) {
+        return this.post('updateCompetitionProgress', {
+            plan_id: planId,
+            completed_milestones: completedMilestones
+        });
+    },
+
+    // ─── Daily Quests ─────────────────────────────────────────────
+    async getDailyQuests() {
+        return this.get('getDailyQuests');
+    },
+
+    async claimDailyQuest(questId) {
+        return this.post('claimDailyQuest', { quest_id: questId });
+    },
+
+    // ─── Achievements ─────────────────────────────────────────────
+    async getAchievements() {
+        return this.get('getAchievements');
     },
 };

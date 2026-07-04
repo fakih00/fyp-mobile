@@ -38,6 +38,13 @@ const WorkoutPlanScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [floatingAnim] = useState(new Animated.Value(0));
+    const [hasRecoveryPlan, setHasRecoveryPlan] = useState(false);
+    const [generating, setGenerating] = useState(false);
+
+    // History Modal States
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [history30Days, setHistory30Days] = useState([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
 
     const currentDay = today;
 
@@ -47,9 +54,51 @@ const WorkoutPlanScreen = ({ navigation }) => {
             if (res.status === 200) {
                 setWorkouts(res.data);
             }
+            if (user?.injuries && user.injuries !== 'none') {
+                const recRes = await api.getRecoveryPlan();
+                if (recRes.status === 200 && recRes.data) {
+                    setHasRecoveryPlan(true);
+                } else {
+                    setHasRecoveryPlan(false);
+                }
+            }
         }
         setLoading(false);
         setRefreshing(false);
+    };
+
+    const handleGenerateWorkout = async () => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setGenerating(true);
+        try {
+            const res = await api.post('generatePlan', { type: 'workout' });
+            if (res.status === 200) {
+                await fetchWorkouts();
+            } else {
+                alert(res.data.message || "Failed to generate plan.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Connection error.");
+        } finally {
+            setGenerating(false);
+        }
+    };
+
+    const openHistory = async () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        setShowHistoryModal(true);
+        setLoadingHistory(true);
+        try {
+            const res = await api.get30DayWorkoutHistory();
+            if (res.status === 200) {
+                setHistory30Days(res.data);
+            }
+        } catch (e) {
+            console.error('History error:', e);
+        } finally {
+            setLoadingHistory(false);
+        }
     };
 
     useFocusEffect(
@@ -180,7 +229,10 @@ const WorkoutPlanScreen = ({ navigation }) => {
                         <Text style={styles.eliteTitle}>Workout Plan</Text>
                         <Text style={styles.eliteSubtitle}>LEVEL UP YOUR STRENGTH</Text>
                     </View>
-                    <TouchableOpacity style={styles.aiButtonElite}>
+                    <TouchableOpacity 
+                        style={styles.aiButtonElite}
+                        onPress={openHistory}
+                    >
                         <BlurView intensity={20} tint="light" style={styles.backBlur}>
                             <Ionicons name="time" size={20} color={COLORS.white} />
                         </BlurView>
@@ -514,11 +566,148 @@ const WorkoutPlanScreen = ({ navigation }) => {
         </Modal>
     );
 
+    // History modal rendered as inline JSX (not a sub-component) to avoid remount issues
+
+    if (generating) {
+        return (
+            <AuraBackground style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color={themeColors.accent} />
+                <Text style={{ marginTop: 20, color: '#475569', fontWeight: 'bold' }}>Generating your custom AI plan...</Text>
+            </AuraBackground>
+        );
+    }
+
     if (loading && !refreshing) {
         return (
             <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
                 <ActivityIndicator size="large" color={themeColors.accent} />
             </View>
+        );
+    }
+
+    if (!workouts || workouts.length === 0) {
+        return (
+            <AuraBackground style={styles.container}>
+                {renderHeader()}
+                <View style={styles.emptyPlanContainer}>
+                    <BlurView intensity={40} tint="light" style={styles.emptyPlanCard}>
+                        <View style={styles.emptyPlanIconCircle}>
+                            <Ionicons name="barbell" size={40} color={themeColors.accent} />
+                        </View>
+                        <Text style={styles.emptyPlanTitle}>GENERATE WORKOUT PLAN</Text>
+                        
+                        {user?.injuries && user.injuries !== 'none' ? (
+                            !hasRecoveryPlan ? (
+                                <>
+                                    <Text style={styles.emptyPlanSubtitle}>
+                                        You registered an active injury ({user.injuries.replace(/_/g, ' ')}).
+                                        To ensure your safety, you must complete your AI Body Recovery assessment before we can compile your workout plan.
+                                    </Text>
+                                    <TouchableOpacity
+                                        style={styles.actionButton}
+                                        onPress={() => {
+                                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                                            navigation.navigate('BodyRecovery');
+                                        }}
+                                    >
+                                        <LinearGradient colors={themeColors.gradient} style={styles.actionBtnGrad}>
+                                            <Text style={styles.actionBtnText}>START BODY RECOVERY</Text>
+                                            <Ionicons name="heart-half" size={16} color="#FFF" />
+                                        </LinearGradient>
+                                    </TouchableOpacity>
+                                </>
+                            ) : (
+                                <>
+                                    <Text style={styles.emptyPlanSubtitle}>
+                                        Your recovery assessment is complete! Click below to compile your sports-science workout plan tailored to your profile and restrictions.
+                                    </Text>
+                                    <TouchableOpacity
+                                        style={styles.actionButton}
+                                        onPress={handleGenerateWorkout}
+                                    >
+                                        <LinearGradient colors={themeColors.gradient} style={styles.actionBtnGrad}>
+                                            <Text style={styles.actionBtnText}>GENERATE WORKOUT PLAN</Text>
+                                            <Ionicons name="sparkles" size={16} color="#FFF" />
+                                        </LinearGradient>
+                                    </TouchableOpacity>
+                                </>
+                            )
+                        ) : (
+                            <>
+                                <Text style={styles.emptyPlanSubtitle}>
+                                    Generate your personalized AI-powered workout plan based on your onboarding preferences.
+                                </Text>
+                                <TouchableOpacity
+                                    style={styles.actionButton}
+                                    onPress={handleGenerateWorkout}
+                                >
+                                    <LinearGradient colors={themeColors.gradient} style={styles.actionBtnGrad}>
+                                        <Text style={styles.actionBtnText}>GENERATE WORKOUT PLAN</Text>
+                                        <Ionicons name="sparkles" size={16} color="#FFF" />
+                                    </LinearGradient>
+                                </TouchableOpacity>
+                            </>
+                        )}
+                    </BlurView>
+                </View>
+                <Modal
+                    visible={showHistoryModal}
+                    transparent
+                    animationType="slide"
+                    onRequestClose={() => setShowHistoryModal(false)}
+                >
+                    <View style={styles.modalContainer}>
+                        <View style={[styles.modalContent, { backgroundColor: COLORS.surface, paddingTop: 20 }]}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 20 }}>
+                                <View>
+                                    <Text style={{ fontSize: 20, fontWeight: '900', color: COLORS.text }}>30-Day History</Text>
+                                    <Text style={{ fontSize: 12, color: COLORS.textSecondary, marginTop: 4 }}>Your recent workout log</Text>
+                                </View>
+                                <TouchableOpacity onPress={() => setShowHistoryModal(false)} style={{ padding: 8, backgroundColor: 'rgba(15,23,42,0.05)', borderRadius: 20 }}>
+                                    <Ionicons name="close" size={20} color={COLORS.text} />
+                                </TouchableOpacity>
+                            </View>
+                            {loadingHistory ? (
+                                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                    <ActivityIndicator size="large" color={themeColors.accent} />
+                                </View>
+                            ) : (
+                                <FlatList
+                                    data={history30Days}
+                                    keyExtractor={(item, index) => index.toString()}
+                                    showsVerticalScrollIndicator={false}
+                                    contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+                                    renderItem={({ item }) => {
+                                        const isRest = item.type === 'rest';
+                                        const isNone = item.type === 'none';
+                                        const isCompleted = !isRest && !isNone && item.completed;
+                                        const isMissed = !isRest && !isNone && !item.completed;
+                                        let iconName = 'barbell-outline', iconColor = COLORS.textSecondary, bgColor = 'rgba(15,23,42,0.03)', statusText = 'Missed';
+                                        if (isRest) { iconName = 'cafe-outline'; iconColor = '#8B5CF6'; bgColor = 'rgba(139,92,246,0.1)'; statusText = 'Rest Day'; }
+                                        else if (isNone) { iconName = 'calendar-outline'; iconColor = '#94A3B8'; bgColor = 'rgba(148,163,184,0.1)'; statusText = 'No Plan'; }
+                                        else if (isCompleted) { iconName = 'checkmark-circle'; iconColor = '#10B981'; bgColor = 'rgba(16,185,129,0.1)'; statusText = 'Logged'; }
+                                        else if (isMissed) { iconName = 'close-circle'; iconColor = '#EF4444'; bgColor = 'rgba(239,68,68,0.1)'; statusText = 'Missed'; }
+                                        return (
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, padding: 16, borderRadius: 18, backgroundColor: COLORS.white, borderWidth: 1, borderColor: 'rgba(15,23,42,0.06)' }}>
+                                                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: bgColor, justifyContent: 'center', alignItems: 'center', marginRight: 15 }}>
+                                                    <Ionicons name={iconName} size={20} color={iconColor} />
+                                                </View>
+                                                <View style={{ flex: 1 }}>
+                                                    <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.text, marginBottom: 3 }}>{item.title}</Text>
+                                                    <Text style={{ fontSize: 12, color: COLORS.textSecondary, fontWeight: '600' }}>{item.day}, {item.date}</Text>
+                                                </View>
+                                                <View style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, backgroundColor: bgColor }}>
+                                                    <Text style={{ fontSize: 11, fontWeight: '900', color: iconColor }}>{statusText.toUpperCase()}</Text>
+                                                </View>
+                                            </View>
+                                        );
+                                    }}
+                                />
+                            )}
+                        </View>
+                    </View>
+                </Modal>
+            </AuraBackground>
         );
     }
 
@@ -565,6 +754,63 @@ const WorkoutPlanScreen = ({ navigation }) => {
             />
 
             <PreviewModal />
+            <Modal
+                visible={showHistoryModal}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setShowHistoryModal(false)}
+            >
+                <View style={styles.modalContainer}>
+                    <View style={[styles.modalContent, { backgroundColor: COLORS.surface, paddingTop: 20 }]}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 20 }}>
+                            <View>
+                                <Text style={{ fontSize: 20, fontWeight: '900', color: COLORS.text }}>30-Day History</Text>
+                                <Text style={{ fontSize: 12, color: COLORS.textSecondary, marginTop: 4 }}>Your recent workout log</Text>
+                            </View>
+                            <TouchableOpacity onPress={() => setShowHistoryModal(false)} style={{ padding: 8, backgroundColor: 'rgba(15,23,42,0.05)', borderRadius: 20 }}>
+                                <Ionicons name="close" size={20} color={COLORS.text} />
+                            </TouchableOpacity>
+                        </View>
+                        {loadingHistory ? (
+                            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                <ActivityIndicator size="large" color={themeColors.accent} />
+                            </View>
+                        ) : (
+                            <FlatList
+                                data={history30Days}
+                                keyExtractor={(item, index) => index.toString()}
+                                showsVerticalScrollIndicator={false}
+                                contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+                                renderItem={({ item }) => {
+                                    const isRest = item.type === 'rest';
+                                    const isNone = item.type === 'none';
+                                    const isCompleted = !isRest && !isNone && item.completed;
+                                    const isMissed = !isRest && !isNone && !item.completed;
+                                    let iconName = 'barbell-outline', iconColor = COLORS.textSecondary, bgColor = 'rgba(15,23,42,0.03)', statusText = 'Missed';
+                                    if (isRest) { iconName = 'cafe-outline'; iconColor = '#8B5CF6'; bgColor = 'rgba(139,92,246,0.1)'; statusText = 'Rest Day'; }
+                                    else if (isNone) { iconName = 'calendar-outline'; iconColor = '#94A3B8'; bgColor = 'rgba(148,163,184,0.1)'; statusText = 'No Plan'; }
+                                    else if (isCompleted) { iconName = 'checkmark-circle'; iconColor = '#10B981'; bgColor = 'rgba(16,185,129,0.1)'; statusText = 'Logged'; }
+                                    else if (isMissed) { iconName = 'close-circle'; iconColor = '#EF4444'; bgColor = 'rgba(239,68,68,0.1)'; statusText = 'Missed'; }
+                                    return (
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, padding: 16, borderRadius: 18, backgroundColor: COLORS.white, borderWidth: 1, borderColor: 'rgba(15,23,42,0.06)' }}>
+                                            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: bgColor, justifyContent: 'center', alignItems: 'center', marginRight: 15 }}>
+                                                <Ionicons name={iconName} size={20} color={iconColor} />
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={{ fontSize: 14, fontWeight: '800', color: COLORS.text, marginBottom: 3 }}>{item.title}</Text>
+                                                <Text style={{ fontSize: 12, color: COLORS.textSecondary, fontWeight: '600' }}>{item.day}, {item.date}</Text>
+                                            </View>
+                                            <View style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, backgroundColor: bgColor }}>
+                                                <Text style={{ fontSize: 11, fontWeight: '900', color: iconColor }}>{statusText.toUpperCase()}</Text>
+                                            </View>
+                                        </View>
+                                    );
+                                }}
+                            />
+                        )}
+                    </View>
+                </View>
+            </Modal>
         </AuraBackground>
     );
 };
@@ -1258,7 +1504,76 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         color: COLORS.white,
         letterSpacing: 1,
-    }
+    },
+    emptyPlanContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        paddingHorizontal: 25,
+        alignItems: 'center',
+    },
+    emptyPlanCard: {
+        width: '100%',
+        borderRadius: 30,
+        padding: 30,
+        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+        borderWidth: 1,
+        borderColor: 'rgba(15, 23, 42, 0.08)',
+        alignItems: 'center',
+    },
+    emptyPlanIconCircle: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        elevation: 2,
+    },
+    emptyPlanTitle: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: '#0F172A',
+        letterSpacing: 1,
+        marginBottom: 10,
+        textAlign: 'center',
+    },
+    emptyPlanSubtitle: {
+        fontSize: 13,
+        color: '#475569',
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 25,
+        fontWeight: '500',
+    },
+    actionButton: {
+        width: '100%',
+        height: 54,
+        borderRadius: 18,
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 4,
+    },
+    actionBtnGrad: {
+        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 10,
+    },
+    actionBtnText: {
+        color: '#FFF',
+        fontSize: 13,
+        fontWeight: '900',
+        letterSpacing: 1,
+    },
 });
 
 export default WorkoutPlanScreen;

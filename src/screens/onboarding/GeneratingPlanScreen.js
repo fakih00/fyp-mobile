@@ -102,7 +102,15 @@ const GeneratingPlanScreen = ({ navigation, route }) => {
 
                 // 2. Generate plans sequentially — PHP's built-in server is single-threaded,
                 //    concurrent requests would just queue up and each block for ~60s anyway.
-                const workoutResult = await api.post('generatePlan', { type: 'workout' });
+                const hasInjury = !!(userData?.injuries && userData.injuries.trim() !== '' && userData.injuries.toLowerCase() !== 'none');
+                
+                let workoutResult = null;
+                if (!hasInjury) {
+                    workoutResult = await api.post('generatePlan', { type: 'workout' });
+                    console.log('Workout result status:', workoutResult?.status);
+                } else {
+                    console.log('Skipping workout generation — user has injuries. Plan will be generated from WorkoutPlan screen after recovery assessment.');
+                }
                 const nutritionResult = await api.post('generatePlan', { type: 'nutrition' });
 
                 // Fast forward progress if it finishes early
@@ -110,8 +118,7 @@ const GeneratingPlanScreen = ({ navigation, route }) => {
                 setProgress(100);
 
                 // Log results for debugging
-                console.log('Workout result status:', workoutResult.status);
-                console.log('Nutrition result status:', nutritionResult.status);
+                console.log('Nutrition result status:', nutritionResult?.status);
 
                 // 3. Hydrate state — isolated so a fetch failure here doesn't
                 //    trigger the catch block and incorrectly navigate to Login.
@@ -121,12 +128,19 @@ const GeneratingPlanScreen = ({ navigation, route }) => {
                     console.warn('loadUserData failed, continuing to Main anyway:', hydrationError);
                 }
 
-                // Navigate to Main Tab
+                // Navigate based on injury profile
                 setTimeout(() => {
-                    navigation.reset({
-                        index: 0,
-                        routes: [{ name: 'Main' }],
-                    });
+                    if (hasInjury) {
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'InjuryWarning', params: { userData } }],
+                        });
+                    } else {
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'Main' }],
+                        });
+                    }
                 }, 1000); // Small delay to let user see 100%
 
             } catch (error) {

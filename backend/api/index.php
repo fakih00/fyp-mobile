@@ -40,6 +40,7 @@ $routes = [
     'getWorkouts'              => ['FitnessController', 'getWorkouts', true, false],
     'getNutritionPlan'         => ['FitnessController', 'getNutritionPlan', true, false],
     'generatePlan'             => ['FitnessController', 'generatePlan', true, false],
+    'replaceMeal'              => ['FitnessController', 'replaceMeal', true, false],
     'updateWorkoutProgress'    => ['FitnessController', 'updateWorkoutProgress', true, false],
     'updateMealProgress'       => ['FitnessController', 'updateMealProgress', true, false],
     'getSuggestedGoalWeight'   => ['FitnessController', 'getSuggestedGoalWeight', true, false],
@@ -90,14 +91,30 @@ $routes = [
     'getProgressStats'         => ['ProgressController', 'getStats', true, false],
     'predictProgress'          => ['ProgressController', 'getPrediction', true, false],
     'getActivityHistory'       => ['ProgressController', 'getActivityHistory', true, false],
+    'get30DayWorkoutHistory'   => ['ProgressController', 'get30DayWorkoutHistory', true, false],
+    'get30DayMealHistory'      => ['ProgressController', 'get30DayMealHistory', true, false],
     'checkWeightLogged'        => ['ProgressController', 'checkWeightLogged', true, false],
     'logDailyPulse'            => ['ProgressController', 'logDailyPulse', true, false],
     'logWater'                 => ['ProgressController', 'logWater', true, false],
+    'getDailyQuests'           => ['FitnessController', 'getDailyQuests', true, false],
+    'claimDailyQuest'          => ['FitnessController', 'claimDailyQuest', true, false],
+
+    // ─── Achievements ──────────────────────────────────────────────────
+    'getAchievements'          => ['AchievementController', 'getAchievements', true, false],
     // ─── AI Chat ──────────────────────────────────────────────────
     'aiChat'                   => ['AIChatController', 'chat', true, false],
+    'generateRecoveryPlan'     => ['RecoveryController', 'generatePlan', true, false],
+    'getRecoveryPlan'          => ['RecoveryController', 'getPlan', true, false],
+    'updateRecoveryProgress'   => ['RecoveryController', 'updateProgress', true, false],
+    'generateCompetitionPlan'  => ['CompetitionController', 'generatePlan', true, false],
+    'getCompetitionPlan'       => ['CompetitionController', 'getPlan', true, false],
+    'updateCompetitionProgress' => ['CompetitionController', 'updateProgress', true, false],
 
     // ─── Audit ────────────────────────────────────────────────────
     'auditProgress'            => ['ProgressController', 'auditProgress', true, false],
+    'getProgressAudit'         => ['ProgressController', 'getProgressAudit', true, false],
+    'simulateTrajectory'       => ['ProgressController', 'simulateTrajectory', true, false],
+    'getDailyBioAdvisory'      => ['ProgressController', 'getDailyBioAdvisory', true, false],
     'logActivity'              => ['ProgressController', 'logActivity', true, false],
 ];
 

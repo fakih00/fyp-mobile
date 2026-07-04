@@ -2,6 +2,7 @@
 require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/UserController.php';
 require_once __DIR__ . '/ChallengeController.php';
+require_once __DIR__ . '/AchievementController.php';
 
 class FitnessController extends BaseController {
     
@@ -263,6 +264,17 @@ class FitnessController extends BaseController {
         }
 
         if ($type === 'workout') {
+            // Check if user has active registered injuries
+            if (!empty($profile['injuries']) && strtolower($profile['injuries']) !== 'none') {
+                // Check if they have completed their AI Body Recovery plan
+                $stmtRec = $this->db->prepare("SELECT COUNT(*) FROM recovery_plans WHERE user_id = ?");
+                $stmtRec->execute([$user_id]);
+                $hasRecoveryPlan = (int)$stmtRec->fetchColumn();
+                if ($hasRecoveryPlan === 0) {
+                    $this->errorResponse("You must complete your AI Body Recovery assessment before generating a workout plan.", 400);
+                }
+            }
+
             require_once __DIR__ . '/../services/WorkoutAI.php';
             $ai = new WorkoutAI();
             $plan = $ai->generatePlan($profile);
@@ -330,6 +342,65 @@ class FitnessController extends BaseController {
         }
     }
 
+    public function replaceMeal() {
+        $user_id = $this->requireAuth();
+        $data = $this->getRequestData();
+
+        if (empty($data->meal_id) || empty($data->hint)) {
+            $this->errorResponse("Missing meal_id or hint", 400);
+        }
+
+        // Fetch user profile for AI (optional, if we need it)
+        $stmt = $this->db->prepare("SELECT * FROM user_profiles WHERE user_id = ?");
+        $stmt->execute([$user_id]);
+        $profile = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        // Fetch current nutrition plan
+        $stmtN = $this->db->prepare("SELECT id, meal_data FROM nutrition_plans WHERE user_id = ? ORDER BY date_generated DESC LIMIT 1");
+        $stmtN->execute([$user_id]);
+        $row = $stmtN->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            $this->errorResponse("No nutrition plan found.", 404);
+        }
+
+        $meals = json_decode($row['meal_data'], true);
+        if (!is_array($meals)) {
+            $this->errorResponse("Invalid nutrition plan data.", 500);
+        }
+
+        $targetMealIdx = -1;
+        $targetMeal = null;
+        foreach ($meals as $idx => $m) {
+            if ($m['id'] === $data->meal_id) {
+                $targetMealIdx = $idx;
+                $targetMeal = $m;
+                break;
+            }
+        }
+
+        if ($targetMealIdx === -1) {
+            $this->errorResponse("Meal not found in current plan.", 404);
+        }
+
+        require_once __DIR__ . '/../services/NutritionAI.php';
+        $ai = new NutritionAI();
+        $newMeal = $ai->replaceMealWithHint($targetMeal, $data->hint);
+
+        if ($newMeal) {
+            $meals[$targetMealIdx] = $newMeal;
+
+            $updateStmt = $this->db->prepare("UPDATE nutrition_plans SET meal_data = ? WHERE id = ?");
+            if ($updateStmt->execute([json_encode($meals), $row['id']])) {
+                $this->jsonResponse(["message" => "Meal replaced successfully", "new_meal" => $newMeal]);
+            } else {
+                $this->errorResponse("Failed to save new meal.", 500);
+            }
+        } else {
+            $this->errorResponse("Failed to generate replacement meal.", 500);
+        }
+    }
+
     public function updateWorkoutProgress() {
         $user_id = $this->requireAuth();
         $data = $this->getRequestData();
@@ -394,6 +465,9 @@ class FitnessController extends BaseController {
                 if ($completed && !$alreadyCompleted) {
                     $userCtrl = new UserController($this->db);
                     $xpResult = $userCtrl->performAddXP($user_id, 200);
+                    // Check achievements after workout
+                    $achCtrl = new AchievementController($this->db);
+                    $achCtrl->checkAndAward($user_id, 'workout');
                 }
                 $this->jsonResponse([
                     "message" => "Progress updated", 
@@ -448,6 +522,10 @@ class FitnessController extends BaseController {
                 // Track Challenge Progress
                 $challengeCtrl = new ChallengeController($this->db);
                 $challengeCtrl->trackProgress($user_id, 'meal');
+
+                // Check achievements after meal
+                $achCtrl = new AchievementController($this->db);
+                $achCtrl->checkAndAward($user_id, 'meal');
             }
             
             $this->jsonResponse([
@@ -474,5 +552,267 @@ class FitnessController extends BaseController {
         $suggestion = $ai->suggestGoalWeight($profile);
 
         $this->jsonResponse($suggestion);
+    }
+
+    public function getDailyQuests() {
+        $user_id = $this->requireAuth();
+        $today = date('Y-m-d');
+
+        // Fetch user profile for context
+        $stmtP = $this->db->prepare("SELECT weight, target_weight, goal FROM user_profiles WHERE user_id = ?");
+        $stmtP->execute([$user_id]);
+        $profile = $stmtP->fetch(PDO::FETCH_ASSOC);
+        
+        $weight = (float)($profile['weight'] ?? 70);
+        $waterGoal = intval($weight * 33);
+        if ($waterGoal <= 0) $waterGoal = 2500;
+
+        // Check if quests exist for today
+        $stmtCheck = $this->db->prepare("SELECT * FROM daily_quests WHERE user_id = ? AND date_logged = ?");
+        $stmtCheck->execute([$user_id, $today]);
+        $quests = $stmtCheck->fetchAll(PDO::FETCH_ASSOC);
+
+        if (empty($quests)) {
+            // Generate 4 daily quests
+            $generatedQuests = [
+                [
+                    'quest_type' => 'steps',
+                    'title' => 'Pedometer Hero',
+                    'description' => 'Walk 8,000 steps today.',
+                    'target_value' => 8000,
+                    'xp_reward' => 50,
+                    'points_reward' => 10
+                ],
+                [
+                    'quest_type' => 'water',
+                    'title' => 'Hydration Champ',
+                    'description' => 'Drink ' . number_format($waterGoal) . ' ml of water.',
+                    'target_value' => $waterGoal,
+                    'xp_reward' => 50,
+                    'points_reward' => 10
+                ],
+                [
+                    'quest_type' => 'workout',
+                    'title' => 'Iron Athlete',
+                    'description' => "Complete today's workout session.",
+                    'target_value' => 1,
+                    'xp_reward' => 100,
+                    'points_reward' => 20
+                ],
+                [
+                    'quest_type' => 'meal',
+                    'title' => 'Mindful Diner',
+                    'description' => 'Log at least 2 meals today.',
+                    'target_value' => 2,
+                    'xp_reward' => 50,
+                    'points_reward' => 10
+                ]
+            ];
+
+            // Insert them
+            foreach ($generatedQuests as $q) {
+                $ins = $this->db->prepare("INSERT INTO daily_quests (user_id, quest_type, title, description, target_value, xp_reward, points_reward, date_logged) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $ins->execute([$user_id, $q['quest_type'], $q['title'], $q['description'], $q['target_value'], $q['xp_reward'], $q['points_reward'], $today]);
+            }
+
+            // Fetch again
+            $stmtCheck->execute([$user_id, $today]);
+            $quests = $stmtCheck->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+        // Synchronize Quest Progress from latest logs
+        $todayDayName = date('l');
+        
+        // 1. Steps
+        $stmtSteps = $this->db->prepare("SELECT steps FROM daily_logs WHERE user_id = ? AND date_logged = ?");
+        $stmtSteps->execute([$user_id, $today]);
+        $currentSteps = (int)$stmtSteps->fetchColumn();
+
+        // 2. Water
+        $stmtWater = $this->db->prepare("SELECT water_ml FROM daily_logs WHERE user_id = ? AND date_logged = ?");
+        $stmtWater->execute([$user_id, $today]);
+        $currentWater = (int)$stmtWater->fetchColumn();
+
+        // 3. Workout
+        $workoutCompleted = 0;
+        $stmtW = $this->db->prepare("SELECT plan_data FROM workouts WHERE user_id = ? ORDER BY date_generated DESC LIMIT 1");
+        $stmtW->execute([$user_id]);
+        $wPlanRow = $stmtW->fetch(PDO::FETCH_ASSOC);
+        if ($wPlanRow) {
+            $plan = json_decode($wPlanRow['plan_data'], true);
+            if (is_array($plan)) {
+                foreach ($plan as $day) {
+                    if (($day['day'] ?? '') === $todayDayName) {
+                        $workoutCompleted = !empty($day['completed']) ? 1 : 0;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 4. Meal
+        $mealsCompleted = 0;
+        $stmtN = $this->db->prepare("SELECT meal_data FROM nutrition_plans WHERE user_id = ? ORDER BY date_generated DESC LIMIT 1");
+        $stmtN->execute([$user_id]);
+        $nPlanRow = $stmtN->fetch(PDO::FETCH_ASSOC);
+        if ($nPlanRow) {
+            $meals = json_decode($nPlanRow['meal_data'], true);
+            if (is_array($meals)) {
+                foreach ($meals as $m) {
+                    if (($m['day'] ?? '') === $todayDayName && !empty($m['completed'])) {
+                        $mealsCompleted++;
+                    }
+                }
+            }
+        }
+
+        // Update each quest with dynamic current value
+        foreach ($quests as &$quest) {
+            $val = 0;
+            if ($quest['quest_type'] === 'steps') {
+                $val = $currentSteps;
+            } elseif ($quest['quest_type'] === 'water') {
+                $val = $currentWater;
+            } elseif ($quest['quest_type'] === 'workout') {
+                $val = $workoutCompleted;
+            } elseif ($quest['quest_type'] === 'meal') {
+                $val = $mealsCompleted;
+            }
+
+            $completed = $val >= $quest['target_value'] ? 1 : 0;
+
+            // Save back
+            $upd = $this->db->prepare("UPDATE daily_quests SET current_value = ?, completed = ? WHERE id = ?");
+            $upd->execute([$val, $completed, $quest['id']]);
+
+            // Update local copy to return
+            $quest['current_value'] = $val;
+            $quest['completed'] = $completed;
+        }
+
+        $this->jsonResponse($quests);
+    }
+
+    public function claimDailyQuest() {
+        $user_id = $this->requireAuth();
+        $data = $this->getRequestData();
+
+        if (empty($data->quest_id)) {
+            $this->errorResponse("Missing quest_id", 400);
+        }
+
+        $quest_id = $data->quest_id;
+
+        try {
+            $this->db->beginTransaction();
+
+            // Fetch the quest
+            $stmt = $this->db->prepare("SELECT * FROM daily_quests WHERE id = ? AND user_id = ?");
+            $stmt->execute([$quest_id, $user_id]);
+            $quest = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$quest) {
+                $this->db->rollBack();
+                $this->errorResponse("Quest not found", 404);
+            }
+
+            if ($quest['claimed']) {
+                $this->db->rollBack();
+                $this->errorResponse("Quest already claimed", 400);
+            }
+
+            // Sync one last time before claiming to be safe
+            $current_val = 0;
+            $todayDayName = date('l');
+            if ($quest['quest_type'] === 'steps') {
+                $stmtSteps = $this->db->prepare("SELECT steps FROM daily_logs WHERE user_id = ? AND date_logged = CURDATE()");
+                $stmtSteps->execute([$user_id]);
+                $current_val = (int)$stmtSteps->fetchColumn();
+            } elseif ($quest['quest_type'] === 'water') {
+                $stmtWater = $this->db->prepare("SELECT water_ml FROM daily_logs WHERE user_id = ? AND date_logged = CURDATE()");
+                $stmtWater->execute([$user_id]);
+                $current_val = (int)$stmtWater->fetchColumn();
+            } elseif ($quest['quest_type'] === 'workout') {
+                $stmtW = $this->db->prepare("SELECT plan_data FROM workouts WHERE user_id = ? ORDER BY date_generated DESC LIMIT 1");
+                $stmtW->execute([$user_id]);
+                $wPlan = json_decode($stmtW->fetchColumn() ?: '[]', true);
+                foreach ($wPlan as $day) {
+                    if (($day['day'] ?? '') === $todayDayName) {
+                        $current_val = !empty($day['completed']) ? 1 : 0;
+                        break;
+                    }
+                }
+            } elseif ($quest['quest_type'] === 'meal') {
+                $stmtN = $this->db->prepare("SELECT meal_data FROM nutrition_plans WHERE user_id = ? ORDER BY date_generated DESC LIMIT 1");
+                $stmtN->execute([$user_id]);
+                $meals = json_decode($stmtN->fetchColumn() ?: '[]', true);
+                foreach ($meals as $m) {
+                    if (($m['day'] ?? '') === $todayDayName && !empty($m['completed'])) {
+                        $current_val++;
+                    }
+                }
+            }
+
+            $completed = $current_val >= $quest['target_value'] ? 1 : 0;
+
+            if (!$completed) {
+                // Let's update DB first and fail
+                $upd = $this->db->prepare("UPDATE daily_quests SET current_value = ?, completed = ? WHERE id = ?");
+                $upd->execute([$current_val, 0, $quest_id]);
+                $this->db->commit();
+                $this->errorResponse("Quest is not yet completed", 400);
+            }
+
+            // Mark as claimed & completed
+            $upd = $this->db->prepare("UPDATE daily_quests SET current_value = ?, completed = 1, claimed = 1 WHERE id = ?");
+            $upd->execute([$current_val, $quest_id]);
+
+            // Award XP + Points
+            $userCtrl = new UserController($this->db);
+            $xpReward = $userCtrl->performAddXP($user_id, $quest['xp_reward']);
+            
+            // Also award the points_reward
+            $points_to_add = $quest['points_reward'];
+            $stmtAwardPoints = $this->db->prepare("UPDATE user_profiles SET points = points + ? WHERE user_id = ?");
+            $stmtAwardPoints->execute([$points_to_add, $user_id]);
+
+            // Notify user
+            $this->createNotification(
+                $user_id,
+                "Quest Completed! 🎉",
+                "You completed the quest '{$quest['title']}' and earned +{$quest['xp_reward']} XP and +{$points_to_add} PTS!",
+                "quest",
+                "flash",
+                "#10B981"
+            );
+
+            $this->db->commit();
+
+            // Check for newly-unlocked achievements after quest claim
+            $achCtrl = new AchievementController($this->db);
+            $achCtrl->checkAndAward($user_id, 'quest');
+
+            // Fetch updated profile
+            $stmtProfile = $this->db->prepare("SELECT level, xp, points FROM user_profiles WHERE user_id = ?");
+            $stmtProfile->execute([$user_id]);
+            $profile = $stmtProfile->fetch(PDO::FETCH_ASSOC);
+
+            $this->jsonResponse([
+                "message" => "Quest claimed successfully",
+                "quest_id" => $quest_id,
+                "xp_reward" => $quest['xp_reward'],
+                "points_reward" => $points_to_add,
+                "user_stats" => [
+                    "level" => (int)$profile['level'],
+                    "xp" => (int)$profile['xp'],
+                    "points" => (int)$profile['points'],
+                    "nextLevelXp" => (int)$profile['level'] * 1000
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            $this->errorResponse("Database error: " . $e->getMessage(), 500);
+        }
     }
 }

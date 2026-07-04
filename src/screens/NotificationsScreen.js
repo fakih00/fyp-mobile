@@ -84,23 +84,38 @@ const NotificationsScreen = ({ navigation }) => {
         }
     };
 
+    const handleMarkAsRead = async (notificationId) => {
+        try {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            const res = await api.markNotificationRead(notificationId);
+            if (res.status === 200) {
+                setNotifications(notifications.map(n => n.id === notificationId ? { ...n, is_read: true } : n));
+                checkNotifications();
+            }
+        } catch (error) {
+            console.error("Mark Read Error:", error);
+        }
+    };
+
     const renderNotification = ({ item, index }) => (
         <AnimatedCard delay={index * 50} style={styles.cardWrapper}>
-            <GlassCard style={styles.notifCard}>
-                <View style={[styles.iconBox, { backgroundColor: (item.color || themeColors.accent) + '20' }]}>
-                    <Ionicons name={item.icon || 'notifications'} size={20} color={item.color || themeColors.accent} />
-                </View>
-                <View style={styles.contentBox}>
-                    <View style={styles.headerRow}>
-                        <Text style={[styles.notifTitle, { color: textColor }]}>{item.title}</Text>
-                        <Text style={[styles.timeText, { color: subTextColor }]}>{item.time}</Text>
+            <TouchableOpacity activeOpacity={0.8} onPress={() => !item.is_read && handleMarkAsRead(item.id)}>
+                <GlassCard style={styles.notifCard}>
+                    <View style={[styles.iconBox, { backgroundColor: (item.color || themeColors.accent) + '20' }]}>
+                        <Ionicons name={item.icon || 'notifications'} size={20} color={item.color || themeColors.accent} />
                     </View>
-                    <Text style={[styles.messageText, { color: subTextColor }]} numberOfLines={2}>
-                        {item.message}
-                    </Text>
-                    {!item.is_read && <View style={[styles.unreadDot, { backgroundColor: themeColors.accent }]} />}
-                </View>
-            </GlassCard>
+                    <View style={styles.contentBox}>
+                        <View style={styles.headerRow}>
+                            <Text style={[styles.notifTitle, { color: textColor }]}>{item.title}</Text>
+                            <Text style={[styles.timeText, { color: subTextColor }]}>{item.time}</Text>
+                        </View>
+                        <Text style={[styles.messageText, { color: subTextColor }]} numberOfLines={2}>
+                            {item.message}
+                        </Text>
+                        {!item.is_read && <View style={[styles.unreadDot, { backgroundColor: themeColors.accent }]} />}
+                    </View>
+                </GlassCard>
+            </TouchableOpacity>
         </AnimatedCard>
     );
 

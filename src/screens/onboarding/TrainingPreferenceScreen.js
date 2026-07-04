@@ -13,15 +13,53 @@ const { width } = Dimensions.get('window');
 
 const TrainingPreferenceScreen = ({ navigation, route }) => {
     const { userData } = route.params || {};
-    const [selectedLocation, setSelectedLocation] = useState('gym');
+
+    const getLocationsByGoal = (goal) => {
+        switch (goal) {
+            case 'swimming':
+                return [
+                    { id: 'pool', title: 'Standard Pool', desc: 'Standard 25m/50m pool access.', icon: 'water' },
+                    { id: 'open_water', title: 'Open Water', desc: 'Lakes, oceans, or outdoor reservoirs.', icon: 'boat-outline' },
+                    { id: 'dryland', title: 'Dryland Base', desc: 'Home resistance bands & swim core.', icon: 'home' },
+                ];
+            case 'running':
+                return [
+                    { id: 'outdoor', title: 'Road & Trail', desc: 'Tracks, road courses, & natural trails.', icon: 'walk' },
+                    { id: 'gym', title: 'Treadmill Club', desc: 'Indoor treadmill runs & supporting lift gear.', icon: 'barbell' },
+                    { id: 'home', title: 'Home Prehab', desc: 'Cardio intervals, jumping rope, & core care.', icon: 'home' },
+                ];
+            case 'boxing':
+            case 'martial_arts':
+                return [
+                    { id: 'gym', title: 'Fight Dojo', desc: 'Heavy bags, training ring, mats & gear.', icon: 'fitness' },
+                    { id: 'home', title: 'Home Dojo', desc: 'Shadow work, shadow boxing, & speed sets.', icon: 'home' },
+                    { id: 'outdoor', title: 'Roadwork Out', desc: 'Outdoor aerobic stamina & sprints.', icon: 'flag' },
+                ];
+            case 'cycling':
+                return [
+                    { id: 'outdoor', title: 'Road & Hills', desc: 'Cycling tracks, highway courses, & hill loops.', icon: 'bicycle' },
+                    { id: 'gym', title: 'Spin Studio', desc: 'Stationary cycle, smart trainer, or spin bike.', icon: 'repeat' },
+                    { id: 'home', title: 'Home Base', desc: 'Cyclist strength supporting runs & leg recovery.', icon: 'home' },
+                ];
+            case 'yoga_flexibility':
+                return [
+                    { id: 'studio', title: 'Yoga Studio', desc: 'Dedicated studio room, blocks & mats.', icon: 'sparkles' },
+                    { id: 'home', title: 'Quiet Home', desc: 'Quiet mat space with recovery tools.', icon: 'home' },
+                    { id: 'outdoor', title: 'Nature Mat', desc: 'Open park, garden lawns, or ocean beach.', icon: 'leaf' },
+                ];
+            default:
+                return [
+                    { id: 'home', title: 'Home Base', desc: 'No equipment needed. Bodyweight focus.', icon: 'home' },
+                    { id: 'gym', title: 'Power Gym', desc: 'Full gear access. Max hypertrophy potential.', icon: 'business' },
+                    { id: 'outdoor', title: 'Wild Hybrid', desc: 'Outdoor stations and dynamic environments.', icon: 'leaf' },
+                ];
+        }
+    };
+
+    const LOCATIONS = getLocationsByGoal(userData?.goal);
+    const [selectedLocation, setSelectedLocation] = useState(LOCATIONS[0]?.id || 'gym');
     const [selectedDays, setSelectedDays] = useState(3);
     const [selectedIntensity, setSelectedIntensity] = useState('moderate');
-
-    const LOCATIONS = [
-        { id: 'home', title: 'Home Base', desc: 'No equipment needed. Bodyweight focus.', icon: 'home' },
-        { id: 'gym', title: 'Power Gym', desc: 'Full gear access. Max hypertrophy potential.', icon: 'business' },
-        { id: 'outdoor', title: 'Wild Hybrid', desc: 'Outdoor stations and dynamic environments.', icon: 'leaf' },
-    ];
 
     const INTENSITIES = [
         { id: 'light', title: 'Light', desc: 'Focus on mobility and health.', icon: 'pulse' },
@@ -33,7 +71,7 @@ const TrainingPreferenceScreen = ({ navigation, route }) => {
 
     const handleNext = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        navigation.navigate('DietaryPreference', {
+        navigation.navigate('PhysicalAssessment', {
             userData: {
                 ...userData,
                 training_location: selectedLocation,
