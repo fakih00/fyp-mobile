@@ -100,6 +100,7 @@ const ShopScreen = ({ navigation }) => {
 
     const loadData = async () => {
         setLoading(true);
+        console.log("Loading reward inventory items and redemption ledger...");
         try {
             const [rewardsRes, historyRes] = await Promise.all([
                 api.getRewards(),
