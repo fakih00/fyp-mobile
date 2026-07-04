@@ -114,6 +114,7 @@ const WorkoutPlayerScreen = ({ navigation }) => {
     // Initialize TensorFlow and MoveNet
     useEffect(() => {
         async function initTF() {
+            console.log("Initializing TensorFlow.js and loading MoveNet pose-detector model...");
             try {
                 await tf.ready();
                 const model = poseDetection.SupportedModels.MoveNet;
