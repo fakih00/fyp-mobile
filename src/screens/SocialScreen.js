@@ -60,7 +60,7 @@ const SocialScreen = ({ navigation }) => {
 
     const fetchSocialData = async () => {
         if (!user?.user_id) return;
-
+        console.log("Fetching community posts, clubs, and friend lists...");
         try {
             const [feedRes, clubsRes, friendsRes] = await Promise.all([
                 api.getFeed(),
