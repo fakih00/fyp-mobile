@@ -136,8 +136,6 @@ class WorkoutAI {
 
         $locationContext = $this->getLocationContext($location);
 
-        // Injury Rehabilitation Mode — when user has active injuries, pivot the plan
-        // to prioritize healing while still honouring sport goal where safe.
         $hasInjuries = ($injuries !== 'None' && !empty(trim($injuries)));
         $injuryRehabContext = '';
         if ($hasInjuries) {
