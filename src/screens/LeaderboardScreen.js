@@ -62,6 +62,7 @@ const LeaderboardScreen = ({ navigation }) => {
 
     const fetchLeaderboard = useCallback(async (isRefreshing = false) => {
         if (!user?.user_id) return;
+        console.log("Fetching real-time rankings and league positions for leaderboard...");
         if (!isRefreshing) setLoading(true);
         try {
             const res = await api.getLeaderboard(mode);
