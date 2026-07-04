@@ -271,6 +271,7 @@ const BodyRecoveryScreen = ({ navigation }) => {
     }, []);
 
     const loadData = async () => {
+        console.log("Hydrating active recovery profile and plan data...");
         try {
             // 1. Fetch User Profile
             const res = await api.getUser();
