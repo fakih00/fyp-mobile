@@ -85,6 +85,7 @@ const NutritionPlanScreen = ({ navigation }) => {
     const handleGeneratePlan = async () => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setGenerating(true);
+        console.log("Initiating AI synthesis for nutrition plan generation...");
         try {
             const res = await api.post('generatePlan', { type: 'nutrition' });
             if (res.status !== 200) Alert.alert('Error', res.data?.message || 'Failed to generate plan.');
