@@ -148,6 +148,7 @@ const AchievementsScreen = ({ navigation }) => {
 
     const loadAchievements = async () => {
         setLoading(true);
+        console.log("Loading achievements from API...");
         try {
             const res = await api.getAchievements();
             if (res.status === 200) {
