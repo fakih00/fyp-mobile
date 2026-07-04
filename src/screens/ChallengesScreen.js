@@ -41,6 +41,7 @@ const ChallengesScreen = ({ navigation }) => {
 
     const loadData = async () => {
         setLoading(true);
+        console.log("Loading active and available challenges from database...");
         try {
             const res = await api.getChallenges();
             if (res.status === 200) {
