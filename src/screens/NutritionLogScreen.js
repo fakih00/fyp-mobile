@@ -22,8 +22,8 @@ const DAY_MAP = {
     'Thu': 'Thursday', 'Fri': 'Friday', 'Sat': 'Saturday', 'Sun': 'Sunday'
 };
 
-const NutritionLogScreen = () => {
-    const { user, meals, nutritionGoal, isRecomp, macroTargets, consumedMacros } = useContext(AppContext);
+const NutritionLogScreen = ({ navigation }) => {
+    const { user, meals, nutritionGoal, isRecomp, macroTargets, consumedMacros, colors: themeColors } = useContext(AppContext);
     const [selectedDay, setSelectedDay] = useState(DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]);
 
     // Get real daily totals
@@ -80,7 +80,7 @@ const NutritionLogScreen = () => {
                         <Text style={styles.subtitle}>{isRecomp ? "Recomposition: Performance Fuel" : "Fuel your performance"}</Text>
                     </View>
                     <TouchableOpacity style={styles.addMealBtn} onPress={() => navigation.navigate('NutritionPlan')}>
-                        <LinearGradient colors={COLORS.primaryGradient} style={styles.addBtnGradient}>
+                        <LinearGradient colors={themeColors.gradient} style={styles.addBtnGradient}>
                             <Ionicons name="restaurant" size={24} color={COLORS.white} />
                         </LinearGradient>
                     </TouchableOpacity>
@@ -91,7 +91,7 @@ const NutritionLogScreen = () => {
                     {DAYS.map(day => (
                         <TouchableOpacity
                             key={day}
-                            style={[styles.dayItem, selectedDay === day && styles.dayItemActive]}
+                            style={[styles.dayItem, selectedDay === day && { backgroundColor: themeColors.accent }]}
                             onPress={() => setSelectedDay(day)}
                         >
                             <Text style={[styles.dayText, selectedDay === day && styles.dayTextActive]}>{day}</Text>
@@ -103,14 +103,14 @@ const NutritionLogScreen = () => {
                 <AnimatedCard delay={100} style={styles.mainCardContainer}>
                     <GlassCard style={styles.mainCard}>
                         <View style={styles.calorieInfo}>
-                            <View style={[styles.calorieCircle, isRecomp && { borderColor: '#10B981' + '40' }]}>
+                            <View style={[styles.calorieCircle, { borderColor: themeColors.accent + '20' }, isRecomp && { borderColor: themeColors.accent + '40' }]}>
                                 <Text style={styles.caloriesNumber}>{remaining}</Text>
                                 <Text style={styles.caloriesLabel}>Remaining</Text>
-                                {isRecomp && <Text style={styles.recompMiniLabelLog}>RECOMP</Text>}
+                                {isRecomp && <Text style={[styles.recompMiniLabelLog, { color: themeColors.accent }]}>RECOMP</Text>}
                             </View>
                             <View style={styles.calorieBreakdown}>
                                 <View style={styles.breakdownItem}>
-                                    <Ionicons name="restaurant" size={16} color={COLORS.primary} />
+                                    <Ionicons name="restaurant" size={16} color={themeColors.accent} />
                                     <View>
                                         <Text style={styles.breakdownValue}>{dayConsumed.calories}</Text>
                                         <Text style={styles.breakdownLabel}>Eaten</Text>
@@ -165,7 +165,7 @@ const NutritionLogScreen = () => {
                         <View style={styles.chartVisual}>
                             <View style={styles.chartLinesContainer}>
                                 {[40, 60, 45, 70, 55, 30, 40].map((h, i) => (
-                                    <View key={i} style={[styles.chartBar, { height: h }]} />
+                                    <View key={i} style={[styles.chartBar, { height: h, backgroundColor: themeColors.accent + '30' }]} />
                                 ))}
                             </View>
                         </View>
@@ -177,16 +177,16 @@ const NutritionLogScreen = () => {
                     <View style={styles.sectionHeader}>
                         <Text style={styles.sectionTitle}>Daily Log</Text>
                         <TouchableOpacity>
-                            <Text style={styles.seeAllText}>Edit Log</Text>
+                            <Text style={[styles.seeAllText, { color: themeColors.accent }]}>Edit Log</Text>
                         </TouchableOpacity>
                     </View>
                     {dayMeals.map((meal, index) => (
                         <AnimatedCard key={meal.id} delay={300 + index * 100} style={styles.mealCard}>
-                            <View style={styles.mealIcon}>
+                            <View style={[styles.mealIcon, { backgroundColor: themeColors.accent + '10' }]}>
                                 <Ionicons
                                     name={meal.type === 'Breakfast' ? 'sunny' : meal.type === 'Snack' ? 'cafe' : 'restaurant'}
                                     size={20}
-                                    color={COLORS.primary}
+                                    color={themeColors.accent}
                                 />
                             </View>
                             <View style={styles.mealInfo}>
@@ -198,7 +198,7 @@ const NutritionLogScreen = () => {
                                     <Text style={styles.mealMacroText}>F: {meal.fats}g</Text>
                                 </View>
                             </View>
-                            <Text style={styles.mealCals}>{meal.calories} kcal</Text>
+                            <Text style={[styles.mealCals, { color: themeColors.accent }]}>{meal.calories} kcal</Text>
                         </AnimatedCard>
                     ))}
                 </View>
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.white,
     },
     dayItemActive: {
-        backgroundColor: COLORS.primary,
+        // backgroundColor handled dynamically
     },
     dayText: {
         ...FONTS.body4,
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
         height: 140,
         borderRadius: 70,
         borderWidth: 10,
-        borderColor: COLORS.primary + '20',
+        // borderColor handled dynamically
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
     },
     seeAllText: {
         ...FONTS.body4,
-        color: COLORS.primary,
+        // color handled dynamically
         fontWeight: 'bold',
     },
     microCard: {
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
     },
     chartBar: {
         width: 30,
-        backgroundColor: COLORS.primary + '30',
+        // backgroundColor handled dynamically
         borderRadius: 8,
     },
     mealCard: {
@@ -458,7 +458,7 @@ const styles = StyleSheet.create({
         width: 45,
         height: 45,
         borderRadius: 12,
-        backgroundColor: COLORS.primary + '10',
+        // backgroundColor handled dynamically
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 15,
@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
     },
     mealCals: {
         ...FONTS.h4,
-        color: COLORS.primary,
+        // color handled dynamically
         fontWeight: 'bold',
     },
 });

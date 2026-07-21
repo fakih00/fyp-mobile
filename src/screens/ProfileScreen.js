@@ -26,8 +26,11 @@ import { AnimatedCard, GlassCard, AuraBackground } from '../components';
 
 const { width } = Dimensions.get('window');
 
-const ProfileScreen = ({ navigation }) => {
+const ProfileScreen = ({ route, navigation }) => {
     const { user, updateUserProfileImage, logout, themeName, setThemeName, colors: themeColors } = useContext(AppContext);
+    const { friendId } = route?.params || {};
+    const isFriendProfile = !!friendId;
+
     const [profileData, setProfileData] = useState(null);
     const [achievements, setAchievements] = useState([]);
     const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -46,12 +49,12 @@ const ProfileScreen = ({ navigation }) => {
     useFocusEffect(
         useCallback(() => {
             fetchUserProfile();
-        }, [])
+        }, [friendId])
     );
 
     const fetchUserProfile = async () => {
         try {
-            const res = await api.getUser();
+            const res = await api.getUser(friendId || null);
             if (res.status === 200) {
                 setProfileData(res.data);
                 setAchievements(res.data.achievements || []);
@@ -191,28 +194,30 @@ const ProfileScreen = ({ navigation }) => {
                         <View style={styles.profileMainRow}>
                             <View style={styles.avatarWrapperElite}>
                                 <TouchableOpacity
-                                    activeOpacity={0.9}
-                                    onPress={pickImage}
+                                    activeOpacity={isFriendProfile ? 1 : 0.9}
+                                    onPress={isFriendProfile ? null : pickImage}
                                     style={styles.avatarBorderElite}
                                 >
-                                    {user.profileImage ? (
-                                        <Image source={{ uri: user.profileImage }} style={styles.avatarInnerImage} />
+                                    {(isFriendProfile ? profileData?.profile?.avatar : user.profileImage) ? (
+                                        <Image source={{ uri: isFriendProfile ? profileData?.profile?.avatar : user.profileImage }} style={styles.avatarInnerImage} />
                                     ) : (
                                         <LinearGradient colors={themeColors.gradient} style={styles.avatarInnerElite}>
-                                            <Text style={styles.avatarTextElite}>{user.name[0]}</Text>
+                                            <Text style={styles.avatarTextElite}>{(isFriendProfile ? profileData?.name : user.name)?.[0] || '?'}</Text>
                                         </LinearGradient>
                                     )}
                                 </TouchableOpacity>
-                                <TouchableOpacity style={styles.editBadgeElite} onPress={pickImage}>
-                                    <Ionicons name="camera" size={12} color={COLORS.white} />
-                                </TouchableOpacity>
+                                {!isFriendProfile && (
+                                    <TouchableOpacity style={styles.editBadgeElite} onPress={pickImage}>
+                                        <Ionicons name="camera" size={12} color={COLORS.white} />
+                                    </TouchableOpacity>
+                                )}
                             </View>
 
                             <View style={styles.userInfoElite}>
-                                <Text style={styles.userNameElite}>{user.name}</Text>
+                                <Text style={styles.userNameElite}>{isFriendProfile ? (profileData?.name || 'Loading...') : user.name}</Text>
                                 <View style={[styles.statusBadgeElite, { backgroundColor: themeColors.accent + '15' }]}>
                                     <Ionicons name="shield-checkmark" size={10} color={themeColors.accent} />
-                                    <Text style={[styles.statusTextElite, { color: themeColors.accent }]}>LEVEL {user.level} ATHLETE</Text>
+                                    <Text style={[styles.statusTextElite, { color: themeColors.accent }]}>LEVEL {isFriendProfile ? (profileData?.profile?.level || 1) : user.level} ATHLETE</Text>
                                 </View>
                             </View>
                         </View>
@@ -289,55 +294,73 @@ const ProfileScreen = ({ navigation }) => {
                     </ScrollView>
                 </View>
 
-                {/* Settings Group 1 */}
-                <View style={styles.sectionElite}>
-                    <Text style={styles.sectionTitleElite}>Account & Security</Text>
-                    <AnimatedCard delay={600} style={styles.settingsCardElite}>
-                        <GlassCard style={styles.settingsGlass}>
-                            {renderSettingItem('person-outline', 'Edit Profile', () => handleOpenSettings('Edit Profile'))}
-                            {renderSettingItem('notifications-outline', 'Notifications', () => handleOpenSettings('Notifications'))}
-                            {renderSettingItem('shield-checkmark-outline', 'Privacy & Security', () => handleOpenSettings('Privacy & Security'))}
-                            {renderSettingItem('card-outline', 'Elite Subscription', () => handleOpenSettings('Elite Subscription'), true)}
-                        </GlassCard>
-                    </AnimatedCard>
-                </View>
+                {/* Settings — only for own profile */}
+                {!isFriendProfile && (
+                    <>
+                        {/* Settings Group 1 */}
+                        <View style={styles.sectionElite}>
+                            <Text style={styles.sectionTitleElite}>Account & Security</Text>
+                            <AnimatedCard delay={600} style={styles.settingsCardElite}>
+                                <GlassCard style={styles.settingsGlass}>
+                                    {renderSettingItem('person-outline', 'Edit Profile', () => handleOpenSettings('Edit Profile'))}
+                                    {renderSettingItem('notifications-outline', 'Notifications', () => handleOpenSettings('Notifications'))}
+                                    {renderSettingItem('shield-checkmark-outline', 'Privacy & Security', () => handleOpenSettings('Privacy & Security'))}
+                                    {renderSettingItem('card-outline', 'Elite Subscription', () => handleOpenSettings('Elite Subscription'), true)}
+                                </GlassCard>
+                            </AnimatedCard>
+                        </View>
 
-                {/* Settings Group 2 */}
-                <View style={styles.sectionElite}>
-                    <Text style={styles.sectionTitleElite}>App Settings</Text>
-                    <AnimatedCard delay={700} style={styles.settingsCardElite}>
-                        <GlassCard style={styles.settingsGlass}>
-                            {renderSettingItem('color-palette-outline', 'App Theme', () => handleOpenSettings('App Theme'))}
-                            {renderSettingItem('help-circle-outline', 'Support Center', () => handleOpenSettings('Support Center'))}
-                            {renderSettingItem('information-circle-outline', 'About App', () => handleOpenSettings('About App'), true)}
-                        </GlassCard>
-                    </AnimatedCard>
-                </View>
+                        {/* Settings Group 2 */}
+                        <View style={styles.sectionElite}>
+                            <Text style={styles.sectionTitleElite}>App Settings</Text>
+                            <AnimatedCard delay={700} style={styles.settingsCardElite}>
+                                <GlassCard style={styles.settingsGlass}>
+                                    {renderSettingItem('color-palette-outline', 'App Theme', () => handleOpenSettings('App Theme'))}
+                                    {renderSettingItem('help-circle-outline', 'Support Center', () => handleOpenSettings('Support Center'))}
+                                    {renderSettingItem('information-circle-outline', 'About App', () => handleOpenSettings('About App'), true)}
+                                </GlassCard>
+                            </AnimatedCard>
+                        </View>
 
-                <TouchableOpacity
-                    style={styles.logoutBtnElite}
-                    onPress={() => {
-                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                        Alert.alert(
-                            "Logout",
-                            "Are you sure you want to exit your Elite session?",
-                            [
-                                { text: "Cancel", style: "cancel" },
-                                {
-                                    text: "Sign Out",
-                                    style: "destructive",
-                                    onPress: () => {
-                                        logout();
-                                        navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-                                    }
-                                }
-                            ]
-                        );
-                    }}
-                >
-                    <Ionicons name="log-out" size={20} color="#EF4444" />
-                    <Text style={styles.logoutTextElite}>SIGN OUT</Text>
-                </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.logoutBtnElite}
+                            onPress={() => {
+                                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                                Alert.alert(
+                                    "Logout",
+                                    "Are you sure you want to exit your Elite session?",
+                                    [
+                                        { text: "Cancel", style: "cancel" },
+                                        {
+                                            text: "Sign Out",
+                                            style: "destructive",
+                                            onPress: () => {
+                                                logout();
+                                                navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+                                            }
+                                        }
+                                    ]
+                                );
+                            }}
+                        >
+                            <Ionicons name="log-out" size={20} color="#EF4444" />
+                            <Text style={styles.logoutTextElite}>SIGN OUT</Text>
+                        </TouchableOpacity>
+                    </>
+                )}
+
+                {/* Friend Profile Actions */}
+                {isFriendProfile && (
+                    <View style={styles.friendActionsSection}>
+                        <TouchableOpacity
+                            style={[styles.friendActionPrimaryBtn, { backgroundColor: themeColors.accent }]}
+                            onPress={() => navigation.navigate('Chat', { friend: { id: friendId, name: profileData?.name, avatar: profileData?.profile?.avatar } })}
+                        >
+                            <Ionicons name="chatbubble-ellipses" size={18} color={COLORS.white} />
+                            <Text style={styles.friendActionPrimaryText}>Send Message</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
 
                 <View style={{ height: 100 }} />
             </ScrollView>
@@ -353,7 +376,6 @@ const ProfileScreen = ({ navigation }) => {
                                     <Ionicons name="close-circle" size={28} color="#94A3B8" />
                                 </TouchableOpacity>
                             </View>
-
                             <View style={styles.modalBodyElite}>
                                 {selectedSetting === 'App Theme' ? (
                                     <View style={styles.themeGridElite}>
@@ -381,6 +403,78 @@ const ProfileScreen = ({ navigation }) => {
                                             </TouchableOpacity>
                                         ))}
                                     </View>
+                                ) : selectedSetting === 'About App' ? (
+                                    <View style={styles.aboutAppContainer}>
+                                        <View style={styles.aboutAppLogoRow}>
+                                            <View style={[styles.aboutAppLogoBg, { backgroundColor: themeColors.accent + '20' }]}>
+                                                <Ionicons name="sparkles" size={28} color={themeColors.accent} />
+                                            </View>
+                                            <View style={styles.aboutAppTextStack}>
+                                                <Text style={styles.aboutAppName}>Elite Fitness AI</Text>
+                                                <Text style={styles.aboutAppVer}>Version 1.4.0 (Build 2026)</Text>
+                                            </View>
+                                        </View>
+                                        <Text style={styles.aboutAppDesc}>
+                                            An advanced, athletic intelligence platform engineered to synchronize biomechanical tracking, nutritional algorithms, and real-time training optimizations into a personalized fitness blueprint.
+                                        </Text>
+                                        <View style={styles.aboutAppMetaRow}>
+                                            <View style={styles.aboutAppMetaItem}>
+                                                <Text style={styles.aboutAppMetaTitle}>AI Model</Text>
+                                                <Text style={[styles.aboutAppMetaValue, { color: themeColors.accent }]}>Gemini 3.5 Pro</Text>
+                                            </View>
+                                            <View style={styles.aboutAppMetaItem}>
+                                                <Text style={styles.aboutAppMetaTitle}>Platform</Text>
+                                                <Text style={styles.aboutAppMetaValue}>Hybrid Engine</Text>
+                                            </View>
+                                        </View>
+                                        <Text style={styles.aboutAppCopyright}>© 2026 Elite Fitness Inc. All rights reserved.</Text>
+                                    </View>
+                                ) : selectedSetting === 'Support Center' ? (
+                                    <View style={styles.supportContainer}>
+                                        <Text style={styles.supportIntro}>How can we assist your athletic journey today?</Text>
+                                        
+                                        {/* Contact Channels */}
+                                        <View style={styles.supportChannelsRow}>
+                                            <TouchableOpacity 
+                                                style={[styles.supportChannelCard, { borderColor: themeColors.accent + '30' }]}
+                                                onPress={() => Alert.alert("Contact Support", "Please email us at: support@elitefitness.ai")}
+                                            >
+                                                <Ionicons name="mail" size={20} color={themeColors.accent} />
+                                                <Text style={styles.supportChannelTitle}>Email Support</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity 
+                                                style={[styles.supportChannelCard, { borderColor: themeColors.accent + '30' }]}
+                                                onPress={() => {
+                                                    setShowSettingsModal(false);
+                                                    navigation.navigate('AIChat');
+                                                }}
+                                            >
+                                                <Ionicons name="chatbubble-ellipses" size={20} color={themeColors.accent} />
+                                                <Text style={styles.supportChannelTitle}>Ask AI Coach</Text>
+                                            </TouchableOpacity>
+                                        </View>
+
+                                        {/* FAQs */}
+                                        <Text style={styles.supportFaqHeader}>Frequently Asked Questions</Text>
+                                        <View style={styles.supportFaqList}>
+                                            {[
+                                                { q: "How does AI body scanning work?", a: "AI body recovery uses computer vision to check posture alignments and movement velocity." },
+                                                { q: "How do I change my daily goal?", a: "Navigate to Edit Profile from account settings and change your Primary Goal." },
+                                                { q: "Are training plans fully customized?", a: "Yes, our algorithms dynamically rebuild plans weekly based on logs." }
+                                            ].map((faq, idx) => (
+                                                <TouchableOpacity 
+                                                    key={idx} 
+                                                    style={styles.supportFaqItem}
+                                                    onPress={() => Alert.alert(faq.q, faq.a)}
+                                                >
+                                                    <View style={{ flex: 1 }}>
+                                                        <Text style={styles.supportFaqQ} numberOfLines={1}>{faq.q}</Text>
+                                                    </View>
+                                                    <Ionicons name="chevron-forward" size={14} color="#94A3B8" />
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+                                    </View>
                                 ) : (
                                     <Text style={styles.modalPlaceholderText}>
                                         This section is coming soon. Here you'll be able to manage your {selectedSetting?.toLowerCase()} settings with our advanced AI interface.
@@ -405,6 +499,30 @@ const ProfileScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+    },
+    friendActionsSection: {
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        gap: 12,
+    },
+    friendActionPrimaryBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        paddingVertical: 16,
+        borderRadius: 18,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 6,
+    },
+    friendActionPrimaryText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: 'bold',
+        letterSpacing: 0.3,
     },
     headerStack: {
         height: 140,
@@ -784,6 +902,121 @@ const styles = StyleSheet.create({
     floatingIcon: {
         position: 'absolute',
         zIndex: 1,
+    },
+    aboutAppContainer: {
+        gap: 15,
+    },
+    aboutAppLogoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 15,
+        marginBottom: 5,
+    },
+    aboutAppLogoBg: {
+        width: 56,
+        height: 56,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    aboutAppTextStack: {
+        gap: 3,
+    },
+    aboutAppName: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: COLORS.text,
+    },
+    aboutAppVer: {
+        fontSize: 11,
+        color: COLORS.textSecondary,
+        fontWeight: '600',
+    },
+    aboutAppDesc: {
+        fontSize: 13,
+        color: COLORS.textSecondary,
+        lineHeight: 20,
+        fontWeight: '500',
+    },
+    aboutAppMetaRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        backgroundColor: 'rgba(0,0,0,0.03)',
+        padding: 15,
+        borderRadius: 18,
+        marginTop: 5,
+    },
+    aboutAppMetaItem: {
+        gap: 4,
+    },
+    aboutAppMetaTitle: {
+        fontSize: 10,
+        fontWeight: '800',
+        color: COLORS.textSecondary,
+        letterSpacing: 0.5,
+    },
+    aboutAppMetaValue: {
+        fontSize: 13,
+        fontWeight: '900',
+        color: COLORS.text,
+    },
+    aboutAppCopyright: {
+        fontSize: 10,
+        color: COLORS.textSecondary,
+        textAlign: 'center',
+        marginTop: 10,
+        fontWeight: '600',
+    },
+    supportContainer: {
+        gap: 15,
+    },
+    supportIntro: {
+        fontSize: 13,
+        color: COLORS.textSecondary,
+        fontWeight: '600',
+        marginBottom: 5,
+    },
+    supportChannelsRow: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    supportChannelCard: {
+        flex: 1,
+        borderWidth: 1.5,
+        borderRadius: 18,
+        padding: 16,
+        alignItems: 'center',
+        gap: 8,
+        backgroundColor: 'rgba(0,0,0,0.02)',
+    },
+    supportChannelTitle: {
+        fontSize: 12,
+        fontWeight: '800',
+        color: COLORS.text,
+    },
+    supportFaqHeader: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: COLORS.text,
+        marginTop: 10,
+        letterSpacing: 0.5,
+    },
+    supportFaqList: {
+        gap: 8,
+    },
+    supportFaqItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+        paddingHorizontal: 15,
+        backgroundColor: 'rgba(0,0,0,0.02)',
+        borderRadius: 14,
+    },
+    supportFaqQ: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: COLORS.text,
     },
 });
 

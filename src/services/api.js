@@ -1,7 +1,7 @@
 // Replace with your computer's local IP if testing on a physical device.
 // For Android Emulator, use 'http://10.0.2.2:8000/api'
 // For iOS Simulator, use 'http://localhost:8000/api'
-const BASE_URL = 'http://192.168.10.173:8000/api';
+const BASE_URL = 'http://192.168.68.123:8000/api';
 
 // Internal token store — set after login, cleared on logout
 let _token = null;
@@ -194,8 +194,8 @@ export const api = {
     },
 
     // ─── User & Profile ───────────────────────────────────────────
-    async getUser() {
-        return this.get('getUser');
+    async getUser(userId = null) {
+        return this.get('getUser', userId ? { user_id: userId } : {});
     },
 
     async updateProfile(data) {
@@ -401,6 +401,16 @@ export const api = {
         return this.post('aiChat', { message, history });
     },
 
+    /** Fetch persisted AI chat history from the database */
+    async getAIChatHistory() {
+        return this.get('getAIChatHistory');
+    },
+
+    /** Clear all persisted AI chat history for the current user */
+    async clearAIChatHistory() {
+        return this.post('clearAIChatHistory', {});
+    },
+
     // ─── AI Injury & Recovery ─────────────────────────────────────
     /**
      * Generate an AI-powered soft-tissue recovery plan.
@@ -466,5 +476,35 @@ export const api = {
     // ─── Achievements ─────────────────────────────────────────────
     async getAchievements() {
         return this.get('getAchievements');
+    },
+
+    // ─── Messages / Conversations ─────────────────────────────────
+    async getConversations() {
+        return this.get('getConversations');
+    },
+
+    async getMessages(friendId) {
+        return this.get('getMessages', { friend_id: friendId });
+    },
+
+    async sendMessage(receiverId, content) {
+        return this.post('sendMessage', { receiver_id: receiverId, content });
+    },
+
+    // ─── Friends ──────────────────────────────────────────────────
+    async getFriends() {
+        return this.get('getFriends');
+    },
+
+    async addFriend(friendId) {
+        return this.post('addFriend', { friend_id: friendId });
+    },
+
+    async getFriendRequests() {
+        return this.get('getFriendRequests');
+    },
+
+    async respondToFriendRequest(requestId, accept) {
+        return this.post('respondToFriendRequest', { request_id: requestId, accept });
     },
 };

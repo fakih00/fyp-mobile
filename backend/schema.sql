@@ -40,6 +40,7 @@ CREATE TABLE `user_profiles` (
   `dislikes` text DEFAULT NULL,
   `allergies` text DEFAULT NULL,
   `meals_per_day` int(11) NOT NULL DEFAULT 4,
+  `theme` varchar(50) DEFAULT 'Emerald',
   PRIMARY KEY (`user_id`),
   CONSTRAINT `fk_user_profile` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

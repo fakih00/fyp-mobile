@@ -5,7 +5,10 @@ import { COLORS } from '../constants/Theme';
 
 const { width } = Dimensions.get('window');
 
+import { AppContext } from '../context/AppContext';
+
 const WeeklyChart = ({ data = [20, 45, 28, 80, 99, 43, 88], height = 80 }) => {
+    const { colors: themeColors } = React.useContext(AppContext);
     const chartWidth = width - 100;
     const padding = 10;
 
@@ -27,14 +30,18 @@ const WeeklyChart = ({ data = [20, 45, 28, 80, 99, 43, 88], height = 80 }) => {
         d += ` L ${points[i].x} ${points[i].y}`;
     }
 
+    // Dynamic gradient colors
+    const gradStart = themeColors.secondary || themeColors.accent;
+    const gradEnd = themeColors.accent;
+
     return (
         <View style={styles.container}>
             <View style={styles.chartWrapper}>
                 <Svg width={chartWidth + padding * 2} height={height}>
                     <Defs>
                         <LinearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
-                            <Stop offset="0" stopColor="#34D399" stopOpacity="1" />
-                            <Stop offset="1" stopColor="#10B981" stopOpacity="1" />
+                            <Stop offset="0" stopColor={gradStart} stopOpacity="1" />
+                            <Stop offset="1" stopColor={gradEnd} stopOpacity="1" />
                         </LinearGradient>
                     </Defs>
 
@@ -56,7 +63,7 @@ const WeeklyChart = ({ data = [20, 45, 28, 80, 99, 43, 88], height = 80 }) => {
                             cy={p.y}
                             r="3"
                             fill={COLORS.white}
-                            stroke="#10B981"
+                            stroke={themeColors.accent}
                             strokeWidth="2"
                         />
                     ))}

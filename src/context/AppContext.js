@@ -17,8 +17,18 @@ export const AppProvider = ({ children }) => {
     const [macroTargets, setMacroTargets] = useState({ protein: 165, carbs: 220, fats: 73 });
 
     // Theme state
-    const [themeName, setThemeName] = useState(DEFAULT_THEME);
+    const [themeName, rawSetThemeName] = useState(DEFAULT_THEME);
     const colors = THEMES[themeName] || THEMES[DEFAULT_THEME];
+    
+    const setThemeName = async (newTheme) => {
+        rawSetThemeName(newTheme);
+        try {
+            await api.updateProfile({ theme: newTheme });
+        } catch (e) {
+            console.error("Failed to update theme in database", e);
+        }
+    };
+
     const [unreadCount, setUnreadCount] = useState(0);
 
     // Function to load notifications count
@@ -57,6 +67,9 @@ export const AppProvider = ({ children }) => {
                 name: res.data.name,
                 email: res.data.email
             }));
+            if (userData.theme) {
+                setThemeName(userData.theme);
+            }
         }
 
         const chalRes = await api.getChallenges();

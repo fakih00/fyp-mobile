@@ -302,7 +302,7 @@ const HomeScreen = ({ navigation }) => {
                                     style={styles.avatarElite}
                                 />
                             </BlurView>
-                            <View style={styles.onlineStatus} />
+                            <View style={[styles.onlineStatus, { backgroundColor: themeColors.accent, borderColor: themeColors.gradient[0] || '#064E3B' }]} />
                         </TouchableOpacity>
 
                         <View style={styles.titleStack}>
@@ -361,7 +361,7 @@ const HomeScreen = ({ navigation }) => {
     };
 
     const renderUserDashboard = () => {
-        if (loading) return <ActivityIndicator color={COLORS.primary} style={{ marginTop: 50 }} />;
+        if (loading) return <ActivityIndicator color={themeColors.accent} style={{ marginTop: 50 }} />;
 
         if (!dashboardData) {
             return (
@@ -382,7 +382,7 @@ const HomeScreen = ({ navigation }) => {
                             })}
                         >
                             <Text style={styles.viewProgressTextElite}>COMPLETE SETUP</Text>
-                            <Ionicons name="arrow-forward" size={14} color="#10B981" />
+                            <Ionicons name="arrow-forward" size={14} color={themeColors.accent} />
                         </TouchableOpacity>
                     </View>
                 </GlassCard>
@@ -404,7 +404,7 @@ const HomeScreen = ({ navigation }) => {
                     </View>
                     <View style={styles.levelBadgeElite}>
                         <LinearGradient
-                            colors={['#10B981', '#059669']}
+                            colors={themeColors.gradient}
                             style={styles.levelGrad}
                         >
                             <Text style={styles.levelValElite}>LVL {user_info.level}</Text>
@@ -419,7 +419,7 @@ const HomeScreen = ({ navigation }) => {
                     </View>
                     <View style={styles.expBarBg}>
                         <LinearGradient
-                            colors={['#10B981', '#34D399']}
+                            colors={themeColors.gradient}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
                             style={[styles.expBarFill, { width: `${progress}%` }]}
@@ -440,7 +440,7 @@ const HomeScreen = ({ navigation }) => {
                         />
                     </View>
                     <View style={styles.metricGridElite}>
-                        <MetricItem icon="scale" val={`${user_info.weight} kg`} label="WEIGHT" color="#10B981" />
+                        <MetricItem icon="scale" val={`${user_info.weight} kg`} label="WEIGHT" color={themeColors.accent} />
                         <View style={styles.metricDivider} />
                         <MetricItem icon="restaurant" val={daily_stats.calories} label="INCAL" color="#FF6B6B" />
                         <View style={styles.metricDivider} />
@@ -460,8 +460,8 @@ const HomeScreen = ({ navigation }) => {
                     style={styles.viewProgressBtnElite}
                     onPress={() => navigation.navigate('Progress')}
                 >
-                    <Text style={styles.viewProgressTextElite}>VIEW DETAILED ANALYTICS</Text>
-                    <Ionicons name="chevron-forward" size={14} color="#10B981" />
+                    <Text style={[styles.viewProgressTextElite, { color: themeColors.accent }]}>VIEW DETAILED ANALYTICS</Text>
+                    <Ionicons name="chevron-forward" size={14} color={themeColors.accent} />
                 </TouchableOpacity>
             </GlassCard>
         );
@@ -643,9 +643,9 @@ const HomeScreen = ({ navigation }) => {
                                     {quests.reduce((s, q) => s + q.xp_reward, 0)} XP available today
                                 </Text>
                             </View>
-                            <View style={[styles.questTotalChip, { borderColor: '#10B98140' }]}>
-                                <Ionicons name="star" size={12} color="#10B981" />
-                                <Text style={[styles.questTotalChipTxt, { color: '#10B981' }]}>
+                            <View style={[styles.questTotalChip, { borderColor: themeColors.accent + '40' }]}>
+                                <Ionicons name="star" size={12} color={themeColors.accent} />
+                                <Text style={[styles.questTotalChipTxt, { color: themeColors.accent }]}>
                                     {quests.reduce((s, q) => s + q.points_reward, 0)} PTS available
                                 </Text>
                             </View>
@@ -678,7 +678,7 @@ const HomeScreen = ({ navigation }) => {
                                     ]}>
                                         <View style={styles.questTopRow}>
                                             <View style={[styles.questIconBox, { backgroundColor: iconColor + '18' }]}>
-                                                <Ionicons name={iconName} size={20} color={isClaimed ? '#10B981' : iconColor} />
+                                                <Ionicons name={iconName} size={20} color={isClaimed ? themeColors.accent : iconColor} />
                                             </View>
                                             <View style={styles.questTextStack}>
                                                 <Text style={[styles.questTitle, isClaimed && { color: '#94A3B8' }]}>
@@ -695,7 +695,7 @@ const HomeScreen = ({ navigation }) => {
                                         <View style={styles.questProgressRow}>
                                             <View style={styles.questBarBg}>
                                                 <LinearGradient
-                                                    colors={isClaimed ? ['#10B981', '#059669'] : [iconColor, iconColor + 'AA']}
+                                                    colors={isClaimed ? themeColors.gradient : [iconColor, iconColor + 'AA']}
                                                     start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                                                     style={[styles.questBarFill, { width: `${progressPercent}%` }]}
                                                 />
@@ -708,7 +708,7 @@ const HomeScreen = ({ navigation }) => {
                                         <View style={styles.questActionContainer}>
                                             {isClaimed ? (
                                                 <View style={styles.claimedBadge}>
-                                                    <Ionicons name="checkmark-circle" size={14} color="#10B981" />
+                                                    <Ionicons name="checkmark-circle" size={14} color={themeColors.accent} />
                                                     <Text style={styles.claimedText}>CLAIMED ✓</Text>
                                                 </View>
                                             ) : isCompleted ? (
@@ -755,20 +755,20 @@ const HomeScreen = ({ navigation }) => {
                 {renderUserDashboard()}
 
                 {/* UNIFIED ELITE AI SUITE */}
-                <AnimatedCard delay={100} style={styles.aiSuiteCard}>
+                <AnimatedCard delay={100} style={[styles.aiSuiteCard, { borderColor: themeColors.accent + '25', shadowColor: themeColors.accent }]}>
                     <LinearGradient
-                        colors={['#EBFDF5', '#FFFCF9']}
+                        colors={[themeColors.accent + '12', '#FFFCF9']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={styles.aiSuiteGradient}
                     >
                         <View style={styles.aiSuiteHeader}>
                             <View style={styles.aiSuiteHeaderTitleRow}>
-                                <Ionicons name="sparkles" size={18} color="#10B981" />
-                                <Text style={styles.aiSuiteTitle}>ELITE AI SUITE</Text>
+                                <Ionicons name="sparkles" size={18} color={themeColors.accent} />
+                                <Text style={[styles.aiSuiteTitle, { color: themeColors.accent }]}>ELITE AI SUITE</Text>
                             </View>
-                            <View style={styles.aiSuiteBadge}>
-                                <Text style={styles.aiSuiteBadgeTxt}>ACTIVE INSTANCE</Text>
+                            <View style={[styles.aiSuiteBadge, { backgroundColor: themeColors.accent + '15', borderColor: themeColors.accent + '30' }]}>
+                                <Text style={[styles.aiSuiteBadgeTxt, { color: themeColors.accent }]}>ACTIVE INSTANCE</Text>
                             </View>
                         </View>
 
@@ -779,7 +779,7 @@ const HomeScreen = ({ navigation }) => {
                         <View style={styles.aiSuiteGrid}>
                             {/* AI Coach */}
                             <TouchableOpacity
-                                style={styles.aiSuiteGridItem}
+                                style={[styles.aiSuiteGridItem, { borderColor: themeColors.accent + '25' }]}
                                 activeOpacity={0.85}
                                 onPress={() => {
                                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -787,8 +787,8 @@ const HomeScreen = ({ navigation }) => {
                                 }}
                             >
                                 <BlurView intensity={20} tint="light" style={styles.aiSuiteItemBlur}>
-                                    <View style={[styles.aiSuiteIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.12)' }]}>
-                                        <Ionicons name="sparkles" size={20} color="#10B981" />
+                                    <View style={[styles.aiSuiteIconBox, { backgroundColor: themeColors.accent + '20' }]}>
+                                        <Ionicons name="sparkles" size={20} color={themeColors.accent} />
                                     </View>
                                     <Text style={styles.aiSuiteItemName}>AI Coach</Text>
                                     <Text style={styles.aiSuiteItemSub}>Real-Time Insight</Text>
@@ -855,11 +855,11 @@ const HomeScreen = ({ navigation }) => {
                             colors={['#FFF', '#F1F5F9']}
                             style={styles.nextUpInner}
                         >
-                            <View style={[styles.nextIconBox, { backgroundColor: '#ECFDF5' }]}>
-                                <Ionicons name="fitness" size={24} color="#10B981" />
+                            <View style={[styles.nextIconBox, { backgroundColor: themeColors.accent + '15' }]}>
+                                <Ionicons name="fitness" size={24} color={themeColors.accent} />
                             </View>
                             <View style={styles.nextInfo}>
-                                <Text style={styles.nextLabel}>TODAY'S SESSION</Text>
+                                <Text style={[styles.nextLabel, { color: themeColors.accent }]}>TODAY'S SESSION</Text>
                                 <Text style={styles.nextTitle}>{dashboardData?.next_workout?.title || "Rest Day"}</Text>
                                 <View style={styles.nextMeta}>
                                     <Ionicons name="time-outline" size={14} color="#64748B" />
@@ -871,8 +871,8 @@ const HomeScreen = ({ navigation }) => {
                                 </View>
                             </View>
                             <View style={styles.startBtnElite}>
-                                <Text style={styles.startBtnText}>{dashboardData?.next_workout ? 'START' : 'PLAN'}</Text>
-                                <Ionicons name={dashboardData?.next_workout ? "play" : "calendar"} size={12} color="#10B981" />
+                                <Text style={[styles.startBtnText, { color: themeColors.accent }]}>{dashboardData?.next_workout ? 'START' : 'PLAN'}</Text>
+                                <Ionicons name={dashboardData?.next_workout ? "play" : "calendar"} size={12} color={themeColors.accent} />
                             </View>
                         </LinearGradient>
                     </TouchableOpacity>
@@ -884,33 +884,33 @@ const HomeScreen = ({ navigation }) => {
                         {
                             icon: 'water',
                             label: 'Water',
-                            color: '#10B981',
-                            gradient: ['#F0FDF4', '#DCFCE7'],
+                            color: themeColors.accent,
+                            gradient: [themeColors.accent + '18', themeColors.accent + '30'],
                             onPress: () => {
                                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                                 navigation.navigate('WaterLog');
                             },
-                            customIcon: <WaterMug progress={waterIntake} size={45} showSteam={true} />
+                            customIcon: <WaterMug progress={waterIntake} size={45} showSteam={true} primaryColor={themeColors.accent} secondaryColor={themeColors.primary} />
                         },
                         {
                             icon: 'body',
                             label: 'Weight',
-                            color: '#059669',
-                            gradient: ['#F0FDF4', '#D1FAE5'],
+                            color: themeColors.accent,
+                            gradient: [themeColors.accent + '12', themeColors.accent + '25'],
                             onPress: () => navigation.navigate('Progress')
                         },
                         {
                             icon: 'restaurant',
                             label: 'Meal',
-                            color: '#059669',
-                            gradient: ['#F0FDF4', '#D1FAE5'],
+                            color: themeColors.accent,
+                            gradient: [themeColors.accent + '12', themeColors.accent + '25'],
                             onPress: () => navigation.navigate('Nutrition')
                         },
                         {
                             icon: 'fitness',
                             label: 'Workout',
-                            color: '#047857',
-                            gradient: ['#F0FDF4', '#DCFCE7'],
+                            color: themeColors.accent,
+                            gradient: [themeColors.accent + '12', themeColors.accent + '30'],
                             onPress: () => navigation.navigate('Workout')
                         },
                     ].map((item, i) => (
@@ -957,13 +957,13 @@ const HomeScreen = ({ navigation }) => {
                                         colors={['transparent', 'rgba(0,0,0,0.9)']}
                                         style={styles.challengeOverlayElite}
                                     >
-                                        <View style={styles.challengeBadgeElite}>
+                                        <View style={[styles.challengeBadgeElite, { backgroundColor: themeColors.accent }]}>
                                             <Text style={styles.challengeBadgeText}>ACTIVE</Text>
                                         </View>
                                         <Text style={styles.challengeTitleElite} numberOfLines={1}>{challenge.title}</Text>
                                         <View style={styles.challengeProgressRow}>
                                             <View style={styles.miniBarBg}>
-                                                <View style={[styles.miniBarFill, { width: `${(challenge.progress / challenge.days) * 100}%` }]} />
+                                                <View style={[styles.miniBarFill, { width: `${(challenge.progress / challenge.days) * 100}%`, backgroundColor: themeColors.accent }]} />
                                             </View>
                                             <Text style={styles.miniBarText}>{challenge.progress}/{challenge.days}d</Text>
                                         </View>
@@ -986,6 +986,11 @@ const HomeScreen = ({ navigation }) => {
                                 style={styles.joinChallBtn}
                                 onPress={() => navigation.navigate('Challenges')}
                             >
+                                <LinearGradient
+                                    colors={themeColors.gradient}
+                                    style={StyleSheet.absoluteFillObject}
+                                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                                />
                                 <Text style={styles.joinChallBtnText}>DISCOVER</Text>
                                 <Ionicons name="compass-outline" size={14} color={COLORS.white} />
                             </TouchableOpacity>
@@ -1003,7 +1008,7 @@ const HomeScreen = ({ navigation }) => {
                     activeOpacity={0.9}
                 >
                     <LinearGradient
-                        colors={['#D1FAE5', '#10B981']}
+                        colors={[themeColors.accent + '30', themeColors.accent]}
                         style={styles.shopCardElite}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
@@ -1409,7 +1414,7 @@ const styles = StyleSheet.create({
     nextLabel: {
         fontSize: 9,
         fontWeight: '900',
-        color: '#10B981',
+        // color handled dynamically in component style mapping
         letterSpacing: 0.5,
     },
     nextTitle: {
@@ -1443,7 +1448,7 @@ const styles = StyleSheet.create({
     startBtnText: {
         fontSize: 10,
         fontWeight: '900',
-        color: '#10B981',
+        // color handled dynamically in component style mapping
     },
     actionRowElite: {
         flexDirection: 'row',
@@ -1522,12 +1527,14 @@ const styles = StyleSheet.create({
     joinChallBtn: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#10B981',
+        // backgroundColor set dynamically via linear gradient
         paddingHorizontal: 16,
         paddingVertical: 10,
         borderRadius: 12,
         gap: 8,
         elevation: 4,
+        overflow: 'hidden',
+        position: 'relative',
     },
     joinChallBtnText: {
         fontSize: 10,
@@ -1564,7 +1571,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 8,
-        backgroundColor: '#10B981',
+        // backgroundColor set dynamically via inline style
         marginBottom: 8,
     },
     challengeBadgeText: {
@@ -1591,7 +1598,7 @@ const styles = StyleSheet.create({
     },
     miniBarFill: {
         height: '100%',
-        backgroundColor: '#10B981',
+        // backgroundColor set dynamically via inline style
         borderRadius: 2,
     },
     miniBarText: {
@@ -2389,9 +2396,7 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         overflow: 'hidden',
         borderWidth: 1.5,
-        borderColor: 'rgba(16, 185, 129, 0.15)',
         elevation: 8,
-        shadowColor: 'rgba(16, 185, 129, 0.2)',
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.15,
         shadowRadius: 12,
@@ -2413,21 +2418,20 @@ const styles = StyleSheet.create({
     aiSuiteTitle: {
         fontSize: 13,
         fontWeight: '900',
-        color: '#065F46',
+        // color handled dynamically in component style mapping
         letterSpacing: 1.2,
     },
     aiSuiteBadge: {
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        // backgroundColor/borderColor handled dynamically in component style mapping
         paddingHorizontal: 8,
         paddingVertical: 3,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: 'rgba(16, 185, 129, 0.25)',
     },
     aiSuiteBadgeTxt: {
         fontSize: 8,
         fontWeight: '900',
-        color: '#065F46',
+        // color handled dynamically in component style mapping
         letterSpacing: 0.5,
     },
     aiSuiteDesc: {

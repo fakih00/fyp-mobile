@@ -5,7 +5,12 @@ class UserController extends BaseController {
     
     public function getUser() {
         // Auth: derive user_id from token
-        $user_id = $this->requireAuth();
+        $current_user_id = $this->requireAuth();
+        $user_id = $current_user_id;
+
+        if (isset($_GET['user_id']) && !empty($_GET['user_id'])) {
+            $user_id = (int)$_GET['user_id'];
+        }
 
         $query = "SELECT u.id, u.name, u.email, p.* 
                   FROM users u 
@@ -71,6 +76,7 @@ class UserController extends BaseController {
                     "allergies" => $row['allergies'],
                     "meals_per_day" => $row['meals_per_day'],
                     "avatar" => $row['avatar'],
+                    "theme" => $row['theme'] ?? 'Emerald',
                     "injuries" => $row['injuries'] ?? null,
                     "pain_points" => $row['pain_points'] ?? null,
                     "strong_side" => $row['strong_side'] ?? null,
@@ -122,14 +128,14 @@ class UserController extends BaseController {
             'body_fat', 'waist_size', 'job_type', 'steps_estimate', 
             'sleep_hours', 'stress_level', 'suggested_goal_weight',
             'injuries', 'pain_points', 'strong_side', 'posture_problems',
-            'mobility_limitations', 'avoid_areas', 'chronic_pain'
+            'mobility_limitations', 'avoid_areas', 'chronic_pain', 'theme'
         ];
 
         // String fields that need sanitization
         $textFields = ['gender', 'goal', 'activity_level', 'training_location', 
                        'training_intensity', 'likes', 'dislikes', 'allergies', 'job_type', 'avatar',
                        'injuries', 'pain_points', 'strong_side', 'posture_problems',
-                       'mobility_limitations', 'avoid_areas', 'chronic_pain'];
+                       'mobility_limitations', 'avoid_areas', 'chronic_pain', 'theme'];
         $data = $this->sanitizeFields($data, $textFields);
 
         $updates = [];
@@ -159,7 +165,8 @@ class UserController extends BaseController {
     public function getFriends() {
         $user_id = $this->requireAuth();
 
-        $query = "SELECT u.id, u.name, up.level, up.points, up.avatar, f.status
+        $query = "SELECT u.id, u.name, up.level, up.points, up.avatar,
+                         CASE WHEN u.last_seen >= NOW() - INTERVAL 2 MINUTE THEN 'Online' ELSE 'Offline' END as status
                   FROM friends f
                   JOIN users u ON f.friend_id = u.id
                   JOIN user_profiles up ON u.id = up.user_id

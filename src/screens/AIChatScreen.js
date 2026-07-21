@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useContext, useEffect } from 'react';
 import {
     View,
     Text,
@@ -10,7 +10,8 @@ import {
     Platform,
     ActivityIndicator,
     ScrollView,
-    Dimensions
+    Dimensions,
+    Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,9 +21,9 @@ import * as Haptics from 'expo-haptics';
 import { COLORS, FONTS, SIZES } from '../constants/Theme';
 import { AnimatedCard, GlassCard } from '../components';
 import { api } from '../services/api';
+import { AppContext } from '../context/AppContext';
 
 const { width } = Dimensions.get('window');
-const EMERALD = '#10B981';
 
 const QUICK_ACTIONS = [
     "Protein tips 🥩",
@@ -33,6 +34,7 @@ const QUICK_ACTIONS = [
 ];
 
 const AIChatScreen = ({ navigation }) => {
+    const { colors: themeColors, user } = useContext(AppContext);
     const [messages, setMessages] = useState([
         {
             _id: 1,
@@ -48,6 +50,77 @@ const AIChatScreen = ({ navigation }) => {
     // Conversation history for multi-turn context
     // Format: [{ role: 'user'|'model', text: '...' }]
     const chatHistoryRef = useRef([]);
+    const [historyLoaded, setHistoryLoaded] = useState(false);
+
+    // ── Load persisted history from DB on first mount ────────────────────
+    useEffect(() => {
+        const loadHistory = async () => {
+            try {
+                const res = await api.getAIChatHistory();
+                if (res.status === 200 && res.data?.messages?.length > 0) {
+                    // Convert DB rows to FlatList message format (newest first)
+                    const dbMessages = res.data.messages.map(row => ({
+                        _id: row.id,
+                        text: row.message,
+                        createdAt: new Date(row.created_at),
+                        user: { _id: row.role === 'user' ? 1 : 2, name: row.role === 'user' ? 'You' : 'AI' },
+                    })).reverse(); // FlatList is inverted so newest must be first
+
+                    setMessages(dbMessages);
+
+                    // Rebuild multi-turn context ref from loaded history (up to last 20)
+                    const context = res.data.messages.slice(-20).map(row => ({
+                        role: row.role,
+                        text: row.message,
+                    }));
+                    chatHistoryRef.current = context;
+                }
+            } catch (e) {
+                console.log('Could not load AI chat history:', e);
+            } finally {
+                setHistoryLoaded(true);
+            }
+        };
+        loadHistory();
+    }, []);
+
+    const INITIAL_MESSAGE = {
+        _id: 1,
+        text: `Hello${user?.name ? ` ${user.name}` : ''}! I'm your Elite AI Coach, powered by Google Gemini. I know your full profile — your goals, diet preferences, injuries, and training setup — so every answer I give you is 100% personalized. Ask me anything. 💪`,
+        createdAt: new Date(),
+        user: { _id: 2, name: 'AI' },
+    };
+
+    const handleHeaderMenu = () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        const goal = user?.profile?.goal?.replace(/_/g, ' ') || 'general fitness';
+        const weight = user?.profile?.weight ? `${user.profile.weight}kg` : '—';
+        const streak = user?.profile?.streak || 0;
+        Alert.alert(
+            '⚡ Coach Elite',
+            `What would you like to do?`,
+            [
+                {
+                    text: '🗑️ Clear Chat',
+                    onPress: async () => {
+                        try { await api.clearAIChatHistory(); } catch (e) {}
+                        chatHistoryRef.current = [];
+                        setMessages([{ ...INITIAL_MESSAGE, _id: Date.now(), createdAt: new Date() }]);
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                    },
+                },
+                {
+                    text: '📊 My Active Profile',
+                    onPress: () => Alert.alert(
+                        '📊 Active Profile',
+                        `Name: ${user?.name || '—'}\nGoal: ${goal}\nWeight: ${weight}\nStreak: ${streak} days\nInjuries: ${user?.profile?.injuries || 'None'}\nAllergies: ${user?.profile?.allergies || 'None'}\n\nThe AI Coach uses all this data to give you personalized advice.`,
+                        [{ text: 'Got it', style: 'default' }]
+                    ),
+                },
+                { text: 'Cancel', style: 'cancel' },
+            ]
+        );
+    };
 
     const sendMessage = async (text) => {
         const messageText = text || inputText;
@@ -116,7 +189,7 @@ const AIChatScreen = ({ navigation }) => {
             ]}>
                 <View style={[
                     styles.bubble,
-                    isUser ? styles.userBubble : styles.aiBubble
+                    isUser ? [styles.userBubble, { backgroundColor: themeColors.accent }] : styles.aiBubble
                 ]}>
                     <Text style={[
                         styles.messageText,
@@ -135,7 +208,7 @@ const AIChatScreen = ({ navigation }) => {
             {/* Elite Header */}
             <View style={styles.headerStack}>
                 <LinearGradient
-                    colors={['#064E3B', '#10B981']}
+                    colors={themeColors.gradient}
                     style={styles.headerGradient}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
@@ -153,11 +226,11 @@ const AIChatScreen = ({ navigation }) => {
                         <View style={styles.titleStack}>
                             <Text style={styles.eliteTitle}>AI Coach</Text>
                             <View style={styles.statusRow}>
-                                <View style={styles.liveDot} />
+                                <View style={[styles.liveDot, { backgroundColor: themeColors.accent }]} />
                                 <Text style={styles.statusText}>ALWAYS READY</Text>
                             </View>
                         </View>
-                        <TouchableOpacity style={styles.headerActionBtn}>
+                        <TouchableOpacity style={styles.headerActionBtn} onPress={handleHeaderMenu}>
                             <BlurView intensity={20} tint="light" style={styles.iconBlur}>
                                 <Ionicons name="ellipsis-horizontal" size={22} color={COLORS.white} />
                             </BlurView>
@@ -176,7 +249,7 @@ const AIChatScreen = ({ navigation }) => {
                 contentContainerStyle={styles.listContent}
                 ListHeaderComponent={() => isTyping && (
                     <View style={styles.typingIndicator}>
-                        <ActivityIndicator size="small" color={EMERALD} />
+                        <ActivityIndicator size="small" color={themeColors.accent} />
                         <Text style={styles.typingText}>Thinking...</Text>
                     </View>
                 )}
@@ -223,8 +296,8 @@ const AIChatScreen = ({ navigation }) => {
                             disabled={inputText.trim().length === 0}
                         >
                             <LinearGradient
-                                colors={inputText.trim().length > 0 ? ['#10B981', '#059669'] : ['#E2E8F0', '#CBD5E1']}
-                                style={styles.sendGradient}
+                                colors={inputText.trim().length > 0 ? themeColors.gradient : ['#E2E8F0', '#CBD5E1']}
+                                style={[styles.sendGradient, inputText.trim().length > 0 && { shadowColor: themeColors.accent }]}
                             >
                                 <Ionicons name="send" size={18} color={COLORS.white} />
                             </LinearGradient>
@@ -295,7 +368,7 @@ const styles = StyleSheet.create({
         width: 6,
         height: 6,
         borderRadius: 3,
-        backgroundColor: '#10B981',
+        // backgroundColor set dynamically in JSX if needed, or reference theme colors below:
         borderWidth: 1.5,
         borderColor: 'rgba(255,255,255,0.4)',
     },
@@ -331,7 +404,7 @@ const styles = StyleSheet.create({
         shadowRadius: 5,
     },
     userBubble: {
-        backgroundColor: EMERALD,
+        // backgroundColor handled dynamically
         borderBottomRightRadius: 4,
     },
     aiBubble: {
@@ -430,7 +503,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         elevation: 5,
-        shadowColor: EMERALD,
+        // shadowColor handled dynamically
         shadowOffset: { width: 0, height: 5 },
         shadowOpacity: 0.3,
         shadowRadius: 10,

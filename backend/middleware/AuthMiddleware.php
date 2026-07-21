@@ -34,7 +34,13 @@ class AuthMiddleware {
 
         if ($stmt->rowCount() > 0) {
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            return (int)$row['id'];
+            $userId = (int)$row['id'];
+            
+            // Update last_seen timestamp on request activity
+            $stmtUpdate = $this->conn->prepare("UPDATE users SET last_seen = NOW() WHERE id = ?");
+            $stmtUpdate->execute([$userId]);
+            
+            return $userId;
         }
 
         // Check if token exists but is expired

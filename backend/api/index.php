@@ -102,7 +102,9 @@ $routes = [
     // ─── Achievements ──────────────────────────────────────────────────
     'getAchievements'          => ['AchievementController', 'getAchievements', true, false],
     // ─── AI Chat ──────────────────────────────────────────────────
-    'aiChat'                   => ['AIChatController', 'chat', true, false],
+    'aiChat'                   => ['AIChatController', 'chat',         true, false],
+    'getAIChatHistory'         => ['AIChatController', 'getHistory',   true, false],
+    'clearAIChatHistory'       => ['AIChatController', 'clearHistory', true, false],
     'generateRecoveryPlan'     => ['RecoveryController', 'generatePlan', true, false],
     'getRecoveryPlan'          => ['RecoveryController', 'getPlan', true, false],
     'updateRecoveryProgress'   => ['RecoveryController', 'updateProgress', true, false],

@@ -31,7 +31,7 @@ const { width } = Dimensions.get('window');
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 const ProgressScreen = ({ navigation }) => {
-    const { user, loadUserData, consumedMacros } = useContext(AppContext);
+    const { user, loadUserData, consumedMacros, colors: themeColors } = useContext(AppContext);
     // Generate current week dates (Monday to Sunday)
     const getCurrentWeekDates = () => {
         const dates = [];
@@ -99,6 +99,9 @@ const ProgressScreen = ({ navigation }) => {
 
     // Live Steps State
     const [sessionSteps, setSessionSteps] = useState(0);
+    const [isTrajectoryExpanded, setIsTrajectoryExpanded] = useState(false);
+    const [isSimulatorExpanded, setIsSimulatorExpanded] = useState(false);
+    const [isBioExpanded, setIsBioExpanded] = useState(false);
 
     // Pedometer Effect
     useEffect(() => {
@@ -343,12 +346,12 @@ const ProgressScreen = ({ navigation }) => {
                     <Svg height={chartHeight} width={mainSvgWidth} style={{ marginLeft: labelAreaWidth }}>
                         <Defs>
                             <SvgGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                                <Stop offset="0" stopColor="#10B981" stopOpacity="0.15" />
-                                <Stop offset="1" stopColor="#10B981" stopOpacity="0" />
+                                <Stop offset="0" stopColor={themeColors.accent} stopOpacity="0.15" />
+                                <Stop offset="1" stopColor={themeColors.accent} stopOpacity="0" />
                             </SvgGradient>
                             <SvgGradient id="glowGrad" x1="0" y1="0" x2="0" y2="1">
-                                <Stop offset="0" stopColor="#10B981" stopOpacity="0.5" />
-                                <Stop offset="1" stopColor="#10B981" stopOpacity="0.1" />
+                                <Stop offset="0" stopColor={themeColors.accent} stopOpacity="0.5" />
+                                <Stop offset="1" stopColor={themeColors.accent} stopOpacity="0.1" />
                             </SvgGradient>
                         </Defs>
 
@@ -386,7 +389,7 @@ const ProgressScreen = ({ navigation }) => {
                             <Path
                                 d={pathData}
                                 fill="none"
-                                stroke="#10B981"
+                                stroke={themeColors.accent}
                                 strokeWidth="8"
                                 strokeOpacity="0.1"
                                 strokeLinecap="round"
@@ -397,7 +400,7 @@ const ProgressScreen = ({ navigation }) => {
                             <Path
                                 d={pathData}
                                 fill="none"
-                                stroke="#10B981"
+                                stroke={themeColors.accent}
                                 strokeWidth="3"
                                 strokeLinecap="round"
                             />
@@ -410,7 +413,7 @@ const ProgressScreen = ({ navigation }) => {
                                         cx={p.x}
                                         cy={p.y}
                                         r="12"
-                                        fill="#10B98133"
+                                        fill={themeColors.accent + '33'}
                                     />
                                 )}
                                 <Circle
@@ -424,7 +427,7 @@ const ProgressScreen = ({ navigation }) => {
                                     cx={p.x}
                                     cy={p.y}
                                     r={i === activeIndex ? 5 : 4}
-                                    fill="#10B981"
+                                    fill={themeColors.accent}
                                 />
                             </G>
                         ))}
@@ -468,7 +471,7 @@ const ProgressScreen = ({ navigation }) => {
 
                 <View style={styles.chartLegendElite}>
                     <View style={styles.legendItemElite}>
-                        <View style={[styles.legendDotElite, { backgroundColor: '#10B981' }]} />
+                        <View style={[styles.legendDotElite, { backgroundColor: themeColors.accent }]} />
                         <Text style={styles.legendTextElite}>Actual Weight</Text>
                     </View>
                     <View style={styles.legendItemElite}>
@@ -594,8 +597,8 @@ const ProgressScreen = ({ navigation }) => {
                         <Text style={styles.sectionTitleElite}>AI Progress Audit</Text>
                         <Text style={styles.sectionSubTitleElite}>BIO-METRIC PATHWAY EVALUATION</Text>
                     </View>
-                    <View style={[styles.eliteBadge, { backgroundColor: '#10B98115' }]}>
-                        <Text style={[styles.eliteBadgeText, { color: '#10B981' }]}>COACH INTELLIGENCE</Text>
+                    <View style={[styles.eliteBadge, { backgroundColor: themeColors.accent + '15' }]}>
+                        <Text style={[styles.eliteBadgeText, { color: themeColors.accent }]}>COACH INTELLIGENCE</Text>
                     </View>
                 </View>
 
@@ -603,14 +606,14 @@ const ProgressScreen = ({ navigation }) => {
                     <GlassCard style={styles.auditTriggerCard}>
                         <View style={styles.auditTriggerContent}>
                             <View style={styles.auditTriggerIconBox}>
-                                <Ionicons name="sparkles" size={28} color="#10B981" />
+                                <Ionicons name="sparkles" size={28} color={themeColors.accent} />
                             </View>
                             <Text style={styles.auditTriggerTitle}>Request AI Progress Audit</Text>
                             <Text style={styles.auditTriggerDesc}>
                                 Let Gemini analyze your workouts, nutrition logs, sleep, stress, and weight changes to generate a custom performance report.
                             </Text>
                             <TouchableOpacity 
-                                style={[styles.auditBtn, { backgroundColor: '#10B981' }]} 
+                                style={[styles.auditBtn, { backgroundColor: themeColors.accent }]} 
                                 onPress={handleGenerateAudit}
                                 disabled={generatingAudit}
                             >
@@ -636,7 +639,7 @@ const ProgressScreen = ({ navigation }) => {
                                 </View>
                                 <TouchableOpacity style={styles.refreshAuditBtn} onPress={handleGenerateAudit} disabled={generatingAudit}>
                                     {generatingAudit ? (
-                                        <ActivityIndicator size="small" color="#10B981" />
+                                        <ActivityIndicator size="small" color={themeColors.accent} />
                                     ) : (
                                         <Ionicons name="refresh" size={16} color="#64748B" />
                                     )}
@@ -650,7 +653,7 @@ const ProgressScreen = ({ navigation }) => {
                                 <Text style={styles.auditSectionSubTitle}>KEY ACCOMPLISHMENTS</Text>
                                 {(auditData.accomplishments || []).map((item, idx) => (
                                     <View key={idx} style={styles.auditItemRow}>
-                                        <Ionicons name="checkmark-circle" size={16} color="#10B981" style={{ marginRight: 8 }} />
+                                        <Ionicons name="checkmark-circle" size={16} color={themeColors.accent} style={{ marginRight: 8 }} />
                                         <Text style={styles.auditItemText}>{item}</Text>
                                     </View>
                                 ))}
@@ -740,7 +743,7 @@ const ProgressScreen = ({ navigation }) => {
                 {workouts.map((workout, idx) => (
                     <View key={idx} style={styles.inlineWorkoutItemElite}>
                         <View style={styles.inlineWorkoutIconBox}>
-                            <Ionicons name="fitness" size={18} color="#10B981" />
+                            <Ionicons name="fitness" size={18} color={themeColors.accent} />
                         </View>
                         <View style={styles.inlineWorkoutContent}>
                             <Text style={styles.inlineWorkoutTitle}>{workout.title}</Text>
@@ -762,13 +765,13 @@ const ProgressScreen = ({ navigation }) => {
         const totalProgress = stats?.total_progress || 0;
         const velocity = stats?.weekly_velocity || 0;
         const distance = stats?.goal_distance || 0;
-        const trendColor = velocity <= 0 ? '#10B981' : '#EF4444'; // Green for loss (assuming loss goal), red for gain
+        const trendColor = velocity <= 0 ? themeColors.accent : '#EF4444'; // theme accent for progress, red for gain
 
         return (
             <View style={styles.weightExecutiveBox}>
                 <View style={styles.weightMainRow}>
                     <View style={styles.weightMetricElite}>
-                        <Text style={[styles.weightMetricVal, { color: totalProgress <= 0 ? '#10B981' : '#F59E0B' }]}>
+                        <Text style={[styles.weightMetricVal, { color: totalProgress <= 0 ? themeColors.accent : '#F59E0B' }]}>
                             {totalProgress > 0 ? '+' : ''}{totalProgress}
                             <Text style={styles.weightMetricUnit}>KG</Text>
                         </Text>
@@ -833,7 +836,7 @@ const ProgressScreen = ({ navigation }) => {
         const sleepScore = stats?.sleep_score || 0;
         const stressLevel = stats?.stress_index || 0;
         const recoveryStatus = sleepScore > 80 && stressLevel < 40 ? 'PEAK RECOVERY' : (sleepScore < 50 || stressLevel > 70 ? 'FATIGUE WARNING' : 'MODERATE RECOVERY');
-        const recoveryColor = sleepScore > 80 && stressLevel < 40 ? '#10B981' : (sleepScore < 50 || stressLevel > 70 ? '#EF4444' : '#F59E0B');
+        const recoveryColor = sleepScore > 80 && stressLevel < 40 ? themeColors.accent : (sleepScore < 50 || stressLevel > 70 ? '#EF4444' : '#F59E0B');
 
         return (
             <View style={styles.lifestyleExecutiveBox}>
@@ -865,7 +868,7 @@ const ProgressScreen = ({ navigation }) => {
 
     // ─── AI Trajectory Simulator ──────────────────────────────────────
     const renderTrajectorySimulator = () => {
-        const plateauColors = { Low: '#10B981', Medium: '#F59E0B', High: '#EF4444' };
+        const plateauColors = { Low: themeColors.accent, Medium: '#F59E0B', High: '#EF4444' };
         const stepsOptions = [3000, 5000, 8000, 10000, 12000, 15000];
         const sleepOptions = [4, 5, 6, 7, 8, 9];
         const stressOptions = ['low', 'medium', 'high'];
@@ -873,29 +876,49 @@ const ProgressScreen = ({ navigation }) => {
         const calorieOptions = [-700, -500, -300, 0, 200, 400];
 
         const efficiencyColor = trajectoryResult
-            ? (trajectoryResult.efficiency_score >= 75 ? '#10B981' : trajectoryResult.efficiency_score >= 50 ? '#F59E0B' : '#EF4444')
+            ? (trajectoryResult.efficiency_score >= 75 ? themeColors.accent : trajectoryResult.efficiency_score >= 50 ? '#F59E0B' : '#EF4444')
             : '#64748B';
 
         return (
             <View style={styles.sectionElite}>
-                <View style={styles.sectionHeaderElite}>
-                    <View>
-                        <Text style={styles.sectionTitleElite}>AI Trajectory Simulator</Text>
-                        <Text style={styles.sectionSubTitleElite}>30-DAY WEIGHT PROJECTION ENGINE</Text>
+                <TouchableOpacity 
+                    activeOpacity={0.8}
+                    style={styles.trajectoryHeaderBtn}
+                    onPress={() => {
+                        Haptics.selectionAsync();
+                        setIsSimulatorExpanded(!isSimulatorExpanded);
+                    }}
+                >
+                    <View style={styles.trajectoryHeaderLeft}>
+                        <LinearGradient
+                            colors={themeColors.gradient}
+                            style={styles.trajectoryIconBox}
+                            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                        >
+                            <Ionicons name="pulse" size={20} color="#FFF" />
+                        </LinearGradient>
+                        <View>
+                            <Text style={[styles.sectionTitleElite, { marginBottom: 2 }]}>AI Trajectory Simulator</Text>
+                            <Text style={styles.sectionSubTitleElite}>30-DAY WEIGHT PROJECTION ENGINE</Text>
+                        </View>
                     </View>
-                    <View style={[styles.eliteBadge, { backgroundColor: '#6366F115' }]}>
-                        <Text style={[styles.eliteBadgeText, { color: '#6366F1' }]}>GEMINI AI</Text>
-                    </View>
-                </View>
+                    <Ionicons 
+                        name={isSimulatorExpanded ? "chevron-up" : "chevron-down"} 
+                        size={20} 
+                        color={COLORS.text + '80'} 
+                    />
+                </TouchableOpacity>
 
-                <GlassCard style={styles.trajCard}>
+                {isSimulatorExpanded && (
+                    <View style={{ marginTop: 10 }}>
+                        <GlassCard style={styles.trajCard}>
                     {/* Daily Steps */}
                     <Text style={styles.trajLabel}>DAILY STEPS TARGET</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }} contentContainerStyle={{ paddingRight: 8 }}>
                         {stepsOptions.map(s => (
                             <TouchableOpacity
                                 key={s}
-                                style={[styles.trajPill, trajSteps === s && styles.trajPillActive]}
+                                style={[styles.trajPill, trajSteps === s && { backgroundColor: themeColors.accent, borderColor: themeColors.accent }]}
                                 onPress={() => { Haptics.selectionAsync(); setTrajSteps(s); setTrajectoryResult(null); }}
                             >
                                 <Text style={[styles.trajPillText, trajSteps === s && styles.trajPillTextActive]}>
@@ -911,7 +934,7 @@ const ProgressScreen = ({ navigation }) => {
                         {sleepOptions.map(h => (
                             <TouchableOpacity
                                 key={h}
-                                style={[styles.trajPill, trajSleep === h && styles.trajPillActive]}
+                                style={[styles.trajPill, trajSleep === h && { backgroundColor: themeColors.accent, borderColor: themeColors.accent }]}
                                 onPress={() => { Haptics.selectionAsync(); setTrajSleep(h); setTrajectoryResult(null); }}
                             >
                                 <Text style={[styles.trajPillText, trajSleep === h && styles.trajPillTextActive]}>{h}h</Text>
@@ -942,7 +965,7 @@ const ProgressScreen = ({ navigation }) => {
                         {workoutOptions.map(d => (
                             <TouchableOpacity
                                 key={d}
-                                style={[styles.trajPill, trajWorkoutDays === d && styles.trajPillActive]}
+                                style={[styles.trajPill, trajWorkoutDays === d && { backgroundColor: themeColors.accent, borderColor: themeColors.accent }]}
                                 onPress={() => { Haptics.selectionAsync(); setTrajWorkoutDays(d); setTrajectoryResult(null); }}
                             >
                                 <Text style={[styles.trajPillText, trajWorkoutDays === d && styles.trajPillTextActive]}>{d}d</Text>
@@ -956,7 +979,7 @@ const ProgressScreen = ({ navigation }) => {
                         {calorieOptions.map(c => (
                             <TouchableOpacity
                                 key={c}
-                                style={[styles.trajPill, trajCalorieDelta === c && styles.trajPillActive, c < 0 && { borderColor: '#10B981' }]}
+                                style={[styles.trajPill, trajCalorieDelta === c && { backgroundColor: themeColors.accent, borderColor: themeColors.accent }, c < 0 && trajCalorieDelta !== c && { borderColor: themeColors.accent + '80' }]}
                                 onPress={() => { Haptics.selectionAsync(); setTrajCalorieDelta(c); setTrajectoryResult(null); }}
                             >
                                 <Text style={[styles.trajPillText, trajCalorieDelta === c && styles.trajPillTextActive]}>
@@ -968,7 +991,7 @@ const ProgressScreen = ({ navigation }) => {
 
                     {/* Simulate Button */}
                     <TouchableOpacity
-                        style={[styles.trajSimulateBtn, simulatingTrajectory && { opacity: 0.7 }]}
+                        style={[styles.trajSimulateBtn, { backgroundColor: themeColors.accent, shadowColor: themeColors.accent }, simulatingTrajectory && { opacity: 0.7 }]}
                         onPress={handleSimulateTrajectory}
                         disabled={simulatingTrajectory}
                     >
@@ -977,7 +1000,7 @@ const ProgressScreen = ({ navigation }) => {
                         ) : (
                             <>
                                 <Ionicons name="pulse" size={18} color="#FFF" style={{ marginRight: 8 }} />
-                                <Text style={styles.trajSimulateBtnText}>SIMULATE 30-DAY TRAJECTORY</Text>
+                                 <Text style={styles.trajSimulateBtnText}>SIMULATE 30-DAY TRAJECTORY</Text>
                             </>
                         )}
                     </TouchableOpacity>
@@ -986,66 +1009,68 @@ const ProgressScreen = ({ navigation }) => {
                 {/* Results */}
                 {trajectoryResult && (
                     <GlassCard style={styles.trajResultCard}>
-                        {/* Header Row */}
-                        <View style={styles.trajResultHeader}>
-                            <Text style={styles.trajResultTitle}>Projected Outcome</Text>
-                            <TouchableOpacity onPress={() => setTrajectoryResult(null)}>
-                                <Ionicons name="close-circle" size={20} color="#94A3B8" />
-                            </TouchableOpacity>
-                        </View>
+                                {/* Header Row */}
+                                <View style={styles.trajResultHeader}>
+                                    <Text style={styles.trajResultTitle}>Projected Outcome</Text>
+                                    <TouchableOpacity onPress={() => setTrajectoryResult(null)}>
+                                        <Ionicons name="close-circle" size={20} color="#94A3B8" />
+                                    </TouchableOpacity>
+                                </View>
 
-                        {/* Big stat row */}
-                        <View style={styles.trajStatRow}>
-                            <View style={styles.trajStatBox}>
-                                <Text style={styles.trajStatValue}>{trajectoryResult.predicted_weight?.toFixed(1) ?? '--'}</Text>
-                                <Text style={styles.trajStatUnit}>kg in 30d</Text>
-                            </View>
-                            <View style={[styles.trajStatBox, { borderLeftWidth: 1, borderLeftColor: '#E2E8F0' }]}>
-                                <Text style={[styles.trajStatValue, { color: (trajectoryResult.weekly_change ?? 0) < 0 ? '#10B981' : '#EF4444' }]}>
-                                    {(trajectoryResult.weekly_change ?? 0) > 0 ? '+' : ''}{trajectoryResult.weekly_change?.toFixed(2) ?? '--'}
-                                </Text>
-                                <Text style={styles.trajStatUnit}>kg / week</Text>
-                            </View>
-                            <View style={[styles.trajStatBox, { borderLeftWidth: 1, borderLeftColor: '#E2E8F0' }]}>
-                                <Text style={[styles.trajStatValue, { color: efficiencyColor }]}>
-                                    {trajectoryResult.efficiency_score ?? '--'}
-                                </Text>
-                                <Text style={styles.trajStatUnit}>efficiency</Text>
-                            </View>
-                        </View>
-
-                        {/* ETA + Plateau Risk */}
-                        <View style={styles.trajTagRow}>
-                            <View style={styles.trajTag}>
-                                <Ionicons name="calendar" size={13} color="#6366F1" style={{ marginRight: 4 }} />
-                                <Text style={styles.trajTagText}>
-                                    {trajectoryResult.days_to_goal ? `Goal in ~${trajectoryResult.days_to_goal}d` : 'Goal >90 days'}
-                                </Text>
-                            </View>
-                            <View style={[styles.trajTag, { backgroundColor: `${plateauColors[trajectoryResult.plateau_risk] ?? '#94A3B8'}18` }]}>
-                                <Ionicons name="warning" size={13} color={plateauColors[trajectoryResult.plateau_risk] ?? '#94A3B8'} style={{ marginRight: 4 }} />
-                                <Text style={[styles.trajTagText, { color: plateauColors[trajectoryResult.plateau_risk] ?? '#94A3B8' }]}>
-                                    {trajectoryResult.plateau_risk ?? 'Unknown'} Plateau Risk
-                                </Text>
-                            </View>
-                        </View>
-
-                        {/* Analysis */}
-                        <Text style={styles.trajAnalysisText}>{trajectoryResult.analysis}</Text>
-
-                        {/* Key Factors */}
-                        {(trajectoryResult.key_factors || []).length > 0 && (
-                            <View style={styles.trajFactorsBox}>
-                                <Text style={styles.trajFactorsTitle}>KEY DRIVING FACTORS</Text>
-                                {(trajectoryResult.key_factors || []).map((f, i) => (
-                                    <View key={i} style={styles.trajFactorRow}>
-                                        <View style={styles.trajFactorDot} />
-                                        <Text style={styles.trajFactorText}>{f}</Text>
+                                {/* Big stat row */}
+                                <View style={styles.trajStatRow}>
+                                    <View style={styles.trajStatBox}>
+                                        <Text style={styles.trajStatValue}>{trajectoryResult.predicted_weight?.toFixed(1) ?? '--'}</Text>
+                                        <Text style={styles.trajStatUnit}>kg in 30d</Text>
                                     </View>
-                                ))}
-                            </View>
+                                    <View style={[styles.trajStatBox, { borderLeftWidth: 1, borderLeftColor: '#E2E8F0' }]}>
+                                        <Text style={[styles.trajStatValue, { color: (trajectoryResult.weekly_change ?? 0) < 0 ? themeColors.accent : '#EF4444' }]}>
+                                            {(trajectoryResult.weekly_change ?? 0) > 0 ? '+' : ''}{trajectoryResult.weekly_change?.toFixed(2) ?? '--'}
+                                        </Text>
+                                        <Text style={styles.trajStatUnit}>kg / week</Text>
+                                    </View>
+                                    <View style={[styles.trajStatBox, { borderLeftWidth: 1, borderLeftColor: '#E2E8F0' }]}>
+                                        <Text style={[styles.trajStatValue, { color: efficiencyColor }]}>
+                                            {trajectoryResult.efficiency_score ?? '--'}
+                                        </Text>
+                                        <Text style={styles.trajStatUnit}>efficiency</Text>
+                                    </View>
+                                </View>
+
+                                {/* ETA + Plateau Risk */}
+                                <View style={styles.trajTagRow}>
+                                    <View style={[styles.trajTag, { backgroundColor: `${themeColors.accent}15` }]}>
+                                        <Ionicons name="calendar" size={13} color={themeColors.accent} style={{ marginRight: 4 }} />
+                                        <Text style={[styles.trajTagText, { color: themeColors.accent }]}>
+                                            {trajectoryResult.days_to_goal ? `Goal in ~${trajectoryResult.days_to_goal}d` : 'Goal >90 days'}
+                                        </Text>
+                                    </View>
+                                    <View style={[styles.trajTag, { backgroundColor: `${plateauColors[trajectoryResult.plateau_risk] ?? '#94A3B8'}18` }]}>
+                                        <Ionicons name="warning" size={13} color={plateauColors[trajectoryResult.plateau_risk] ?? '#94A3B8'} style={{ marginRight: 4 }} />
+                                        <Text style={[styles.trajTagText, { color: plateauColors[trajectoryResult.plateau_risk] ?? '#94A3B8' }]}>
+                                            {trajectoryResult.plateau_risk ?? 'Unknown'} Plateau Risk
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                {/* Analysis */}
+                                <Text style={styles.trajAnalysisText}>{trajectoryResult.analysis}</Text>
+
+                                {/* Key Factors */}
+                                {(trajectoryResult.key_factors || []).length > 0 && (
+                                    <View style={styles.trajFactorsBox}>
+                                        <Text style={styles.trajFactorsTitle}>KEY DRIVING FACTORS</Text>
+                                        {(trajectoryResult.key_factors || []).map((f, i) => (
+                                            <View key={i} style={styles.trajFactorRow}>
+                                                <View style={styles.trajFactorDot} />
+                                                <Text style={styles.trajFactorText}>{f}</Text>
+                                            </View>
+                                        ))}
+                                    </View>
+                                )}
+                            </GlassCard>
                         )}
-                    </GlassCard>
+                    </View>
                 )}
             </View>
         );
@@ -1054,7 +1079,7 @@ const ProgressScreen = ({ navigation }) => {
     // ─── AI Daily Bio-Advisory ────────────────────────────────────────
     const renderBioAdvisory = () => {
         const statusColorMap = {
-            green: '#10B981',
+            green: themeColors.accent,
             yellow: '#F59E0B',
             red: '#EF4444',
             blue: '#3B82F6',
@@ -1071,83 +1096,105 @@ const ProgressScreen = ({ navigation }) => {
 
         return (
             <View style={styles.sectionElite}>
-                <View style={styles.sectionHeaderElite}>
-                    <View>
-                        <Text style={styles.sectionTitleElite}>AI Daily Bio-Advisory</Text>
-                        <Text style={styles.sectionSubTitleElite}>PERSONALIZED MORNING BRIEFING</Text>
-                    </View>
-                    <View style={[styles.eliteBadge, { backgroundColor: '#F59E0B15' }]}>
-                        <Text style={[styles.eliteBadgeText, { color: '#F59E0B' }]}>DAILY AI</Text>
-                    </View>
-                </View>
-
-                {!bioAdvisoryLoaded ? (
-                    <GlassCard style={styles.bioTriggerCard}>
-                        <View style={styles.bioTriggerInner}>
-                            <LinearGradient
-                                colors={['#6366F1', '#8B5CF6']}
-                                style={styles.bioTriggerIconBox}
-                                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                            >
-                                <Ionicons name="sunny" size={26} color="#FFF" />
-                            </LinearGradient>
-                            <Text style={styles.bioTriggerTitle}>Get Today's Bio-Advisory</Text>
-                            <Text style={styles.bioTriggerDesc}>
-                                Gemini analyzes your sleep, steps, and stress from yesterday to generate 3 hyper-personalized action tips for today.
-                            </Text>
-                            <TouchableOpacity
-                                style={styles.bioLoadBtn}
-                                onPress={handleLoadBioAdvisory}
-                                disabled={loadingBioAdvisory}
-                            >
-                                {loadingBioAdvisory ? (
-                                    <ActivityIndicator size="small" color="#FFF" />
-                                ) : (
-                                    <>
-                                        <Ionicons name="flash" size={16} color="#FFF" style={{ marginRight: 6 }} />
-                                        <Text style={styles.bioLoadBtnText}>GENERATE MORNING BRIEF</Text>
-                                    </>
-                                )}
-                            </TouchableOpacity>
+                <TouchableOpacity 
+                    activeOpacity={0.8}
+                    style={styles.trajectoryHeaderBtn}
+                    onPress={() => {
+                        Haptics.selectionAsync();
+                        setIsBioExpanded(!isBioExpanded);
+                    }}
+                >
+                    <View style={styles.trajectoryHeaderLeft}>
+                        <LinearGradient
+                            colors={themeColors.gradient}
+                            style={styles.trajectoryIconBox}
+                            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                        >
+                            <Ionicons name="sunny" size={20} color="#FFF" />
+                        </LinearGradient>
+                        <View>
+                            <Text style={[styles.sectionTitleElite, { marginBottom: 2 }]}>AI Daily Bio-Advisory</Text>
+                            <Text style={styles.sectionSubTitleElite}>PERSONALIZED MORNING BRIEFING</Text>
                         </View>
-                    </GlassCard>
-                ) : (
-                    <View>
-                        {/* Status Banner */}
-                        <View style={[styles.bioStatusBanner, { backgroundColor: statusBg, borderColor: `${statusColor}30` }]}>
-                            <View style={[styles.bioStatusDot, { backgroundColor: statusColor }]} />
-                            <Text style={[styles.bioStatusText, { color: statusColor }]}>
-                                {bioAdvisoryData?.morning_status?.toUpperCase() ?? 'STATUS UNKNOWN'}
-                            </Text>
-                            <TouchableOpacity
-                                style={styles.bioRefreshBtn}
-                                onPress={handleLoadBioAdvisory}
-                                disabled={loadingBioAdvisory}
-                            >
-                                {loadingBioAdvisory
-                                    ? <ActivityIndicator size="small" color={statusColor} />
-                                    : <Ionicons name="refresh" size={16} color="#64748B" />
-                                }
-                            </TouchableOpacity>
-                        </View>
+                    </View>
+                    <Ionicons 
+                        name={isBioExpanded ? "chevron-up" : "chevron-down"} 
+                        size={20} 
+                        color={COLORS.text + '80'} 
+                    />
+                </TouchableOpacity>
 
-                        {/* Advisory Cards */}
-                        {(bioAdvisoryData?.advisories ?? []).map((item, idx) => (
-                            <GlassCard key={idx} style={styles.bioAdvisoryCard}>
-                                <View style={styles.bioAdvisoryRow}>
-                                    <View style={[styles.bioAdvisoryIconBox, { backgroundColor: `${item.color}18` }]}>
-                                        <Ionicons name={item.icon ?? 'star'} size={22} color={item.color ?? '#6366F1'} />
-                                    </View>
-                                    <View style={styles.bioAdvisoryContent}>
-                                        <Text style={[styles.bioAdvisoryCategory, { color: item.color ?? '#6366F1' }]}>
-                                            {item.category}
-                                        </Text>
-                                        <Text style={styles.bioAdvisoryTitle}>{item.title}</Text>
-                                        <Text style={styles.bioAdvisoryAdvice}>{item.advice}</Text>
-                                    </View>
+                {isBioExpanded && (
+                    <View style={{ marginTop: 10 }}>
+                        {!bioAdvisoryLoaded ? (
+                            <GlassCard style={styles.bioTriggerCard}>
+                                <View style={styles.bioTriggerInner}>
+                                    <LinearGradient
+                                        colors={themeColors.gradient}
+                                        style={styles.bioTriggerIconBox}
+                                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                                    >
+                                        <Ionicons name="sunny" size={26} color="#FFF" />
+                                    </LinearGradient>
+                                    <Text style={[styles.bioTriggerTitle, { color: themeColors.isDark ? '#FFFFFF' : '#0F172A' }]}>Get Today's Bio-Advisory</Text>
+                                    <Text style={styles.bioTriggerDesc}>
+                                        Gemini analyzes your sleep, steps, and stress from yesterday to generate 3 hyper-personalized action tips for today.
+                                    </Text>
+                                    <TouchableOpacity
+                                        style={[styles.bioLoadBtn, { backgroundColor: themeColors.accent, shadowColor: themeColors.accent }]}
+                                        onPress={handleLoadBioAdvisory}
+                                        disabled={loadingBioAdvisory}
+                                    >
+                                        {loadingBioAdvisory ? (
+                                            <ActivityIndicator size="small" color="#FFF" />
+                                        ) : (
+                                            <>
+                                                <Ionicons name="flash" size={16} color="#FFF" style={{ marginRight: 6 }} />
+                                                <Text style={styles.bioLoadBtnText}>GENERATE MORNING BRIEF</Text>
+                                            </>
+                                        )}
+                                    </TouchableOpacity>
                                 </View>
                             </GlassCard>
-                        ))}
+                        ) : (
+                            <View>
+                                {/* Status Banner */}
+                                <View style={[styles.bioStatusBanner, { backgroundColor: `${statusColor}15`, borderColor: `${statusColor}30` }]}>
+                                    <View style={[styles.bioStatusDot, { backgroundColor: statusColor }]} />
+                                    <Text style={[styles.bioStatusText, { color: statusColor }]}>
+                                        {bioAdvisoryData?.morning_status?.toUpperCase() ?? 'STATUS UNKNOWN'}
+                                    </Text>
+                                    <TouchableOpacity
+                                        style={styles.bioRefreshBtn}
+                                        onPress={handleLoadBioAdvisory}
+                                        disabled={loadingBioAdvisory}
+                                    >
+                                        {loadingBioAdvisory
+                                            ? <ActivityIndicator size="small" color={statusColor} />
+                                            : <Ionicons name="refresh" size={16} color="#64748B" />
+                                        }
+                                    </TouchableOpacity>
+                                </View>
+
+                                {/* Advisory Cards */}
+                                {(bioAdvisoryData?.advisories ?? []).map((item, idx) => (
+                                    <GlassCard key={idx} style={styles.bioAdvisoryCard}>
+                                        <View style={styles.bioAdvisoryRow}>
+                                            <View style={[styles.bioAdvisoryIconBox, { backgroundColor: `${item.color}18` }]}>
+                                                <Ionicons name={item.icon ?? 'star'} size={22} color={item.color ?? '#6366F1'} />
+                                            </View>
+                                            <View style={styles.bioAdvisoryContent}>
+                                                <Text style={[styles.bioAdvisoryCategory, { color: item.color ?? '#6366F1' }]}>
+                                                    {item.category}
+                                                </Text>
+                                                <Text style={[styles.bioAdvisoryTitle, { color: themeColors.isDark ? '#FFFFFF' : '#0F172A' }]}>{item.title}</Text>
+                                                <Text style={[styles.bioAdvisoryAdvice, { color: themeColors.isDark ? 'rgba(255,255,255,0.75)' : 'rgba(15,23,42,0.75)' }]}>{item.advice}</Text>
+                                            </View>
+                                        </View>
+                                    </GlassCard>
+                                ))}
+                            </View>
+                        )}
                     </View>
                 )}
             </View>
@@ -1192,7 +1239,7 @@ const ProgressScreen = ({ navigation }) => {
                 id: 'sleep_peak',
                 type: 'PEAK',
                 icon: 'trending-up',
-                color: '#10B981',
+                color: themeColors.accent,
                 label: 'PRIME ZONE',
                 title: 'Peak Recovery',
                 message: 'You unlocked "Prime Recovery" with 8h+ sleep. Today is a great day for a heavy lifting session!'
@@ -1206,7 +1253,7 @@ const ProgressScreen = ({ navigation }) => {
                 <View style={styles.sectionHeaderElite}>
                     <Text style={styles.sectionTitleElite}>AI Pattern Recognition</Text>
                     <View style={styles.scanningPill}>
-                        <Animated.View style={[styles.scanDot, { opacity: floatingAnim }]} />
+                        <Animated.View style={[styles.scanDot, { opacity: floatingAnim, backgroundColor: themeColors.accent }]} />
                         <Text style={styles.scanningText}>ANALYZING CORRELATIONS</Text>
                     </View>
                 </View>
@@ -1252,12 +1299,12 @@ const ProgressScreen = ({ navigation }) => {
 
                 <AnimatedCard style={styles.coachCardElite}>
                     <LinearGradient
-                        colors={['#064E3B', '#065F46']}
+                        colors={themeColors.gradient}
                         style={styles.coachGradElite}
                     >
                         <View style={styles.coachBubbleRow}>
                             <View style={styles.coachIconBox}>
-                                <Ionicons name="sparkles" size={24} color="#10B981" />
+                                <Ionicons name="sparkles" size={24} color="#FFFFFF" />
                             </View>
                             <View style={styles.coachSpeech}>
                                 <Text style={styles.coachMessageText}>
@@ -1315,7 +1362,7 @@ const ProgressScreen = ({ navigation }) => {
                             <Text style={styles.lifeLabelElite}>STRESS</Text>
                         </View>
                         <View style={styles.lifeItemElite}>
-                            <Ionicons name="footsteps" size={20} color="#10B981" />
+                            <Ionicons name="footsteps" size={20} color={themeColors.accent} />
                             <Text style={styles.lifeValueElite}>{currentSteps.toLocaleString()}</Text>
                             <Text style={styles.lifeLabelElite}>STEPS</Text>
                         </View>
@@ -1331,34 +1378,60 @@ const ProgressScreen = ({ navigation }) => {
 
         return (
             <View style={styles.sectionElite}>
-                <View style={styles.sectionHeaderElite}>
-                    <Text style={styles.sectionTitleElite}>The Trajectory</Text>
-                    <Text style={styles.activityGoalText}>{stats.percentage}% TO TARGET</Text>
-                </View>
-                <GlassCard style={styles.trajectoryPath}>
-                    <View style={styles.trajectoryRow}>
-                        <View style={styles.tStep}>
-                            <View style={[styles.tDot, styles.tDotDone]} />
-                            <Text style={styles.tLab}>{stats.roadmap.start.date.toUpperCase()}</Text>
-                            <Text style={styles.tVal}>{stats.roadmap.start.weight}kg</Text>
-                        </View>
-                        <View style={styles.tLine} />
-                        <View style={styles.tStep}>
-                            <View style={[styles.tDot, stats.percentage >= 50 && styles.tDotDone]} />
-                            <Text style={styles.tLab}>MIDWAY</Text>
-                            <Text style={styles.tVal}>{stats.roadmap.midway.weight}kg</Text>
-                        </View>
-                        <View style={styles.tLine} />
-                        <View style={styles.tStep}>
-                            <View style={styles.tDot} />
-                            <Text style={styles.tLab}>GOAL</Text>
-                            <Text style={styles.tVal}>{stats.roadmap.goal.weight}kg</Text>
+                <TouchableOpacity 
+                    activeOpacity={0.8}
+                    style={styles.trajectoryHeaderBtn}
+                    onPress={() => {
+                        Haptics.selectionAsync();
+                        setIsTrajectoryExpanded(!isTrajectoryExpanded);
+                    }}
+                >
+                    <View style={styles.trajectoryHeaderLeft}>
+                        <LinearGradient
+                            colors={themeColors.gradient}
+                            style={styles.trajectoryIconBox}
+                            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                        >
+                            <Ionicons name="git-commit" size={20} color="#FFF" />
+                        </LinearGradient>
+                        <View>
+                            <Text style={[styles.sectionTitleElite, { marginBottom: 2 }]}>The Trajectory</Text>
+                            <Text style={styles.sectionSubTitleElite}>{stats.percentage}% TO TARGET</Text>
                         </View>
                     </View>
-                    <View style={styles.tProgressTrack}>
-                        <View style={[styles.tProgressFill, { width: `${stats.percentage}%` }]} />
-                    </View>
-                </GlassCard>
+                    <Ionicons 
+                        name={isTrajectoryExpanded ? "chevron-up" : "chevron-down"} 
+                        size={20} 
+                        color={COLORS.text + '80'} 
+                    />
+                </TouchableOpacity>
+
+                {isTrajectoryExpanded && (
+                    <GlassCard style={[styles.trajectoryPath, { marginTop: 10 }]}>
+                        <View style={styles.trajectoryRow}>
+                            <View style={styles.tStep}>
+                                <View style={[styles.tDot, styles.tDotDone]} />
+                                <Text style={styles.tLab}>{stats.roadmap.start.date.toUpperCase()}</Text>
+                                <Text style={styles.tVal}>{stats.roadmap.start.weight}kg</Text>
+                            </View>
+                            <View style={styles.tLine} />
+                            <View style={styles.tStep}>
+                                <View style={[styles.tDot, stats.percentage >= 50 && styles.tDotDone]} />
+                                <Text style={styles.tLab}>MIDWAY</Text>
+                                <Text style={styles.tVal}>{stats.roadmap.midway.weight}kg</Text>
+                            </View>
+                            <View style={styles.tLine} />
+                            <View style={styles.tStep}>
+                                <View style={styles.tDot} />
+                                <Text style={styles.tLab}>GOAL</Text>
+                                <Text style={styles.tVal}>{stats.roadmap.goal.weight}kg</Text>
+                            </View>
+                        </View>
+                        <View style={styles.tProgressTrack}>
+                            <View style={[styles.tProgressFill, { width: `${stats.percentage}%` }]} />
+                        </View>
+                    </GlassCard>
+                )}
             </View>
         );
     };
@@ -1428,7 +1501,7 @@ const ProgressScreen = ({ navigation }) => {
                             <Circle cx="50" cy="50" r="40" stroke="#F1F5F9" strokeWidth="10" fill="transparent" />
                             <Circle
                                 cx="50" cy="50" r="40"
-                                stroke={COLORS.primary} strokeWidth="10"
+                                stroke={themeColors.accent} strokeWidth="10"
                                 fill="transparent"
                                 strokeDasharray={`${(calPerc / 100) * 251.2} 251.2`}
                                 strokeLinecap="round"
@@ -1442,12 +1515,12 @@ const ProgressScreen = ({ navigation }) => {
                 </View>
 
                 <View style={styles.macroSplitStrip}>
-                    <View style={[styles.macroPiece, { flex: Math.max(0.1, curDay.protein), backgroundColor: '#10B981' }]} />
+                    <View style={[styles.macroPiece, { flex: Math.max(0.1, curDay.protein), backgroundColor: themeColors.accent }]} />
                     <View style={[styles.macroPiece, { flex: Math.max(0.1, curDay.carbs), backgroundColor: '#3B82F6' }]} />
                     <View style={[styles.macroPiece, { flex: Math.max(0.1, curDay.fats), backgroundColor: '#F59E0B' }]} />
                 </View>
                 <View style={styles.macroSplitLabels}>
-                    <Text style={styles.splitLab}><Text style={{ color: '#10B981' }}>●</Text> P</Text>
+                    <Text style={styles.splitLab}><Text style={{ color: themeColors.accent }}>●</Text> P</Text>
                     <Text style={styles.splitLab}><Text style={{ color: '#3B82F6' }}>●</Text> C</Text>
                     <Text style={styles.splitLab}><Text style={{ color: '#F59E0B' }}>●</Text> F</Text>
                 </View>
@@ -1519,10 +1592,10 @@ const ProgressScreen = ({ navigation }) => {
                             setActiveCategory(cat);
                         }}
                     >
-                        <Text style={[styles.tabTextElite, activeCategory === cat && styles.tabTextActiveElite]}>
+                        <Text style={[styles.tabTextElite, activeCategory === cat && { color: themeColors.accent }]}>
                             {cat}
                         </Text>
-                        {activeCategory === cat && <View style={styles.tabIndicatorElite} />}
+                        {activeCategory === cat && <View style={[styles.tabIndicatorElite, { backgroundColor: themeColors.accent }]} />}
                     </TouchableOpacity>
                 ))}
             </View>
@@ -1532,7 +1605,7 @@ const ProgressScreen = ({ navigation }) => {
     const renderHeader = () => (
         <View style={styles.headerStack}>
             <LinearGradient
-                colors={['#064E3B', '#059669']}
+                colors={themeColors.gradient}
                 style={styles.headerGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0.5 }}
@@ -1635,7 +1708,7 @@ const ProgressScreen = ({ navigation }) => {
         </View>
     );
 
-    if (loading) return <ActivityIndicator color={COLORS.primary} style={{ marginTop: 50 }} />;
+    if (loading) return <ActivityIndicator color={themeColors.accent} style={{ marginTop: 50 }} />;
 
     return (
         <AuraBackground style={styles.container}>
@@ -1902,7 +1975,7 @@ const ProgressScreen = ({ navigation }) => {
                                 onPress={handleLogWeight}
                             >
                                 <LinearGradient
-                                    colors={['#10B981', '#059669']}
+                                    colors={themeColors.gradient}
                                     style={styles.saveGradElite}
                                 >
                                     <Text style={styles.saveTextElite}>COMPLETE CHECK-IN</Text>
@@ -2110,14 +2183,14 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
     },
     tabTextActiveElite: {
-        color: '#10B981',
+        // color set dynamically via inline style
     },
     tabIndicatorElite: {
         position: 'absolute',
         bottom: 0,
         width: 30,
         height: 3,
-        backgroundColor: '#10B981',
+        // backgroundColor set dynamically via inline style
         borderTopLeftRadius: 3,
         borderTopRightRadius: 3,
     },
@@ -2166,7 +2239,7 @@ const styles = StyleSheet.create({
         width: 6,
         height: 6,
         borderRadius: 3,
-        backgroundColor: '#10B981',
+        // backgroundColor set dynamically via inline style
     },
     scanningText: {
         fontSize: 8,
@@ -3255,6 +3328,30 @@ const styles = StyleSheet.create({
         height: 25,
         backgroundColor: '#E2E8F0',
     },
+    trajectoryHeaderBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 14,
+        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+        borderRadius: 20,
+        marginHorizontal: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.08)',
+    },
+    trajectoryHeaderLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    trajectoryIconBox: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     trajectoryPath: {
         marginHorizontal: 20,
         padding: 24,
@@ -3922,7 +4019,7 @@ const styles = StyleSheet.create({
     trajStatValue: {
         fontSize: 22,
         fontWeight: '800',
-        color: '#1E293B',
+        color: COLORS.text,
     },
     trajStatUnit: {
         fontSize: 11,
@@ -3983,7 +4080,7 @@ const styles = StyleSheet.create({
     },
     trajFactorText: {
         fontSize: 13,
-        color: '#374151',
+        color: COLORS.text,
         fontWeight: '500',
         flex: 1,
         lineHeight: 18,
@@ -4008,7 +4105,7 @@ const styles = StyleSheet.create({
     bioTriggerTitle: {
         fontSize: 17,
         fontWeight: '700',
-        color: '#1E293B',
+        color: COLORS.text,
         marginBottom: 8,
         textAlign: 'center',
     },
@@ -4091,7 +4188,7 @@ const styles = StyleSheet.create({
     bioAdvisoryTitle: {
         fontSize: 15,
         fontWeight: '700',
-        color: '#1E293B',
+        color: COLORS.text,
         marginBottom: 5,
     },
     bioAdvisoryAdvice: {

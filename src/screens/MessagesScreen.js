@@ -9,7 +9,8 @@ import {
     Dimensions,
     ActivityIndicator,
     RefreshControl,
-    Animated
+    Animated,
+    TextInput
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -28,6 +29,8 @@ const MessagesScreen = ({ navigation }) => {
     const [conversations, setConversations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [searchVisible, setSearchVisible] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const floatingAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -116,9 +119,9 @@ const MessagesScreen = ({ navigation }) => {
                         <Text style={styles.eliteTitle}>Messages</Text>
                         <Text style={styles.eliteSubtitle}>YOUR CONVERSATIONS</Text>
                     </View>
-                    <TouchableOpacity style={styles.headerActionBtn}>
+                    <TouchableOpacity style={styles.headerActionBtn} onPress={() => setSearchVisible(v => !v)}>
                         <BlurView intensity={20} tint="light" style={styles.iconBlur}>
-                            <Ionicons name="search" size={20} color={COLORS.white} />
+                            <Ionicons name={searchVisible ? 'close' : 'search'} size={20} color={COLORS.white} />
                         </BlurView>
                     </TouchableOpacity>
                 </View>
@@ -126,22 +129,39 @@ const MessagesScreen = ({ navigation }) => {
         </View>
     );
 
+    const filteredConversations = conversations.filter(c =>
+        !searchQuery || c.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     return (
         <AuraBackground style={styles.container}>
             {renderHeader()}
+            {searchVisible && (
+                <View style={styles.searchBar}>
+                    <Ionicons name="search" size={16} color={COLORS.textSecondary} />
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Search conversations..."
+                        placeholderTextColor={COLORS.textSecondary}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        autoFocus
+                    />
+                </View>
+            )}
 
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollPadding}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.accent} />
                 }
             >
                 {/* Active Squad Scroller */}
                 <View style={styles.activeSection}>
                     <Text style={styles.sectionTitle}>Active Now</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.activeScrollContent}>
-                        {conversations.filter(c => c.status !== 'Offline').map((friend, index) => (
+                        {filteredConversations.filter(c => c.status !== 'Offline').map((friend, index) => (
                             <TouchableOpacity
                                 key={friend.id}
                                 style={styles.activeUser}
@@ -149,7 +169,7 @@ const MessagesScreen = ({ navigation }) => {
                             >
                                 <View style={styles.activeAvatarFrame}>
                                     <Image source={{ uri: friend.avatar }} style={styles.activeAvatarImg} />
-                                    <View style={styles.onlineDot} />
+                                    <View style={[styles.onlineDot, { backgroundColor: themeColors.accent }]} />
                                 </View>
                                 <Text style={styles.activeName}>{(friend.name || 'User').split(' ')[0]}</Text>
                             </TouchableOpacity>
@@ -161,9 +181,9 @@ const MessagesScreen = ({ navigation }) => {
                 <View style={styles.chatListSection}>
                     <Text style={styles.sectionTitle}>Recent Chats</Text>
                     {loading && !refreshing ? (
-                        <ActivityIndicator color={COLORS.primary} style={{ marginTop: 20 }} />
-                    ) : conversations.length > 0 ? (
-                        conversations.map((friend, index) => (
+                        <ActivityIndicator color={themeColors.accent} style={{ marginTop: 20 }} />
+                    ) : filteredConversations.length > 0 ? (
+                        filteredConversations.map((friend, index) => (
                             <AnimatedCard key={friend.id} delay={index * 100} style={styles.chatItemElite}>
                                 <GlassCard>
                                     <TouchableOpacity
@@ -172,7 +192,7 @@ const MessagesScreen = ({ navigation }) => {
                                     >
                                         <View style={styles.avatarWrapper}>
                                             <Image source={{ uri: friend.avatar }} style={styles.listAvatarImg} />
-                                            {friend.status !== 'Offline' && <View style={styles.statusDotList} />}
+                                            {friend.status !== 'Offline' && <View style={[styles.statusDotList, { backgroundColor: themeColors.accent }]} />}
                                         </View>
 
                                         <View style={styles.chatInfo}>
@@ -201,9 +221,12 @@ const MessagesScreen = ({ navigation }) => {
                 <View style={{ height: 40 }} />
             </ScrollView>
 
-            <TouchableOpacity style={styles.fabElite}>
+            <TouchableOpacity
+                style={[styles.fabElite, { shadowColor: themeColors.accent }]}
+                onPress={() => navigation.navigate('Main', { screen: 'Social' })}
+            >
                 <LinearGradient
-                    colors={['#10B981', '#059669']}
+                    colors={themeColors.gradient}
                     style={styles.fabGradientElite}
                 >
                     <Ionicons name="create" size={28} color={COLORS.white} />
@@ -320,7 +343,7 @@ const styles = StyleSheet.create({
         width: 14,
         height: 14,
         borderRadius: 7,
-        backgroundColor: '#10B981',
+        // backgroundColor handled dynamically
         borderWidth: 2,
         borderColor: COLORS.white,
     },
@@ -356,7 +379,7 @@ const styles = StyleSheet.create({
         width: 12,
         height: 12,
         borderRadius: 6,
-        backgroundColor: '#10B981',
+        // backgroundColor handled dynamically
         borderWidth: 2,
         borderColor: COLORS.white,
     },
@@ -399,7 +422,7 @@ const styles = StyleSheet.create({
         height: 60,
         borderRadius: 22,
         elevation: 8,
-        shadowColor: '#10B981',
+        // shadowColor handled dynamically
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.3,
         shadowRadius: 12,
@@ -418,6 +441,25 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 16,
         color: COLORS.textSecondary,
+        fontWeight: '600',
+    },
+    searchBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        borderRadius: 14,
+        marginHorizontal: 20,
+        marginTop: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        gap: 10,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.12)',
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 14,
+        color: COLORS.text,
         fontWeight: '600',
     },
     floatingIcon: {

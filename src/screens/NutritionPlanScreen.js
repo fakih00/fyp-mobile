@@ -280,7 +280,7 @@ const NutritionPlanScreen = ({ navigation }) => {
                             <Text style={styles.mealTypeText}>{item.type.toUpperCase()}</Text>
                         </View>
                         {item.completed && (
-                            <View style={styles.mealDoneBadge}>
+                            <View style={[styles.mealDoneBadge, { backgroundColor: themeColors.accent }]}>
                                 <Ionicons name="checkmark" size={16} color={COLORS.white} />
                             </View>
                         )}
@@ -290,7 +290,7 @@ const NutritionPlanScreen = ({ navigation }) => {
                         <View style={styles.mealHeaderRow}>
                             <Text style={styles.mealName} numberOfLines={1}>{item.name}</Text>
                             <TouchableOpacity
-                                style={[styles.logBtn, item.completed && styles.logBtnDone]}
+                                style={[styles.logBtn, item.completed && { backgroundColor: themeColors.accent, borderColor: themeColors.accent }]}
                                 onPress={() => handleLogMeal(item.id)}
                                 disabled={item.completed}
                             >
@@ -367,7 +367,7 @@ const NutritionPlanScreen = ({ navigation }) => {
                                         <Ionicons name="close" size={22} color={COLORS.white} />
                                     </TouchableOpacity>
                                     <View style={styles.modalHeroText}>
-                                        <Text style={styles.modalMealType}>{selectedMeal.type.toUpperCase()}</Text>
+                                        <Text style={[styles.modalMealType, { color: themeColors.accent }]}>{selectedMeal.type.toUpperCase()}</Text>
                                         <Text style={styles.modalMealName}>{selectedMeal.name}</Text>
                                     </View>
                                 </View>
@@ -549,7 +549,7 @@ const NutritionPlanScreen = ({ navigation }) => {
                                     let statusText = 'No Plan';
                                     let statusIcon = 'calendar-outline';
 
-                                    if (allLogged) { statusColor = '#10B981'; statusBg = 'rgba(16,185,129,0.1)'; statusText = 'All Logged'; statusIcon = 'checkmark-circle'; }
+                                    if (allLogged) { statusColor = themeColors.accent; statusBg = themeColors.accent + '15'; statusText = 'All Logged'; statusIcon = 'checkmark-circle'; }
                                     else if (partial) { statusColor = '#F59E0B'; statusBg = 'rgba(245,158,11,0.1)'; statusText = `${safeItem.logged}/${safeItem.total_meals} Logged`; statusIcon = 'ellipse-outline'; }
                                     else if (missed) { statusColor = '#EF4444'; statusBg = 'rgba(239,68,68,0.1)'; statusText = 'Missed'; statusIcon = 'close-circle'; }
 
@@ -584,13 +584,13 @@ const NutritionPlanScreen = ({ navigation }) => {
                                                 <View style={styles.historyMealList}>
                                                     {safeItem.meals.map((meal, mi) => (
                                                         <View key={mi} style={styles.historyMealRow}>
-                                                            <View style={[styles.historyMealDot, { backgroundColor: meal.completed ? '#10B981' : '#EF4444' }]} />
+                                                            <View style={[styles.historyMealDot, { backgroundColor: meal.completed ? themeColors.accent : '#EF4444' }]} />
                                                             <View style={{ flex: 1 }}>
                                                                 <Text style={styles.historyMealName}>{meal.name}</Text>
                                                                 <Text style={styles.historyMealCals}>{meal.calories} kcal · {meal.protein}g protein</Text>
                                                             </View>
-                                                            <View style={[styles.historyMealBadge, { backgroundColor: meal.completed ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)' }]}>
-                                                                <Text style={{ fontSize: 9, fontWeight: '900', color: meal.completed ? '#10B981' : '#EF4444' }}>
+                                                            <View style={[styles.historyMealBadge, { backgroundColor: meal.completed ? themeColors.accent + '15' : 'rgba(239,68,68,0.12)' }]}>
+                                                                <Text style={{ fontSize: 9, fontWeight: '900', color: meal.completed ? themeColors.accent : '#EF4444' }}>
                                                                     {meal.completed ? 'LOGGED' : 'MISSED'}
                                                                 </Text>
                                                             </View>
@@ -704,12 +704,11 @@ const styles = StyleSheet.create({
     mealImg: { width: '100%', height: '100%' },
     mealTypeTag: { position: 'absolute', top: 8, left: 8, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 7, backgroundColor: 'rgba(0,0,0,0.5)' },
     mealTypeText: { fontSize: 8, fontWeight: '900', color: COLORS.white },
-    mealDoneBadge: { position: 'absolute', bottom: 8, right: 8, width: 24, height: 24, borderRadius: 12, backgroundColor: '#10B981', justifyContent: 'center', alignItems: 'center' },
+    mealDoneBadge: { position: 'absolute', bottom: 8, right: 8, width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
     mealBody: { flex: 1, marginLeft: 15, justifyContent: 'center' },
     mealHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
     mealName: { fontSize: 16, fontWeight: '800', color: '#0F172A', flex: 1, marginRight: 8 },
     logBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' },
-    logBtnDone: { backgroundColor: '#10B981', borderColor: '#10B981' },
     logBtnText: { fontSize: 9, fontWeight: '900', color: '#475569' },
     macroChips: { flexDirection: 'row', gap: 6 },
     macroChip: { flex: 1, paddingVertical: 5, borderRadius: 10, alignItems: 'center' },
@@ -730,7 +729,7 @@ const styles = StyleSheet.create({
     modalImg: { width: '100%', height: '100%' },
     modalCloseBtn: { position: 'absolute', top: 18, right: 18, width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center' },
     modalHeroText: { position: 'absolute', bottom: 24, left: 24, right: 24 },
-    modalMealType: { fontSize: 11, fontWeight: '900', color: '#10B981', letterSpacing: 2, marginBottom: 6 },
+    modalMealType: { fontSize: 11, fontWeight: '900', letterSpacing: 2, marginBottom: 6 },
     modalMealName: { fontSize: 26, fontWeight: '900', color: COLORS.white, letterSpacing: -0.5 },
     modalBody: { padding: 24 },
     modalMacroGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },

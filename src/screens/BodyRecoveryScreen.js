@@ -619,8 +619,8 @@ const BodyRecoveryScreen = ({ navigation }) => {
                                                 handleAnswerChange(choice);
                                             }}
                                         >
-                                            <Ionicons name={isSelected ? "checkbox" : "square-outline"} size={16} color={isSelected ? '#06B6D4' : '#64748B'} />
-                                            <Text style={[styles.choiceText, isSelected && styles.choiceTextActive]}>{choice}</Text>
+                                            <Ionicons name={isSelected ? "checkbox" : "square-outline"} size={16} color={isSelected ? themeColors.accent : '#64748B'} />
+                                            <Text style={[styles.choiceText, isSelected && { color: themeColors.accent, fontWeight: '700' }]}>{choice}</Text>
                                         </TouchableOpacity>
                                     );
                                 })}
@@ -664,7 +664,7 @@ const BodyRecoveryScreen = ({ navigation }) => {
 
                 <TouchableOpacity style={styles.qNextBtn} onPress={handleNext}>
                     <LinearGradient
-                        colors={['#06B6D4', '#0891B2']}
+                        colors={themeColors.gradient || ['#06B6D4', '#0891B2']}
                         style={styles.qNextGrad}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
@@ -903,15 +903,15 @@ const BodyRecoveryScreen = ({ navigation }) => {
             <SafeAreaView style={styles.safeArea}>
                 {/* Cyber-Med Header */}
                 <View style={styles.header}>
-                    <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+                    <TouchableOpacity style={[styles.backBtn, { borderColor: `${themeColors.accent}40` }]} onPress={() => navigation.goBack()}>
                         <BlurView intensity={40} tint="light" style={styles.backBlur}>
-                            <Ionicons name="chevron-back" size={20} color="#06B6D4" />
+                            <Ionicons name="chevron-back" size={20} color={themeColors.accent} />
                         </BlurView>
                     </TouchableOpacity>
 
-                    <BlurView intensity={30} tint="light" style={styles.hudBadge}>
-                        <Animated.View style={[styles.hudPulseDot, { transform: [{ scale: pulseWarningAnim }] }]} />
-                        <Text style={styles.hudBadgeText}>SMART RECOVERY</Text>
+                    <BlurView intensity={30} tint="light" style={[styles.hudBadge, { borderColor: `${themeColors.accent}30` }]}>
+                        <Animated.View style={[styles.hudPulseDot, { backgroundColor: themeColors.accent, transform: [{ scale: pulseWarningAnim }] }]} />
+                        <Text style={[styles.hudBadgeText, { color: themeColors.accent }]}>SMART RECOVERY</Text>
                     </BlurView>
 
                     {phase === 'results' ? (
@@ -927,7 +927,7 @@ const BodyRecoveryScreen = ({ navigation }) => {
 
                 {phase === 'loading_profile' && (
                     <View style={styles.centerSpinner}>
-                        <ActivityIndicator size="large" color="#06B6D4" />
+                        <ActivityIndicator size="large" color={themeColors.accent} />
                         <Text style={styles.loadingProfileText}>Contacting Sports Clinic database...</Text>
                     </View>
                 )}
@@ -960,10 +960,10 @@ const BodyRecoveryScreen = ({ navigation }) => {
                                 <View style={styles.neonPlinth} />
 
                                 {/* Perspective toggler */}
-                                <TouchableOpacity style={styles.viewToggleBtn} activeOpacity={0.8} onPress={toggleView}>
+                                <TouchableOpacity style={[styles.viewToggleBtn, { borderColor: `${themeColors.accent}30` }]} activeOpacity={0.8} onPress={toggleView}>
                                     <BlurView intensity={35} tint="light" style={styles.viewToggleBlur}>
-                                        <Ionicons name="sync" size={14} color="#06B6D4" style={{ marginRight: 6 }} />
-                                        <Text style={styles.viewToggleText}>{isFrontView ? 'FRONT VIEW' : 'BACK VIEW'}</Text>
+                                        <Ionicons name="sync" size={14} color={themeColors.accent} style={{ marginRight: 6 }} />
+                                        <Text style={[styles.viewToggleText, { color: themeColors.accent }]}>{isFrontView ? 'FRONT VIEW' : 'BACK VIEW'}</Text>
                                     </BlurView>
                                 </TouchableOpacity>
 
@@ -992,7 +992,7 @@ const BodyRecoveryScreen = ({ navigation }) => {
 
                                     <TouchableOpacity style={styles.launchBtn} onPress={() => setPhase('questionnaire')}>
                                         <LinearGradient
-                                            colors={['#06B6D4', '#0891B2']}
+                                            colors={themeColors.gradient || ['#06B6D4', '#0891B2']}
                                             style={styles.launchGrad}
                                             start={{ x: 0, y: 0 }}
                                             end={{ x: 1, y: 0 }}
@@ -1033,7 +1033,7 @@ const BodyRecoveryScreen = ({ navigation }) => {
                         {/* Summary Stats Row */}
                         <View style={styles.summaryStatsRow}>
                             <BlurView intensity={50} tint="light" style={styles.summaryStatCard}>
-                                <Ionicons name="fitness" size={18} color="#06B6D4" />
+                                <Ionicons name="fitness" size={18} color={themeColors.accent} />
                                 <Text style={styles.summaryStatNumber}>{recoveryPlan?.stretching?.length || 0}</Text>
                                 <Text style={styles.summaryStatLabel}>Stretches</Text>
                             </BlurView>
@@ -1091,7 +1091,7 @@ const BodyRecoveryScreen = ({ navigation }) => {
                         <View style={styles.dashboardGrid}>
                             {[
                                 { key: 'analysis', icon: 'pulse', color: '#EF4444', bg: 'rgba(239,68,68,0.12)', title: 'Pain Analysis', sub: 'Clinical overview', gradColors: ['#EF4444', '#F87171'] },
-                                { key: 'stretching', icon: 'accessibility', color: '#06B6D4', bg: 'rgba(6,182,212,0.12)', title: 'Stretching', sub: `${recoveryPlan?.stretching?.length || 0} targeted moves`, gradColors: ['#06B6D4', '#22D3EE'] },
+                                { key: 'stretching', icon: 'accessibility', color: themeColors.accent, bg: `${themeColors.accent}20`, title: 'Stretching', sub: `${recoveryPlan?.stretching?.length || 0} targeted moves`, gradColors: themeColors.gradient || ['#06B6D4', '#22D3EE'] },
                                 { key: 'mobility', icon: 'sync', color: '#10B981', bg: 'rgba(16,185,129,0.12)', title: 'Mobility Rehab', sub: `${recoveryPlan?.mobility_exercises?.length || 0} active drills`, gradColors: ['#10B981', '#34D399'] },
                                 { key: 'supplements', icon: 'leaf', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', title: 'Supplements', sub: `${recoveryPlan?.supplements?.length || 0} compounds`, gradColors: ['#F59E0B', '#FBBF24'] },
                                 { key: 'avoid', icon: 'ban', color: '#EF4444', bg: 'rgba(239,68,68,0.12)', title: 'Avoid Movements', sub: `${recoveryPlan?.exercises_to_avoid?.length || 0} restrictions`, gradColors: ['#EF4444', '#FB7185'] },

@@ -306,7 +306,7 @@ const WorkoutPlanScreen = ({ navigation }) => {
                     <View style={styles.macroListElite}>
                         <MetricItem label="CALORIES" val={kcal} target={kcalTarget} color="#FF6B6B" icon="flame" />
                         <MetricItem label="DURATION" val={duration} target={durationTarget} color={themeColors.accent} icon="time" suffix="m" />
-                        <MetricItem label="INTENSITY" val={intensity} target={intensityTarget} color="#34D399" icon="flash" />
+                        <MetricItem label="INTENSITY" val={intensity} target={intensityTarget} color={themeColors.accent} icon="flash" />
                     </View>
                 </View>
 
@@ -389,11 +389,12 @@ const WorkoutPlanScreen = ({ navigation }) => {
                     <View style={styles.workoutBodyElite}>
                         <View style={styles.workoutHeaderElite}>
                             <Text style={styles.workoutTitleElite} numberOfLines={1}>{item.title}</Text>
-                            <View style={[styles.checkCircleElite, item.completed && styles.checkCircleActiveElite]}>
+                            <View style={[styles.checkCircleElite, item.completed && { backgroundColor: themeColors.accent, borderColor: themeColors.accent }]}>
                                 <Ionicons
                                     name={item.completed ? "shield-checkmark" : "chevron-forward"}
                                     size={18}
                                     color={item.completed ? COLORS.white : themeColors.accent}
+                                
                                 />
                             </View>
                         </View>
@@ -452,19 +453,19 @@ const WorkoutPlanScreen = ({ navigation }) => {
                                 <View style={styles.modalHeaderInfo}>
                                     <Text style={styles.modalTitle}>{previewWorkout.title}</Text>
                                     <View style={styles.modalBadgeRow}>
-                                        <View style={styles.modalCategoryBadge}>
+                                        <View style={[styles.modalCategoryBadge, { backgroundColor: themeColors.accent }]}>
                                             <Text style={styles.modalCategoryText}>{previewWorkout.category}</Text>
                                         </View>
-                                        <View style={styles.modalDifficultyBadge}>
-                                            <Ionicons name="stats-chart" size={12} color="#10B981" />
-                                            <Text style={styles.modalDifficultyText}>{previewWorkout.difficulty}</Text>
+                                        <View style={[styles.modalDifficultyBadge, { backgroundColor: themeColors.accent + '15' }]}>
+                                            <Ionicons name="stats-chart" size={12} color={themeColors.accent} />
+                                            <Text style={[styles.modalDifficultyText, { color: themeColors.accent }]}>{previewWorkout.difficulty}</Text>
                                         </View>
                                     </View>
                                 </View>
 
                                 <View style={styles.modalStatsGrid}>
                                     <View style={styles.modalStatCard}>
-                                        <Ionicons name="time" size={20} color="#10B981" />
+                                        <Ionicons name="time" size={20} color={themeColors.accent} />
                                         <Text style={styles.modalStatNum}>{previewWorkout.duration}</Text>
                                         <Text style={styles.modalStatLabel}>Time</Text>
                                     </View>
@@ -474,7 +475,7 @@ const WorkoutPlanScreen = ({ navigation }) => {
                                         <Text style={styles.modalStatLabel}>Burn</Text>
                                     </View>
                                     <View style={styles.modalStatCard}>
-                                        <Ionicons name="flash" size={20} color="#10B981" />
+                                        <Ionicons name="flash" size={20} color={themeColors.accent} />
                                         <Text style={styles.modalStatNum}>{previewWorkout.intensity || 7}</Text>
                                         <Text style={styles.modalStatLabel}>Intensity</Text>
                                     </View>
@@ -482,7 +483,7 @@ const WorkoutPlanScreen = ({ navigation }) => {
 
                                 <Text style={styles.modalSectionTitle}>AI Rationale</Text>
                                 <View style={styles.rationaleCard}>
-                                    <Ionicons name="bulb" size={20} color="#10B981" style={{ marginRight: 15 }} />
+                                    <Ionicons name="bulb" size={20} color={themeColors.accent} style={{ marginRight: 15 }} />
                                     <Text style={styles.rationaleText}>{previewWorkout.rationale}</Text>
                                 </View>
 
@@ -499,8 +500,8 @@ const WorkoutPlanScreen = ({ navigation }) => {
                                 <View style={styles.circuitList}>
                                     {(previewWorkout.exercises || []).map((ex, i) => (
                                         <View key={i} style={styles.circuitItem}>
-                                            <View style={styles.circuitNumber}>
-                                                <Text style={styles.circuitNumberText}>{i + 1}</Text>
+                                            <View style={[styles.circuitNumber, { backgroundColor: themeColors.accent + '15' }]}>
+                                                <Text style={[styles.circuitNumberText, { color: themeColors.accent }]}>{i + 1}</Text>
                                             </View>
                                             <View style={styles.circuitInfo}>
                                                 <Text style={styles.circuitName}>{ex.name}</Text>
@@ -741,13 +742,13 @@ const WorkoutPlanScreen = ({ navigation }) => {
                         <Text style={styles.emptyTextElite}>Rest Day Scheduled</Text>
                         <Text style={styles.emptySubtextElite}>No workouts for {selectedDay}. Enjoy your recovery!</Text>
                         <TouchableOpacity
-                            style={styles.generateBtn}
+                            style={[styles.generateBtn, { backgroundColor: themeColors.accent + '15', borderColor: themeColors.accent + '30' }]}
                             onPress={() => {
                                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                                 onRefresh();
                             }}
                         >
-                            <Text style={styles.generateBtnText}>RE-SYNC PLAN</Text>
+                            <Text style={[styles.generateBtnText, { color: themeColors.accent }]}>RE-SYNC PLAN</Text>
                         </TouchableOpacity>
                     </View>
                 )}
@@ -1203,8 +1204,7 @@ const styles = StyleSheet.create({
         borderColor: '#E2E8F0',
     },
     checkCircleActiveElite: {
-        backgroundColor: '#10B981',
-        borderColor: '#10B981',
+        // backgroundColor set dynamically via inline styles
     },
     workoutStatsGridElite: {
         flexDirection: 'row',
@@ -1265,14 +1265,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 25,
         paddingVertical: 12,
         borderRadius: 15,
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-        borderWidth: 1,
-        borderColor: 'rgba(16, 185, 129, 0.2)',
+        // background/border handled dynamically
     },
     generateBtnText: {
         fontSize: 12,
         fontWeight: '900',
-        color: '#10B981',
         letterSpacing: 1,
     },
     modalContainer: {
@@ -1335,7 +1332,7 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     modalCategoryBadge: {
-        backgroundColor: '#10B981',
+        // backgroundColor set dynamically inline
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 10,
@@ -1353,10 +1350,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 10,
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        // background handled inline
     },
     modalDifficultyText: {
-        color: '#10B981',
         fontSize: 11,
         fontWeight: 'bold',
     },
@@ -1433,7 +1429,7 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 12,
-        backgroundColor: '#F1F5F9',
+        // background handled inline
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 15,
@@ -1441,7 +1437,6 @@ const styles = StyleSheet.create({
     circuitNumberText: {
         fontSize: 16,
         fontWeight: '900',
-        color: '#10B981',
     },
     circuitInfo: {
         flex: 1,

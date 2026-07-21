@@ -7,31 +7,30 @@ class MessageController extends BaseController {
         $user_id = $this->requireAuth();
 
         $query = "SELECT 
-                    CASE WHEN m.sender_id = :user_id THEN m.receiver_id ELSE m.sender_id END as id,
+                    CASE WHEN m.sender_id = ? THEN m.receiver_id ELSE m.sender_id END as id,
                     u.name as name,
                     up.avatar as avatar,
                     m.content as last_message,
-                    m.timestamp as last_message_time
+                    m.timestamp as last_message_time,
+                    CASE WHEN u.last_seen >= NOW() - INTERVAL 2 MINUTE THEN 'Online' ELSE 'Offline' END as status
                   FROM messages m
-                  JOIN users u ON u.id = (CASE WHEN m.sender_id = :user_id THEN m.receiver_id ELSE m.sender_id END)
-                  JOIN user_profiles up ON u.id = up.user_id
+                  JOIN users u ON u.id = (CASE WHEN m.sender_id = ? THEN m.receiver_id ELSE m.sender_id END)
+                  LEFT JOIN user_profiles up ON u.id = up.user_id
                   WHERE m.id IN (
                       SELECT MAX(id) 
                       FROM messages 
-                      WHERE sender_id = :user_id OR receiver_id = :user_id 
-                      GROUP BY CASE WHEN sender_id = :user_id THEN receiver_id ELSE sender_id END
+                      WHERE sender_id = ? OR receiver_id = ? 
+                      GROUP BY CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END
                   )
                   ORDER BY m.timestamp DESC";
         
         $stmt = $this->db->prepare($query);
-        $stmt->bindParam(":user_id", $user_id);
-        $stmt->execute();
+        $stmt->execute([$user_id, $user_id, $user_id, $user_id, $user_id]);
         
         $conversations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($conversations as &$conv) {
             $conv['avatar'] = $conv['avatar'] ?: "https://i.pravatar.cc/150?u=" . urlencode($conv['name']);
-            $conv['status'] = 'Online';
             $conv['last_message_time'] = $this->timeElapsedString($conv['last_message_time']);
         }
 

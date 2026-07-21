@@ -23,7 +23,9 @@ class AIChatController extends BaseController {
         $stmt = $this->db->prepare("
             SELECT u.name, p.goal, p.weight, p.height, p.age, p.gender,
                    p.training_intensity, p.training_days_per_week, p.training_location,
-                   p.level, p.streak, p.xp
+                   p.level, p.streak, p.xp, p.likes, p.dislikes, p.allergies,
+                   p.injuries, p.pain_points, p.strong_side, p.posture_problems,
+                   p.mobility_limitations, p.avoid_areas, p.chronic_pain
             FROM users u
             JOIN user_profiles p ON u.id = p.user_id
             WHERE u.id = ?
@@ -67,20 +69,63 @@ class AIChatController extends BaseController {
             ]);
         }
 
+        // ── Persist both messages to the database ──────────────────────────
+        $insert = $this->db->prepare(
+            "INSERT INTO ai_chat_history (user_id, role, message) VALUES (?, ?, ?)"
+        );
+        $insert->execute([$user_id, 'user',  $data->message]);
+        $insert->execute([$user_id, 'model', $reply]);
+
         $this->jsonResponse([
-            "reply" => $reply,
+            "reply"      => $reply,
             "ai_powered" => true
         ]);
     }
 
+    /**
+     * GET history — returns all saved AI chat messages for this user,
+     * ordered oldest first so the frontend can render them in order.
+     */
+    public function getHistory() {
+        $user_id = $this->requireAuth();
+
+        $stmt = $this->db->prepare(
+            "SELECT id, role, message, created_at
+             FROM ai_chat_history
+             WHERE user_id = ?
+             ORDER BY created_at ASC, id ASC
+             LIMIT 500"
+        );
+        $stmt->execute([$user_id]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $this->jsonResponse(['messages' => $rows]);
+    }
+
+    /**
+     * DELETE history — wipes all AI chat messages for this user.
+     */
+    public function clearHistory() {
+        $user_id = $this->requireAuth();
+
+        $stmt = $this->db->prepare(
+            "DELETE FROM ai_chat_history WHERE user_id = ?"
+        );
+        $stmt->execute([$user_id]);
+
+        $this->jsonResponse(['success' => true]);
+    }
+
+
     private function buildSystemPrompt($profile): string {
         if (!$profile) {
-            return "You are an elite AI fitness coach. Be concise, motivating, and science-backed. Keep responses under 3 sentences unless the user asks for a detailed plan.";
+            return "You are Coach Elite, an advanced AI athletic performance coach. Be concise, motivating, and science-backed. Keep responses under 4 sentences unless the user asks for a detailed plan.";
         }
 
         $goal      = str_replace('_', ' ', $profile['goal'] ?? 'general fitness');
         $name      = $profile['name'] ?? 'Champion';
         $weight    = $profile['weight'] ?? '?';
+        $height    = $profile['height'] ?? '?';
         $age       = $profile['age'] ?? '?';
         $gender    = $profile['gender'] ?? 'person';
         $level     = $profile['level'] ?? 1;
@@ -89,23 +134,49 @@ class AIChatController extends BaseController {
         $location  = $profile['training_location'] ?? 'gym';
         $days      = $profile['training_days_per_week'] ?? 3;
 
+        // Nutritional preferences
+        $likes     = $profile['likes'] ?? 'None specified';
+        $dislikes  = $profile['dislikes'] ?? 'None specified';
+        $allergies = $profile['allergies'] ?? 'None specified';
+
+        // Recovery / Medical constraints
+        $injuries           = $profile['injuries'] ?? 'None';
+        $painPoints         = $profile['pain_points'] ?? 'None';
+        $strongSide         = $profile['strong_side'] ?? 'right';
+        $postureProblems    = $profile['posture_problems'] ?? 'None';
+        $mobilityLimit      = $profile['mobility_limitations'] ?? 'None';
+        $avoidAreas         = $profile['avoid_areas'] ?? 'None';
+        $chronicPain        = $profile['chronic_pain'] ?? 'None';
+
         return <<<PROMPT
-        You are an elite, world-class AI Personal Trainer and Nutrition Coach named "Coach Elite".
+        You are "Coach Elite", a world-class AI Personal Trainer, Sports Medicine Specialist, and Precision Nutrition Advisor.
         
-        You are currently coaching a user named {$name} with the following profile:
-        - Goal: {$goal}
-        - Age: {$age}, Gender: {$gender}, Weight: {$weight}kg
-        - Training: {$days} days/week, {$intensity} intensity, at a {$location}
-        - App Level: {$level}, Current Streak: {$streak} days
+        You are currently advising a user with the following physiological profile:
+        - Name: {$name} (User ID: {$name})
+        - Goals & Activity: Target is "{$goal}", training {$days} days/week at {$intensity} intensity.
+        - Primary Location: {$location}
+        - Metrics: {$weight}kg, {$height}cm, Age {$age}, Gender: {$gender}
+        - User Progress: Level {$level}, Streak {$streak} days
         
-        Coaching Style Rules:
-        1. Be direct, motivating, and science-backed. Think like a mix of a drill sergeant and a supportive mentor.
-        2. ALWAYS personalize your response using the user's name or profile details when relevant.
-        3. Keep responses CONCISE — 2-4 sentences for simple questions, up to 8 for detailed plans.
-        4. If someone asks for a workout or meal plan, provide a brief but specific example.
-        5. Use emojis sparingly (1-2 max per response) for energy and personality.
-        6. If you don't have enough data to answer precisely, say so and ask a follow-up question.
-        7. Never give medical advice. For injuries or health conditions, always recommend consulting a doctor.
+        Nutrition & Dietary Constraints:
+        - Preferences (Likes): {$likes}
+        - Dislikes: {$dislikes}
+        - Allergies / Avoid: {$allergies}
+        
+        Biomechanical / Safety Context:
+        - Active Injuries: {$injuries}
+        - Chronic Pain: {$chronicPain}
+        - Pain Points: {$painPoints}
+        - Dominant Side: {$strongSide}
+        - Posture Issues: {$postureProblems}
+        - Mobility Restrictions: {$mobilityLimit}
+        - Specific Movements to Avoid: {$avoidAreas}
+        
+        Coaching Directive:
+        1. PERSONALIZATION: Always tailor your coaching response to the user's specific injuries, allergies, training location, and goals. NEVER recommend movements they must avoid or foods they are allergic to.
+        2. STYLE: Direct, expert, highly motivating, science-backed. Sound like a dedicated premium private trainer. Use 1-2 emojis max per response.
+        3. SAFETY: If the user mentions pain, refer to their pain points or injuries, and provide safe, modification exercises. Never give medical diagnoses; advise seeking professional care if pain persists.
+        4. BREVITY: Keep answers concise and direct. Avoid generic introductory filler like "Sure, I can help with that!". Dive straight into high-value information. Keep responses to 2-4 sentences for questions, or structured lists up to 8 sentences if planning.
         PROMPT;
     }
 }

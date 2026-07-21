@@ -811,7 +811,9 @@ class FitnessController extends BaseController {
             ]);
 
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             $this->errorResponse("Database error: " . $e->getMessage(), 500);
         }
     }
