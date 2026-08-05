@@ -1,7 +1,8 @@
 // Replace with your computer's local IP if testing on a physical device.
 // For Android Emulator, use 'http://10.0.2.2:8000/api'
 // For iOS Simulator, use 'http://localhost:8000/api'
-const BASE_URL = 'http://192.168.68.123:8000/api';
+const BASE_URL = 'http://192.168.1.17:8000/api';
+const REQUEST_TIMEOUT_MS = 10000;
 
 // Internal token store — set after login, cleared on logout
 let _token = null;
@@ -40,6 +41,20 @@ function authHeaders(extraHeaders = {}) {
     return headers;
 }
 
+async function fetchWithTimeout(url, options = {}) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    try {
+        return await fetch(url, {
+            ...options,
+            signal: controller.signal,
+        });
+    } finally {
+        clearTimeout(timeoutId);
+    }
+}
+
 /**
  * Internal: handle response, checking for 401 globally.
  */
@@ -62,7 +77,7 @@ export const api = {
     // ─── Auth (no token needed) ───────────────────────────────────
     async register(name, email, password) {
         try {
-            const response = await fetch(`${BASE_URL}/register`, {
+            const response = await fetchWithTimeout(`${BASE_URL}/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, email, password }),
@@ -70,13 +85,13 @@ export const api = {
             return handleResponse(response, true);
         } catch (error) {
             console.error("API Register Error:", error);
-            return { status: 500, data: { message: "Network error" } };
+            return { status: 500, data: { message: "Cannot reach the server. Make sure the backend is running." } };
         }
     },
 
     async login(email, password) {
         try {
-            const response = await fetch(`${BASE_URL}/login`, {
+            const response = await fetchWithTimeout(`${BASE_URL}/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
@@ -89,13 +104,13 @@ export const api = {
             return result;
         } catch (error) {
             console.error("API Login Error:", error);
-            return { status: 500, data: { message: "Network error" } };
+            return { status: 500, data: { message: "Cannot reach the server. Make sure the backend is running." } };
         }
     },
 
     async logout() {
         try {
-            const response = await fetch(`${BASE_URL}/logout`, {
+            const response = await fetchWithTimeout(`${BASE_URL}/logout`, {
                 method: 'POST',
                 headers: authHeaders(),
             });
@@ -106,14 +121,14 @@ export const api = {
         } catch (error) {
             console.error("API Logout Error:", error);
             setApiToken(null);
-            return { status: 500, data: { message: "Network error" } };
+            return { status: 500, data: { message: "Cannot reach the server. Make sure the backend is running." } };
         }
     },
 
     // ─── Helper for protected POST requests ───────────────────────
     async post(endpoint, body = {}) {
         try {
-            const response = await fetch(`${BASE_URL}/${endpoint}`, {
+            const response = await fetchWithTimeout(`${BASE_URL}/${endpoint}`, {
                 method: 'POST',
                 headers: authHeaders(),
                 body: JSON.stringify(body),
@@ -121,7 +136,7 @@ export const api = {
             return handleResponse(response);
         } catch (error) {
             console.error(`API POST ${endpoint} Error:`, error);
-            return { status: 500, data: { message: "Network error" } };
+            return { status: 500, data: { message: "Cannot reach the server. Make sure the backend is running." } };
         }
     },
 
@@ -133,14 +148,14 @@ export const api = {
                 .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
                 .join('&');
             const url = query ? `${BASE_URL}/${endpoint}?${query}` : `${BASE_URL}/${endpoint}`;
-            const response = await fetch(url, {
+            const response = await fetchWithTimeout(url, {
                 method: 'GET',
                 headers: authHeaders(),
             });
             return handleResponse(response);
         } catch (error) {
             console.error(`API GET ${endpoint} Error:`, error);
-            return { status: 500, data: { message: "Network error" } };
+            return { status: 500, data: { message: "Cannot reach the server. Make sure the backend is running." } };
         }
     },
 
@@ -161,8 +176,35 @@ export const api = {
         return this.post('generatePlan');
     },
 
-    async replaceMeal(mealId, hint) {
-        return this.post('replaceMeal', { meal_id: mealId, hint });
+    async replaceMeal(mealId, hint, replacement = null) {
+        const payload = { meal_id: mealId, hint };
+        if (replacement) payload.replacement = replacement;
+        return this.post('replaceMeal', payload);
+    },
+
+    async getMealFeedback() {
+        return this.get('getMealFeedback');
+    },
+
+    async saveMealFeedback(mealId, rating, ingredients = []) {
+        return this.post('saveMealFeedback', { meal_id: mealId, rating, ingredients });
+    },
+
+    async getMealReviews() {
+        return this.get('getMealReviews');
+    },
+
+    async getMealReviewAccess() {
+        return this.get('getMealReviewAccess');
+    },
+
+    async saveMealReview(mealId, status, notes = '', reviewedBy = 'Reviewer') {
+        return this.post('saveMealReview', {
+            meal_id: mealId,
+            status,
+            notes,
+            reviewed_by: reviewedBy,
+        });
     },
 
     async updateWorkoutProgress(day, exerciseId, completed) {

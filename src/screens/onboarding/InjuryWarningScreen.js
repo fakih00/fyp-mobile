@@ -137,7 +137,7 @@ const InjuryWarningScreen = ({ navigation, route }) => {
                     
                     {/* Header Alert badge */}
                     <View style={styles.alertHeaderBadge}>
-                        <Ionicons name="shield-alert" size={14} color="#EF4444" />
+                        <Ionicons name="warning-outline" size={14} color="#EF4444" />
                         <Text style={styles.alertHeaderBadgeText}>BIOMECHANICAL RISK IN EFFECT</Text>
                     </View>
 

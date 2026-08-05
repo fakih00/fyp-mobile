@@ -9,6 +9,8 @@ import SocialScreen from './SocialScreen';
 import ChatScreen from './ChatScreen';
 import WorkoutPlanScreen from './WorkoutPlanScreen';
 import NutritionPlanScreen from './NutritionPlanScreen';
+import SmartMealAIScreen from './SmartMealAIScreen';
+import MealReviewScreen from './MealReviewScreen';
 import ProgressScreen from './ProgressScreen';
 import ProfileScreen from './ProfileScreen';
 import AIChatScreen from './AIChatScreen';
@@ -61,6 +63,8 @@ export {
     WorkoutPlanScreen,
     WorkoutPlayerScreen,
     NutritionPlanScreen,
+    SmartMealAIScreen,
+    MealReviewScreen,
     NutritionLogScreen,
     ProgressScreen,
     LeaderboardScreen,

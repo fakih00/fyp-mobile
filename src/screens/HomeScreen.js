@@ -58,6 +58,13 @@ const HomeScreen = ({ navigation }) => {
     const modalSlide = useRef(new Animated.Value(500)).current;
     const modalFade = useRef(new Animated.Value(0)).current;
 
+    const normalizeQuests = (data) => {
+        if (Array.isArray(data)) return data;
+        if (Array.isArray(data?.quests)) return data.quests;
+        if (Array.isArray(data?.records)) return data.records;
+        return [];
+    };
+
     // Fetch data when screen comes into focus
     useFocusEffect(
         useCallback(() => {
@@ -102,7 +109,7 @@ const HomeScreen = ({ navigation }) => {
                     try {
                         const questsRes = await api.getDailyQuests();
                         if (questsRes.status === 200) {
-                            setQuests(questsRes.data || []);
+                            setQuests(normalizeQuests(questsRes.data));
                         }
                     } catch (e) {
                         console.error("Fetch daily quests error:", e);
@@ -499,7 +506,7 @@ const HomeScreen = ({ navigation }) => {
                 // Refresh quests list
                 const questsRes = await api.getDailyQuests();
                 if (questsRes.status === 200) {
-                    setQuests(questsRes.data || []);
+                    setQuests(normalizeQuests(questsRes.data));
                 }
             } else {
                 Alert.alert("Claim Failed", res.data.message || "Failed to claim reward.");
@@ -567,9 +574,10 @@ const HomeScreen = ({ navigation }) => {
     };
 
     // How many quests are done?
-    const questsDone = quests.filter(q => q.claimed === 1).length;
-    const questsTotal = quests.length;
-    const hasClaimable = quests.some(q => (q.completed === 1 || q.current_value >= q.target_value) && q.claimed !== 1);
+    const questList = Array.isArray(quests) ? quests : [];
+    const questsDone = questList.filter(q => q.claimed === 1).length;
+    const questsTotal = questList.length;
+    const hasClaimable = questList.some(q => (q.completed === 1 || q.current_value >= q.target_value) && q.claimed !== 1);
 
     const getQuestIcon = (type) => {
         const map = { steps: 'footsteps', water: 'water', workout: 'barbell', meal: 'restaurant' };
@@ -640,13 +648,13 @@ const HomeScreen = ({ navigation }) => {
                             <View style={styles.questTotalChip}>
                                 <Ionicons name="flash" size={12} color="#F59E0B" />
                                 <Text style={styles.questTotalChipTxt}>
-                                    {quests.reduce((s, q) => s + q.xp_reward, 0)} XP available today
+                                    {questList.reduce((s, q) => s + Number(q.xp_reward || 0), 0)} XP available today
                                 </Text>
                             </View>
                             <View style={[styles.questTotalChip, { borderColor: themeColors.accent + '40' }]}>
                                 <Ionicons name="star" size={12} color={themeColors.accent} />
                                 <Text style={[styles.questTotalChipTxt, { color: themeColors.accent }]}>
-                                    {quests.reduce((s, q) => s + q.points_reward, 0)} PTS available
+                                    {questList.reduce((s, q) => s + Number(q.points_reward || 0), 0)} PTS available
                                 </Text>
                             </View>
                         </View>
@@ -659,12 +667,12 @@ const HomeScreen = ({ navigation }) => {
                         >
                             {questsLoading ? (
                                 <ActivityIndicator color="#F59E0B" style={{ marginTop: 30 }} />
-                            ) : quests.length === 0 ? (
+                            ) : questList.length === 0 ? (
                                 <View style={styles.questEmptyState}>
                                     <Text style={styles.questEmptyIcon}>⚡</Text>
                                     <Text style={styles.questEmptyTxt}>No missions today yet</Text>
                                 </View>
-                            ) : quests.map((quest) => {
+                            ) : questList.map((quest) => {
                                 const progressPercent = Math.min((quest.current_value / quest.target_value) * 100, 100);
                                 const isCompleted = quest.completed === 1 || quest.current_value >= quest.target_value;
                                 const isClaimed = quest.claimed === 1;

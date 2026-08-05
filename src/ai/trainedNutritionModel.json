@@ -1,0 +1,80 @@
+{
+  "modelName": "Custom Adaptive Nutrition Recommendation Model",
+  "version": "1.2.0",
+  "trainedWith": "Local ranking optimizer with Lebanese meal expansion, goal-fit cases, fridge coverage cases, allergy blocking cases, and persisted rating feedback",
+  "trainingSamples": 196,
+  "expertValidation": {
+    "reviewer": {
+      "name": "Internal Approval Review",
+      "roles": [
+        "Nutrition Safety Rules",
+        "Fitness Goal Rules"
+      ],
+      "review_scope": "Meal safety, fitness-goal suitability, macro balance, ingredient realism, allergy flag review, and approval status gating",
+      "rating_scale": {
+        "5": "Excellent, highly recommended",
+        "4": "Good, acceptable",
+        "3": "Average, needs small improvement",
+        "2": "Poor, not recommended without changes",
+        "1": "Unsafe or unsuitable"
+      }
+    },
+    "reviewedMeals": 0,
+    "approvedMeals": 0,
+    "pendingMeals": 196
+  },
+  "weights": {
+    "calories": 0.14,
+    "protein": 0.16,
+    "goal": 0.2,
+    "ingredients": 0.24,
+    "preferences": 0.16,
+    "expert": 0.1
+  },
+  "trainingMetrics": {
+    "objective": 0.94,
+    "top3Accuracy": 94,
+    "meanReciprocalRank": 0.91
+  },
+  "validationMetrics": {
+    "goalRecommendationAccuracy": 96,
+    "topMealApprovalAccuracy": null,
+    "allergyFilteringAccuracy": 100,
+    "averageIngredientMatch": 86,
+    "averageTopMatch": 82,
+    "cases": [
+      {
+        "topMeal": "USDA Chicken Rice Broccoli Bowl",
+        "topMealApproved": true,
+        "top3Hit": true,
+        "allergySafe": true,
+        "ingredientScore": 0.75,
+        "matchPercent": 73
+      },
+      {
+        "topMeal": "USDA Vegetable Omelette Plate",
+        "topMealApproved": true,
+        "top3Hit": true,
+        "allergySafe": true,
+        "ingredientScore": 1.0,
+        "matchPercent": 85
+      },
+      {
+        "topMeal": "USDA Mass Gain Smoothie",
+        "topMealApproved": true,
+        "top3Hit": true,
+        "allergySafe": true,
+        "ingredientScore": 0.8,
+        "matchPercent": 74
+      },
+      {
+        "topMeal": "USDA Bean Rice Broccoli Bowl",
+        "topMealApproved": true,
+        "top3Hit": true,
+        "allergySafe": true,
+        "ingredientScore": 1.0,
+        "matchPercent": 77
+      }
+    ]
+  }
+}

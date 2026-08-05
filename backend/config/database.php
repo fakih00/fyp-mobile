@@ -7,7 +7,7 @@ class Database {
     public function getConnection() {
         $this->conn = null;
 
-        $host = getenv('DB_HOST') ?: 'localhost';
+        $host = getenv('DB_HOST') ?: '127.0.0.1';
         $db   = getenv('DB_NAME') ?: 'fitness_db';
         $user = getenv('DB_USER') ?: 'root';
         $pass = getenv('DB_PASS') ?: '';
@@ -21,6 +21,7 @@ class Database {
                     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                     PDO::ATTR_EMULATE_PREPARES   => false,  // Use real prepared statements
+                    PDO::ATTR_TIMEOUT            => 5,
                 ]
             );
         } catch (PDOException $exception) {

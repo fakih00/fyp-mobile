@@ -21,6 +21,8 @@ import {
     ProfileScreen,
     ProgressScreen,
     NutritionPlanScreen,
+    SmartMealAIScreen,
+    MealReviewScreen,
     MessagesScreen,
     AchievementsScreen,
     NotificationsScreen,
@@ -72,6 +74,8 @@ const AppNavigator = () => {
                 <Stack.Screen name="Profile" component={ProfileScreen} />
                 <Stack.Screen name="Progress" component={ProgressScreen} />
                 <Stack.Screen name="NutritionPlan" component={NutritionPlanScreen} />
+                <Stack.Screen name="SmartMealAI" component={SmartMealAIScreen} />
+                <Stack.Screen name="MealReview" component={MealReviewScreen} />
                 <Stack.Screen name="NutritionLog" component={NutritionLogScreen} />
                 <Stack.Screen name="WaterLog" component={WaterLogScreen} />
                 <Stack.Screen name="Messages" component={MessagesScreen} />

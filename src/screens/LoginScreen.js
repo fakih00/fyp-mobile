@@ -168,8 +168,12 @@ const LoginScreen = ({ navigation }) => {
             if (result.status === 200) {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                 await loadUserData(result.data.user_id, result.data.token);
+                const accessResult = await api.getMealReviewAccess();
                 setLoading(false);
-                navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+                navigation.reset({
+                    index: 0,
+                    routes: [{ name: accessResult.status === 200 && accessResult.data?.can_review ? 'MealReview' : 'Main' }],
+                });
             } else {
                 setLoading(false);
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

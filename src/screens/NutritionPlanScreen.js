@@ -13,15 +13,17 @@ import { AppContext } from '../context/AppContext';
 import { api } from '../services/api';
 import { COLORS } from '../constants/Theme';
 import { AnimatedCard, GlassCard, AuraBackground } from '../components';
+import { INGREDIENT_CATALOG } from '../ai/mealDataset';
 
 const { width } = Dimensions.get('window');
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DEFAULT_FRIDGE = ['chicken', 'rice', 'eggs', 'oats', 'banana', 'tomato', 'greek_yogurt', 'spinach', 'avocado'];
 
 const NutritionPlanScreen = ({ navigation }) => {
     const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const today = daysOfWeek[new Date().getDay()];
 
-    const { meals, toggleMealComplete, replaceMealInContext, nutritionGoal, isRecomp, macroTargets, colors: themeColors, user } = useContext(AppContext);
+    const { meals, toggleMealComplete, replaceMealInContext, nutritionGoal, isRecomp, macroTargets, colors: themeColors, user, loadUserData } = useContext(AppContext);
     const [selectedDay, setSelectedDay] = useState(today);
     const [selectedMeal, setSelectedMeal] = useState(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -29,6 +31,8 @@ const NutritionPlanScreen = ({ navigation }) => {
     const [generating, setGenerating] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [waterGlasses, setWaterGlasses] = useState(0);
+    const [showGenerateOptions, setShowGenerateOptions] = useState(false);
+    const [selectedFridgeIngredients, setSelectedFridgeIngredients] = useState(DEFAULT_FRIDGE);
 
     // History
     const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -82,18 +86,39 @@ const NutritionPlanScreen = ({ navigation }) => {
         }
     };
 
-    const handleGeneratePlan = async () => {
+    const handleGeneratePlan = () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        setShowGenerateOptions(true);
+    };
+
+    const submitGeneratePlan = async (useFridgeSync = true) => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setGenerating(true);
-        console.log("Initiating AI synthesis for nutrition plan generation...");
+        setShowGenerateOptions(false);
+        console.log("Generating nutrition plan with NutriCore...");
         try {
-            const res = await api.post('generatePlan', { type: 'nutrition' });
-            if (res.status !== 200) Alert.alert('Error', res.data?.message || 'Failed to generate plan.');
+            const payload = { type: 'nutrition' };
+            if (useFridgeSync) payload.fridge_ingredients = selectedFridgeIngredients;
+            const res = await api.post('generatePlan', payload);
+            if (res.status === 200) {
+                await loadUserData?.(user?.user_id, user?.token);
+            } else {
+                Alert.alert('Error', res.data?.message || 'Failed to generate plan.');
+            }
         } catch (e) {
             Alert.alert('Connection Error', 'Please check your connection and try again.');
         } finally {
             setGenerating(false);
         }
+    };
+
+    const toggleGenerateIngredient = (ingredientId) => {
+        Haptics.selectionAsync();
+        setSelectedFridgeIngredients((prev) => (
+            prev.includes(ingredientId)
+                ? prev.filter((id) => id !== ingredientId)
+                : [...prev, ingredientId]
+        ));
     };
 
     const handleLogMeal = (id) => {
@@ -104,7 +129,7 @@ const NutritionPlanScreen = ({ navigation }) => {
 
     const handleReplaceMeal = async () => {
         if (!replaceHint.trim()) {
-            Alert.alert('Hint Required', 'Please tell the AI what to change about this meal (e.g., "no chicken", "make it vegan").');
+            Alert.alert('Hint Required', 'Tell NutriCore what to change about this meal (e.g., "no chicken", "make it vegan").');
             return;
         }
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -118,7 +143,7 @@ const NutritionPlanScreen = ({ navigation }) => {
                 setReplaceHint('');
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             } else {
-                Alert.alert('Replacement Failed', res.data?.message || 'The AI could not replace this meal. Please try another hint.');
+                Alert.alert('Replacement Failed', res.data?.message || 'NutriCore could not replace this meal. Please try another hint.');
             }
         } catch (e) {
             Alert.alert('Error', 'Network error. Please try again.');
@@ -150,7 +175,11 @@ const NutritionPlanScreen = ({ navigation }) => {
 
             <SafeAreaView edges={['top']} style={styles.headerSafe}>
                 <View style={styles.navRow}>
-                    <View style={styles.headerSpacer} />
+                    <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.navigate('SmartMealAI')}>
+                        <BlurView intensity={20} tint="light" style={styles.headerBtnBlur}>
+                            <Ionicons name="snow-outline" size={20} color={COLORS.white} />
+                        </BlurView>
+                    </TouchableOpacity>
                     <View style={styles.titleStack}>
                         <Text style={styles.eliteTitle}>Nutrition Plan</Text>
                         {isRecomp ? (
@@ -252,7 +281,7 @@ const NutritionPlanScreen = ({ navigation }) => {
             {/* AI insight */}
             <View style={[styles.aiBox, { backgroundColor: themeColors.accent + '12' }]}>
                 <View style={[styles.aiIcon, { backgroundColor: themeColors.accent }]}>
-                    <Ionicons name="sparkles" size={12} color={COLORS.white} />
+                    <Ionicons name="restaurant-outline" size={12} color={COLORS.white} />
                 </View>
                 <Text style={[styles.aiMsg, { color: themeColors.accent }]}>
                     {progress >= 1
@@ -260,7 +289,7 @@ const NutritionPlanScreen = ({ navigation }) => {
                         : progress >= 0.7
                         ? "Almost there! Keep fueling your body with high-quality food."
                         : isRecomp
-                        ? "AI Pivot: Targeting 40% protein to preserve muscle while burning fat."
+                        ? "NutriCore Pivot: Targeting 40% protein to preserve muscle while burning fat."
                         : `${Math.round((1 - progress) * 100)}% of your daily fuel remaining — stay on track!`}
                 </Text>
             </View>
@@ -332,6 +361,30 @@ const NutritionPlanScreen = ({ navigation }) => {
                 ListHeaderComponent={() => (
                     <View style={styles.listHeader}>
                         {renderDashboard()}
+                        <TouchableOpacity
+                            activeOpacity={0.9}
+                            style={styles.smartAiBanner}
+                            onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                navigation.navigate('SmartMealAI');
+                            }}
+                        >
+                            <LinearGradient
+                                colors={['#0F766E', '#10B981']}
+                                style={styles.smartAiBannerGrad}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                            >
+                                <View style={styles.smartAiIcon}>
+                                    <Ionicons name="snow-outline" size={22} color="#0F766E" />
+                                </View>
+                                <View style={styles.smartAiCopy}>
+                                    <Text style={styles.smartAiTitle}>Fridge Sync</Text>
+                                    <Text style={styles.smartAiSub}>Use your available ingredients to find swaps for this plan</Text>
+                                </View>
+                                <Ionicons name="chevron-forward" size={22} color={COLORS.white} />
+                            </LinearGradient>
+                        </TouchableOpacity>
                         <View style={styles.sectionHeader}>
                             <Ionicons name="restaurant" size={16} color={themeColors.accent} />
                             <Text style={styles.sectionTitle}>{selectedDay}'s Fuel Plan</Text>
@@ -352,6 +405,75 @@ const NutritionPlanScreen = ({ navigation }) => {
                 )}
                 contentContainerStyle={styles.listContent}
             />
+
+            <Modal
+                animationType="fade"
+                transparent
+                visible={showGenerateOptions}
+                onRequestClose={() => setShowGenerateOptions(false)}
+            >
+                <View style={styles.generateOverlay}>
+                    <View style={styles.generateSheet}>
+                        <View style={styles.generateTopRow}>
+                            <View>
+                                <Text style={styles.generateTitle}>Generate With NutriCore</Text>
+                                <Text style={styles.generateSub}>Fridge Sync can bias the same plan toward food you already have.</Text>
+                            </View>
+                            <TouchableOpacity style={styles.generateCloseBtn} onPress={() => setShowGenerateOptions(false)}>
+                                <Ionicons name="close" size={20} color="#64748B" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.generateFridgeHeader}>
+                            <Ionicons name="snow-outline" size={16} color="#0D9488" />
+                            <Text style={styles.generateFridgeTitle}>Available Ingredients</Text>
+                            <Text style={styles.generateCount}>{selectedFridgeIngredients.length}</Text>
+                        </View>
+
+                        <ScrollView style={styles.generateIngredientScroll} showsVerticalScrollIndicator={false}>
+                            <View style={styles.generateIngredientGrid}>
+                                {INGREDIENT_CATALOG.map((item) => {
+                                    const active = selectedFridgeIngredients.includes(item.id);
+                                    return (
+                                        <TouchableOpacity
+                                            key={item.id}
+                                            style={[styles.generateIngredientChip, active && styles.generateIngredientChipActive]}
+                                            onPress={() => toggleGenerateIngredient(item.id)}
+                                        >
+                                            <Ionicons name={item.icon} size={14} color={active ? '#0D9488' : '#94A3B8'} />
+                                            <Text style={[styles.generateIngredientText, active && styles.generateIngredientTextActive]}>{item.name}</Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+                        </ScrollView>
+
+                        <View style={styles.generateActionRow}>
+                            <TouchableOpacity
+                                style={styles.generateSecondaryBtn}
+                                onPress={() => submitGeneratePlan(false)}
+                                disabled={generating}
+                            >
+                                <Text style={styles.generateSecondaryText}>Standard Plan</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.generatePrimaryBtn, { backgroundColor: themeColors.accent }]}
+                                onPress={() => submitGeneratePlan(true)}
+                                disabled={generating}
+                            >
+                                {generating ? (
+                                    <ActivityIndicator size="small" color={COLORS.white} />
+                                ) : (
+                                    <>
+                                        <Text style={styles.generatePrimaryText}>Use Fridge Sync</Text>
+                                        <Ionicons name="arrow-forward" size={17} color={COLORS.white} />
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
 
             {/* ── Meal Details Modal ── */}
             <Modal animationType="slide" transparent visible={isModalVisible} onRequestClose={() => { setIsModalVisible(false); setShowReplaceInput(false); setReplaceHint(''); }}>
@@ -407,9 +529,9 @@ const NutritionPlanScreen = ({ navigation }) => {
                                         </View>
                                     )}
 
-                                    {/* ── AI Meal Replacement ── */}
+                                    {/* ── Local Meal Replacement ── */}
                                     <View style={styles.detailSection}>
-                                        <Text style={styles.detailTitle}>AI MEAL REPLACEMENT</Text>
+                                        <Text style={styles.detailTitle}>NUTRICORE SWAP</Text>
                                         {!showReplaceInput ? (
                                             <TouchableOpacity 
                                                 style={[styles.aiReplaceBtn, { borderColor: themeColors.accent }]} 
@@ -418,12 +540,12 @@ const NutritionPlanScreen = ({ navigation }) => {
                                                     setShowReplaceInput(true);
                                                 }}
                                             >
-                                                <Ionicons name="sparkles" size={18} color={themeColors.accent} />
-                                                <Text style={[styles.aiReplaceBtnText, { color: themeColors.accent }]}>Replace this meal with AI</Text>
+                                                <Ionicons name="swap-horizontal-outline" size={18} color={themeColors.accent} />
+                                                <Text style={[styles.aiReplaceBtnText, { color: themeColors.accent }]}>Find a NutriCore swap</Text>
                                             </TouchableOpacity>
                                         ) : (
                                             <View style={styles.aiInputContainer}>
-                                                <Text style={styles.aiInputHint}>Tell Gemini what to change (e.g., "no dairy", "swap chicken for beef", "higher protein")</Text>
+                                                <Text style={styles.aiInputHint}>Tell NutriCore what to change (e.g., "no dairy", "swap chicken for beef", "higher protein")</Text>
                                                 <TextInput
                                                     style={styles.aiTextInput}
                                                     placeholder="Enter your replacement hint..."
@@ -455,7 +577,7 @@ const NutritionPlanScreen = ({ navigation }) => {
                                                             <ActivityIndicator size="small" color={COLORS.white} />
                                                         ) : (
                                                             <View style={styles.aiSubmitBtnContent}>
-                                                                <Ionicons name="sparkles" size={14} color={COLORS.white} />
+                                                                <Ionicons name="swap-horizontal-outline" size={14} color={COLORS.white} />
                                                                 <Text style={styles.aiSubmitBtnText}>Replace Meal</Text>
                                                             </View>
                                                         )}
@@ -642,6 +764,12 @@ const styles = StyleSheet.create({
 
     // ── Dashboard
     dashboard: { marginTop: 12, marginHorizontal: 20, padding: 22, borderRadius: 30, backgroundColor: COLORS.surface || '#FFFCF9', elevation: 8 },
+    smartAiBanner: { marginHorizontal: 20, marginTop: 16, borderRadius: 24, overflow: 'hidden', elevation: 7, shadowColor: '#0F766E', shadowOffset: { width: 0, height: 7 }, shadowOpacity: 0.18, shadowRadius: 12 },
+    smartAiBannerGrad: { minHeight: 86, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14 },
+    smartAiIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: '#ECFDF5', justifyContent: 'center', alignItems: 'center' },
+    smartAiCopy: { flex: 1 },
+    smartAiTitle: { fontSize: 16, fontWeight: '900', color: COLORS.white },
+    smartAiSub: { fontSize: 11, color: 'rgba(255,255,255,0.78)', lineHeight: 16, fontWeight: '600', marginTop: 3 },
     dashRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
     ringSection: { width: 120, height: 120, justifyContent: 'center', alignItems: 'center' },
     ringOuter: { width: 112, height: 112, borderRadius: 56, backgroundColor: '#F1F5F9', overflow: 'hidden', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.04)' },
@@ -723,6 +851,27 @@ const styles = StyleSheet.create({
     emptyBtnText: { fontSize: 12, fontWeight: '900', letterSpacing: 1 },
 
     // ── Meal Modal
+    generateOverlay: { flex: 1, backgroundColor: 'rgba(15,23,42,0.55)', justifyContent: 'flex-end', padding: 16 },
+    generateSheet: { maxHeight: '82%', backgroundColor: COLORS.surface || '#FFFCF9', borderRadius: 28, padding: 18 },
+    generateTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14, marginBottom: 16 },
+    generateTitle: { fontSize: 20, fontWeight: '900', color: '#0F172A' },
+    generateSub: { fontSize: 12, color: '#64748B', fontWeight: '600', lineHeight: 18, marginTop: 4, maxWidth: 280 },
+    generateCloseBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#F1F5F9', justifyContent: 'center', alignItems: 'center' },
+    generateFridgeHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+    generateFridgeTitle: { flex: 1, fontSize: 13, fontWeight: '900', color: '#0F172A' },
+    generateCount: { fontSize: 11, fontWeight: '900', color: '#0D9488', backgroundColor: '#CCFBF1', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 9 },
+    generateIngredientScroll: { maxHeight: 260 },
+    generateIngredientGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingBottom: 6 },
+    generateIngredientChip: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#F8FAFC', paddingHorizontal: 10, paddingVertical: 8, borderRadius: 14 },
+    generateIngredientChipActive: { borderColor: '#0D9488', backgroundColor: '#CCFBF1' },
+    generateIngredientText: { fontSize: 11, fontWeight: '800', color: '#64748B' },
+    generateIngredientTextActive: { color: '#0F766E' },
+    generateActionRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
+    generateSecondaryBtn: { flex: 1, height: 50, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFFFFF' },
+    generateSecondaryText: { fontSize: 12, fontWeight: '900', color: '#475569' },
+    generatePrimaryBtn: { flex: 1.25, height: 50, borderRadius: 16, justifyContent: 'center', alignItems: 'center', flexDirection: 'row', gap: 8 },
+    generatePrimaryText: { fontSize: 12, fontWeight: '900', color: COLORS.white },
+
     modalOverlay: { flex: 1, justifyContent: 'flex-end' },
     modalSheet: { backgroundColor: COLORS.surface || '#FFFCF9', borderTopLeftRadius: 40, borderTopRightRadius: 40, height: '88%', overflow: 'hidden' },
     modalHero: { height: 280, position: 'relative' },
@@ -773,7 +922,7 @@ const styles = StyleSheet.create({
     historyMealCals: { fontSize: 11, color: '#94A3B8', marginTop: 2 },
     historyMealBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
 
-    // AI Replacement
+    // NutriCore replacement
     aiReplaceBtn: {
         flexDirection: 'row',
         alignItems: 'center',

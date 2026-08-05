@@ -1,13 +1,6 @@
 <?php
-require_once __DIR__ . '/GeminiService.php';
 
 class NutritionAI {
-
-    private GeminiService $gemini;
-
-    public function __construct() {
-        $this->gemini = new GeminiService();
-    }
 
     // =========================================================================
     // CALORIE CALCULATION — stays local (math-based, no AI needed)
@@ -57,183 +50,35 @@ class NutritionAI {
     }
 
     // =========================================================================
-    // MEAL PLAN GENERATION — Try Gemini first, fallback to local library
+    // MEAL PLAN GENERATION — Always use the local nutrition module.
     // =========================================================================
-    public function generateMealPlan($calories, $profile) {
-        if ($this->gemini->isAvailable()) {
-            $plan = $this->generateWithGemini($calories, $profile);
-            if ($plan !== null) {
-                return $plan;
-            }
-            error_log("NutritionAI: Gemini failed, falling back to local logic.");
-        }
-
-        return $this->generateLocal($calories, $profile);
-    }
-
-    // =========================================================================
-    // GEMINI MEAL PLAN
-    // =========================================================================
-    private function generateWithGemini($calories, $profile): ?array {
-        $goal        = $profile['goal'] ?? 'general_fitness';
-        $gender      = $profile['gender'] ?? 'male';
-        $weight      = $profile['weight'] ?? 70;
-        $height      = $profile['height'] ?? 170;
-        $age         = $profile['age'] ?? 25;
-        $targetWeight= $profile['target_weight'] ?? $profile['suggested_goal_weight'] ?? $weight;
-        $mealCount   = (int)($profile['meals_per_day'] ?? 4);
-        $dislikes    = $profile['dislikes'] ?? 'none';
-        $allergies   = $profile['allergies'] ?? 'none';
-        $goalLabel   = str_replace('_', ' ', $goal);
-
-        // Calculate macro targets locally (reliable math)
-        $isRecomp = ($weight > $targetWeight) && ($goal === 'gain_muscle');
-        
-        // Define macro ratios based on goals
-        if ($isRecomp) {
-            $p_ratio  = 0.40;
-            $c_ratio  = 0.35;
-            $f_ratio  = 0.25;
-        } elseif (in_array($goal, ['running', 'cycling', 'swimming'])) {
-            // Endurance sports: high carb, moderate protein, low-moderate fat
-            $p_ratio  = 0.25;
-            $c_ratio  = 0.55;
-            $f_ratio  = 0.20;
-        } elseif (in_array($goal, ['boxing', 'martial_arts'])) {
-            // Combat sports: higher protein and carbs for energy/muscle maintenance
-            $p_ratio  = 0.40;
-            $c_ratio  = 0.40;
-            $f_ratio  = 0.20;
-        } elseif ($goal === 'yoga_flexibility') {
-            // Mind-body flexibility: balanced/clean macros
-            $p_ratio  = 0.30;
-            $c_ratio  = 0.40;
-            $f_ratio  = 0.30;
-        } else {
-            // General / default macro ratios
-            $p_ratio  = 0.30;
-            $c_ratio  = 0.40;
-            $f_ratio  = 0.30;
-        }
-
-        $p_total  = round(($calories * $p_ratio) / 4);
-        $c_total  = round(($calories * $c_ratio) / 4);
-        $f_total  = round(($calories * $f_ratio) / 9);
-
-        $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-        $mealTypes = $this->getMealStructure($mealCount);
-
-        // Build per-meal macro breakdown for the prompt
-        $mealTargets = '';
-        foreach ($mealTypes as $m) {
-            $mp = round($p_total * $m['weight']);
-            $mc = round($c_total * $m['weight']);
-            $mf = round($f_total * $m['weight']);
-            $mk = ($mp * 4) + ($mc * 4) + ($mf * 9);
-            $mealTargets .= "  - {$m['type']}: ~{$mk} kcal | Protein {$mp}g | Carbs {$mc}g | Fats {$mf}g\n";
-        }
-
-        $prompt = "You're a nutritionist. 3-day meal plan.\n"
-            . "User: {$goalLabel}, target: {$calories} kcal\n"
-            . "Target macro per meal type:\n{$mealTargets}"
-            . "Rules:\n"
-            . "1. ONLY RAW JSON array.\n"
-            . "2. Use shorthand keys: d=day, m=meals, t=type, n=name, i=ingredients (minimized).\n"
-            . "3. Format: [{\"d\":\"1\",\"m\":[{\"t\":\"Breakfast\",\"n\":\"Oats\",\"i\":[\"80g oats\",\"30g whey\"]}]}]";
-
-        $geminiSuggestions = $this->gemini->askForJson($prompt);
-
-        if (!is_array($geminiSuggestions) || count($geminiSuggestions) === 0) {
-            return null;
-        }
-
-        // Flatten into meal records
-        $allMeals = [];
-        $mealCounter = 1;
-
-        foreach ($days as $idx => $realDayName) {
-            $daySuggestion = $geminiSuggestions[$idx % count($geminiSuggestions)];
-            $dayName   = $realDayName;
-            $dayMeals  = $daySuggestion['m'] ?? ($daySuggestion['meals'] ?? []);
-
-            foreach ($dayMeals as $i => $meal) {
-                $mealConfig = $mealTypes[$i] ?? ['type' => 'Meal', 'weight' => 1 / $mealCount];
-                $w = $mealConfig['weight'];
-
-                // Use AI-provided macros if available, else calculate from ratios
-                $m_protein  = isset($meal['protein'])  ? (int)$meal['protein']  : round($p_total * $w);
-                $m_carbs    = isset($meal['carbs'])    ? (int)$meal['carbs']    : round($c_total * $w);
-                $m_fats     = isset($meal['fats'])     ? (int)$meal['fats']     : round($f_total * $w);
-                $m_calories = isset($meal['kcal'])     ? (int)$meal['kcal']     : ($m_protein * 4) + ($m_carbs * 4) + ($m_fats * 9);
-
-                $ingredients = $meal['i'] ?? ($meal['ing'] ?? ($meal['ingredients'] ?? ["See recipe for " . ($meal['n'] ?? 'this meal')]));
-                if (!is_array($ingredients)) {
-                    $ingredients = [$ingredients];
-                }
-
-                $allMeals[] = [
-                    "id"           => "m" . $mealCounter++,
-                    "day"          => $dayName,
-                    "type"         => $meal['t'] ?? $mealConfig['type'],
-                    "name"         => $meal['n'] ?? ($meal['name'] ?? "Balanced Meal"),
-                    "calories"     => $m_calories,
-                    "protein"      => $m_protein,
-                    "carbs"        => $m_carbs,
-                    "fats"         => $m_fats,
-                    "ingredients"  => $ingredients,
-                    "instructions" => $meal['instructions'] ?? "Follow standard healthy preparation methods for this meal.",
-                    "image"        => "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&q=80&sig=" . md5($meal['name'] ?? $dayName . $i),
-                    "completed"    => false,
-                ];
-            }
-        }
-
-        return count($allMeals) > 0 ? $allMeals : null;
+    public function generateMealPlan($calories, $profile, array $fridgeIngredients = []) {
+        return $this->generateLocal($calories, $profile, $fridgeIngredients);
     }
 
     public function replaceMealWithHint($mealToReplace, $hint) {
-        if (!$this->gemini->isAvailable()) {
+        require_once __DIR__ . '/../data/food_library.php';
+        $library = FoodLibrary::getLibrary();
+        $type = $mealToReplace['type'] ?? 'Meal';
+        $options = $library[$type] ?? array_merge(...array_values($library));
+        $selected = $this->pickReplacementMeal($options, $hint, $mealToReplace['name'] ?? '', $mealToReplace);
+
+        if (!$selected) {
             return null;
-        }
-
-        $cals = $mealToReplace['calories'];
-        $pro = $mealToReplace['protein'];
-        $carb = $mealToReplace['carbs'];
-        $fat = $mealToReplace['fats'];
-        $type = $mealToReplace['type'];
-
-        $prompt = "You're a nutritionist. Replace this meal with something else based on the user's hint.\n"
-            . "Target: {$cals} kcal | Protein {$pro}g | Carbs {$carb}g | Fats {$fat}g\n"
-            . "Meal Type: {$type}\n"
-            . "User Hint: \"{$hint}\"\n"
-            . "Rules:\n"
-            . "1. ONLY RAW JSON OBJECT (not an array).\n"
-            . "2. Use keys: t=type, n=name, i=ingredients (minimized).\n"
-            . "3. Format: {\"t\":\"Breakfast\",\"n\":\"Oats\",\"i\":[\"80g oats\",\"30g whey\"]}";
-
-        $geminiSuggestion = $this->gemini->askForJson($prompt);
-
-        if (!is_array($geminiSuggestion) || empty($geminiSuggestion['n'])) {
-            return null;
-        }
-
-        $ingredients = $geminiSuggestion['i'] ?? ($geminiSuggestion['ingredients'] ?? ["See recipe"]);
-        if (!is_array($ingredients)) {
-            $ingredients = [$ingredients];
         }
 
         return [
             "id"           => $mealToReplace['id'],
             "day"          => $mealToReplace['day'],
-            "type"         => $geminiSuggestion['t'] ?? $type,
-            "name"         => $geminiSuggestion['n'] ?? "New Meal",
-            "calories"     => $cals,
-            "protein"      => $pro,
-            "carbs"        => $carb,
-            "fats"         => $fat,
-            "ingredients"  => $ingredients,
-            "instructions" => $geminiSuggestion['instructions'] ?? "Follow standard healthy preparation methods.",
-            "image"        => "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&q=80&sig=" . md5($geminiSuggestion['n'] ?? time()),
+            "type"         => $type,
+            "name"         => $selected['name'],
+            "calories"     => (int)$mealToReplace['calories'],
+            "protein"      => (int)$mealToReplace['protein'],
+            "carbs"        => (int)$mealToReplace['carbs'],
+            "fats"         => (int)$mealToReplace['fats'],
+            "ingredients"  => $selected['ingredients'],
+            "instructions" => $selected['instructions'],
+            "image"        => $this->getMealImage($selected['name']),
             "completed"    => false,
         ];
     }
@@ -274,7 +119,7 @@ class NutritionAI {
     // =========================================================================
     // LOCAL FALLBACK ENGINE (original logic, preserved)
     // =========================================================================
-    public function generateLocal($calories, $profile) {
+    public function generateLocal($calories, $profile, array $fridgeIngredients = []) {
         require_once __DIR__ . '/../data/food_library.php';
         $full_library = FoodLibrary::getLibrary();
         
@@ -346,7 +191,8 @@ class NutritionAI {
 
                 if (empty($filtered_options)) $filtered_options = $options;
 
-                $meal_base = $filtered_options[array_rand($filtered_options)];
+                $meal_base = $this->pickBestMealForPlan(array_values($filtered_options), $fridgeIngredients);
+                $fridgeMeta = $this->getFridgeMatch($meal_base, $fridgeIngredients);
 
                 $m_protein  = round($p_target_total * $weight_ratio);
                 $m_carbs    = round($c_target_total * $weight_ratio);
@@ -364,6 +210,9 @@ class NutritionAI {
                     "fats"         => (int)$m_fats,
                     "ingredients"  => $meal_base['ingredients'],
                     "instructions" => $meal_base['instructions'],
+                    "fridge_match" => $fridgeMeta['match'],
+                    "fridge_used" => $fridgeMeta['used'],
+                    "missing_ingredients" => $fridgeMeta['missing'],
                     "image"        => $this->getMealImage($meal_base['name']),
                     "completed"    => false
                 ];
@@ -371,6 +220,89 @@ class NutritionAI {
         }
 
         return $plan;
+    }
+
+    private function pickBestMealForPlan(array $options, array $fridgeIngredients): array {
+        if (empty($options)) {
+            return [];
+        }
+
+        $scored = [];
+        foreach ($options as $meal) {
+            $score = 1 + $this->scoreMealByFridge($meal, $fridgeIngredients);
+            $scored[] = ['meal' => $meal, 'score' => $score];
+        }
+
+        usort($scored, fn($a, $b) => $b['score'] <=> $a['score']);
+        $top = array_slice($scored, 0, min(4, count($scored)));
+        return $top[array_rand($top)]['meal'];
+    }
+
+    private function scoreMealByFridge(array $meal, array $fridgeIngredients): int {
+        $score = 0;
+        $haystack = $this->mealHaystack($meal);
+
+        foreach ($this->normalizeIngredientTerms($fridgeIngredients) as $term) {
+            if ($term !== '' && str_contains($haystack, $term)) {
+                $score += 12;
+            }
+        }
+
+        return $score;
+    }
+
+    private function getFridgeMatch(array $meal, array $fridgeIngredients): array {
+        if (empty($fridgeIngredients)) {
+            return ['match' => null, 'used' => [], 'missing' => []];
+        }
+
+        $terms = $this->normalizeIngredientTerms($fridgeIngredients);
+        $used = [];
+        $missing = [];
+        $ingredients = $meal['ingredients'] ?? [];
+
+        foreach ($ingredients as $ingredient) {
+            $ingredientText = strtolower(str_replace(['_', '-'], ' ', (string)$ingredient));
+            $matched = false;
+            foreach ($terms as $term) {
+                if ($term !== '' && str_contains($ingredientText, $term)) {
+                    $used[] = $ingredient;
+                    $matched = true;
+                    break;
+                }
+            }
+            if (!$matched) {
+                $missing[] = $ingredient;
+            }
+        }
+
+        $total = max(count($ingredients), 1);
+        return [
+            'match' => (int)round((count($used) / $total) * 100),
+            'used' => array_values(array_unique($used)),
+            'missing' => array_slice(array_values(array_unique($missing)), 0, 5),
+        ];
+    }
+
+    private function mealHaystack(array $meal): string {
+        return strtolower(str_replace(
+            ['_', '-'],
+            ' ',
+            ($meal['name'] ?? '') . ' ' . implode(' ', $meal['tags'] ?? []) . ' ' . implode(' ', $meal['ingredients'] ?? [])
+        ));
+    }
+
+    private function normalizeIngredientTerms(array $items): array {
+        $terms = [];
+        foreach ($items as $item) {
+            $clean = trim(strtolower(str_replace(['_', '-'], ' ', (string)$item)));
+            if ($clean === '') continue;
+            $terms[] = $clean;
+            foreach (preg_split('/\s+/', $clean) as $part) {
+                if (strlen($part) > 3) $terms[] = $part;
+            }
+        }
+        return array_values(array_unique($terms));
     }
 
     private function pickBestMeal($options, $likes) {
@@ -394,6 +326,114 @@ class NutritionAI {
             if ($rand <= $current) return $opt['meal'];
         }
         return $options[array_rand($options)];
+    }
+
+    private function pickReplacementMeal(array $options, string $hint, string $currentName, array $targetMeal = []): ?array {
+        $hintText = strtolower($hint);
+        $tokens = preg_split('/[^a-z0-9]+/', $hintText, -1, PREG_SPLIT_NO_EMPTY);
+        $blocked = $this->extractBlockedTerms($hintText);
+        $wantsVegan = str_contains($hintText, 'vegan') || str_contains($hintText, 'plant based') || str_contains($hintText, 'plant-based');
+        $wantsProtein = str_contains($hintText, 'protein') || str_contains($hintText, 'high protein');
+        $wantsLowCarb = str_contains($hintText, 'low carb') || str_contains($hintText, 'less carb');
+        $wantsLowFat = str_contains($hintText, 'low fat') || str_contains($hintText, 'less fat');
+        $wantsLebanese = str_contains($hintText, 'lebanese') || str_contains($hintText, 'arabic') || str_contains($hintText, 'levant') || str_contains($hintText, 'home food');
+        $targetCalories = (int)($targetMeal['calories'] ?? 0);
+        $targetProtein = (int)($targetMeal['protein'] ?? 0);
+        $targetCarbs = (int)($targetMeal['carbs'] ?? 0);
+        $targetFats = (int)($targetMeal['fats'] ?? 0);
+
+        $best = null;
+        $bestScore = PHP_INT_MIN;
+
+        foreach ($options as $meal) {
+            if (strcasecmp($meal['name'] ?? '', $currentName) === 0) {
+                continue;
+            }
+
+            $haystack = strtolower(
+                ($meal['name'] ?? '') . ' ' .
+                implode(' ', $meal['tags'] ?? []) . ' ' .
+                implode(' ', $meal['ingredients'] ?? [])
+            );
+
+            $allergens = array_map('strtolower', $meal['allergens'] ?? []);
+            $tags = array_map('strtolower', $meal['tags'] ?? []);
+            $score = 0;
+            $mealCalories = (int)($meal['cals'] ?? 0);
+            $mealProtein = (int)($meal['p'] ?? 0);
+            $mealCarbs = (int)($meal['c'] ?? 0);
+            $mealFats = (int)($meal['f'] ?? 0);
+
+            foreach ($blocked as $term) {
+                if ($term !== '' && (str_contains($haystack, $term) || in_array($term, $allergens, true) || in_array($term, $tags, true))) {
+                    $score -= 1000;
+                }
+            }
+
+            if ($wantsVegan) {
+                $score += in_array('vegan', $tags, true) ? 80 : -200;
+            }
+            if ($wantsProtein) {
+                $score += (int)($meal['p'] ?? 0) * 2;
+                if (in_array('protein', $tags, true)) $score += 20;
+            }
+            if ($wantsLowCarb) {
+                $score -= (int)($meal['c'] ?? 0);
+            }
+            if ($wantsLowFat) {
+                $score -= (int)($meal['f'] ?? 0);
+            }
+            if ($wantsLebanese || in_array('lebanese', $tags, true) || in_array('arabic', $tags, true)) {
+                $score += (in_array('lebanese', $tags, true) || in_array('arabic', $tags, true) || in_array('levantine', $tags, true)) ? 28 : 0;
+            }
+
+            if ($targetCalories > 0) {
+                $score += max(0, 30 - (abs($mealCalories - $targetCalories) / 18));
+            }
+            if ($targetProtein > 0) {
+                $score += max(0, 24 - (abs($mealProtein - $targetProtein) * 1.4));
+            }
+            if ($targetCarbs > 0) {
+                $score += max(0, 14 - (abs($mealCarbs - $targetCarbs) / 3));
+            }
+            if ($targetFats > 0) {
+                $score += max(0, 14 - (abs($mealFats - $targetFats) / 2));
+            }
+
+            if (in_array('protein', $tags, true) || $mealProtein >= 30) {
+                $score += 8;
+            }
+
+            foreach ($tokens as $token) {
+                if (strlen($token) < 3 || in_array($token, ['the', 'and', 'with', 'make', 'swap', 'more', 'less', 'higher', 'lower'], true)) {
+                    continue;
+                }
+                if (str_contains($haystack, $token)) {
+                    $score += 12;
+                }
+            }
+
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $best = $meal;
+            }
+        }
+
+        return $best ?: ($options[array_rand($options)] ?? null);
+    }
+
+    private function extractBlockedTerms(string $hintText): array {
+        $blocked = [];
+        if (preg_match_all('/(?:no|without|avoid|remove|swap out)\s+([a-z0-9 ]{2,30})/i', $hintText, $matches)) {
+            foreach ($matches[1] as $phrase) {
+                foreach (preg_split('/\s+|,|and|or/', strtolower($phrase), -1, PREG_SPLIT_NO_EMPTY) as $term) {
+                    if (strlen($term) >= 3) {
+                        $blocked[] = $term;
+                    }
+                }
+            }
+        }
+        return array_values(array_unique($blocked));
     }
 
     private function getMealImage($name) {

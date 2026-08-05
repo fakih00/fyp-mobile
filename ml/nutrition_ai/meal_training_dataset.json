@@ -1,0 +1,182 @@
+{
+  "meals": [
+    {
+      "id": "m_chicken_rice",
+      "name": "Chicken Rice Power Bowl",
+      "ingredients": ["chicken", "rice", "broccoli", "olive_oil"],
+      "calories": 640,
+      "protein": 48,
+      "carbs": 66,
+      "fats": 18,
+      "goals": ["muscle_gain", "maintain"],
+      "allergens": [],
+      "expert_score": 0.94
+    },
+    {
+      "id": "m_egg_oats",
+      "name": "Egg and Oat Breakfast Stack",
+      "ingredients": ["eggs", "oats", "banana", "milk"],
+      "calories": 520,
+      "protein": 31,
+      "carbs": 58,
+      "fats": 18,
+      "goals": ["muscle_gain", "maintain"],
+      "allergens": ["eggs", "dairy"],
+      "expert_score": 0.9
+    },
+    {
+      "id": "m_tuna_toast",
+      "name": "Tuna Avocado Toast",
+      "ingredients": ["tuna", "bread", "avocado", "lettuce"],
+      "calories": 470,
+      "protein": 36,
+      "carbs": 38,
+      "fats": 19,
+      "goals": ["weight_loss", "maintain"],
+      "allergens": ["fish", "gluten"],
+      "expert_score": 0.88
+    },
+    {
+      "id": "m_salmon_potato",
+      "name": "Salmon Potato Recovery Plate",
+      "ingredients": ["salmon", "potato", "spinach", "olive_oil"],
+      "calories": 610,
+      "protein": 42,
+      "carbs": 44,
+      "fats": 28,
+      "goals": ["maintain", "muscle_gain"],
+      "allergens": ["fish"],
+      "expert_score": 0.92
+    },
+    {
+      "id": "m_greek_yogurt_bowl",
+      "name": "Greek Yogurt Protein Bowl",
+      "ingredients": ["greek_yogurt", "berries", "oats", "peanut_butter"],
+      "calories": 430,
+      "protein": 29,
+      "carbs": 46,
+      "fats": 15,
+      "goals": ["weight_loss", "maintain", "muscle_gain"],
+      "allergens": ["dairy", "peanuts"],
+      "expert_score": 0.91
+    },
+    {
+      "id": "m_tofu_quinoa",
+      "name": "Tofu Quinoa Green Bowl",
+      "ingredients": ["tofu", "quinoa", "broccoli", "olive_oil"],
+      "calories": 560,
+      "protein": 30,
+      "carbs": 62,
+      "fats": 21,
+      "goals": ["weight_loss", "maintain"],
+      "allergens": ["soy"],
+      "expert_score": 0.87
+    },
+    {
+      "id": "m_beef_pasta",
+      "name": "Lean Beef Pasta Builder",
+      "ingredients": ["beef", "pasta", "tomato", "spinach"],
+      "calories": 720,
+      "protein": 45,
+      "carbs": 82,
+      "fats": 22,
+      "goals": ["muscle_gain", "weight_gain"],
+      "allergens": ["gluten"],
+      "expert_score": 0.84
+    },
+    {
+      "id": "m_turkey_hummus",
+      "name": "Turkey Hummus Wrap",
+      "ingredients": ["turkey", "bread", "hummus", "lettuce", "tomato"],
+      "calories": 510,
+      "protein": 38,
+      "carbs": 48,
+      "fats": 17,
+      "goals": ["weight_loss", "maintain"],
+      "allergens": ["gluten", "sesame"],
+      "expert_score": 0.89
+    },
+    {
+      "id": "m_smoothie_gain",
+      "name": "Mass Gain Smoothie",
+      "ingredients": ["milk", "banana", "oats", "peanut_butter", "greek_yogurt"],
+      "calories": 690,
+      "protein": 38,
+      "carbs": 80,
+      "fats": 25,
+      "goals": ["weight_gain", "muscle_gain"],
+      "allergens": ["dairy", "peanuts"],
+      "expert_score": 0.86
+    },
+    {
+      "id": "m_veggie_omelette",
+      "name": "Vegetable Omelette Plate",
+      "ingredients": ["eggs", "spinach", "tomato", "avocado"],
+      "calories": 410,
+      "protein": 26,
+      "carbs": 18,
+      "fats": 27,
+      "goals": ["weight_loss", "maintain"],
+      "allergens": ["eggs"],
+      "expert_score": 0.9
+    },
+    {
+      "id": "m_chicken_salad",
+      "name": "Chicken Avocado Salad",
+      "ingredients": ["chicken", "lettuce", "tomato", "avocado", "olive_oil"],
+      "calories": 520,
+      "protein": 42,
+      "carbs": 20,
+      "fats": 30,
+      "goals": ["weight_loss", "maintain"],
+      "allergens": [],
+      "expert_score": 0.93
+    },
+    {
+      "id": "m_quinoa_breakfast",
+      "name": "Apple Quinoa Breakfast Bowl",
+      "ingredients": ["quinoa", "apple", "milk", "berries"],
+      "calories": 460,
+      "protein": 19,
+      "carbs": 76,
+      "fats": 10,
+      "goals": ["maintain", "weight_gain"],
+      "allergens": ["dairy"],
+      "expert_score": 0.82
+    }
+  ],
+  "training_cases": [
+    {
+      "profile": { "age": 22, "gender": "male", "height": 178, "weight": 76, "activity_level": "moderate", "goal": "muscle_gain" },
+      "fridge": ["chicken", "rice", "broccoli", "eggs", "oats", "banana"],
+      "liked": ["chicken", "rice"],
+      "disliked": [],
+      "allergies": [],
+      "approved_meals": ["m_chicken_rice", "m_egg_oats"]
+    },
+    {
+      "profile": { "age": 21, "gender": "female", "height": 164, "weight": 68, "activity_level": "light", "goal": "weight_loss" },
+      "fridge": ["eggs", "spinach", "tomato", "avocado", "greek_yogurt", "berries"],
+      "liked": ["eggs", "spinach"],
+      "disliked": ["tuna"],
+      "allergies": ["fish"],
+      "approved_meals": ["m_veggie_omelette", "m_greek_yogurt_bowl", "m_chicken_salad"]
+    },
+    {
+      "profile": { "age": 24, "gender": "male", "height": 181, "weight": 64, "activity_level": "active", "goal": "weight_gain" },
+      "fridge": ["milk", "banana", "oats", "peanut_butter", "pasta", "beef"],
+      "liked": ["peanut_butter", "beef"],
+      "disliked": [],
+      "allergies": [],
+      "approved_meals": ["m_smoothie_gain", "m_beef_pasta"]
+    },
+    {
+      "profile": { "age": 26, "gender": "female", "height": 170, "weight": 61, "activity_level": "moderate", "goal": "maintain" },
+      "fridge": ["tofu", "quinoa", "broccoli", "olive_oil", "apple", "berries"],
+      "liked": ["tofu", "quinoa"],
+      "disliked": ["beef"],
+      "allergies": ["dairy"],
+      "approved_meals": ["m_tofu_quinoa"]
+    }
+  ]
+}
