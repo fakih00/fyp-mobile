@@ -7,7 +7,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "train:nutrition-ai": "python ml/nutrition_ai/preprocess_usda_dataset.py && python ml/nutrition_ai/train_model.py"
+    "train:nutrition-ai": "python ml/nutrition_ai/preprocess_usda_dataset.py && python ml/nutrition_ai/train_model.py",
+    "validate:exercise-ai": "node scripts/validate-exercise-ai.js",
+    "train:exercise-ai": "node scripts/validate-exercise-ai.js"
   },
   "dependencies": {
     "@mediapipe/pose": "^0.5.1675469404",

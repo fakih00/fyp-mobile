@@ -26,6 +26,7 @@ import * as poseDetection from '@tensorflow-models/pose-detection';
 import { AppContext } from '../context/AppContext';
 import { COLORS, FONTS, SIZES } from '../constants/Theme';
 import { AnimatedCard, GlassCard } from '../components';
+import { analyzeExercisePose, createExerciseTracker, getExerciseModelType, parseTargetReps } from '../ai/exerciseFormModel';
 
 const { width, height } = Dimensions.get('window');
 
@@ -88,6 +89,11 @@ const WorkoutPlayerScreen = ({ navigation }) => {
     // AI posture states
     const [aiFeedbackText, setAiFeedbackText] = useState("AI Coach standing by...");
     const [postureState, setPostureState] = useState("CORRECT"); // CORRECT, INCORRECT, SCANNING
+    const [aiRepCount, setAiRepCount] = useState(0);
+    const [aiFormScore, setAiFormScore] = useState(0);
+    const [aiExerciseType, setAiExerciseType] = useState('general');
+    const [aiFaultyJoints, setAiFaultyJoints] = useState([]);
+    const [aiPhase, setAiPhase] = useState('up');
     
     // Camera Permission
     const [permission, requestPermission] = useCameraPermissions();
@@ -110,6 +116,8 @@ const WorkoutPlayerScreen = ({ navigation }) => {
     const [detector, setDetector] = useState(null);
     const cameraRef = useRef(null);
     const targetSkeletonRef = useRef(SKELETON_COORDS);
+    const exerciseTrackerRef = useRef(createExerciseTracker());
+    const currentEx = activeWorkout?.exercises?.find(ex => !(activeWorkout.completedExercises || []).includes(ex.id)) || activeWorkout?.exercises?.[0];
 
     // Initialize TensorFlow and MoveNet
     useEffect(() => {
@@ -211,6 +219,21 @@ const WorkoutPlayerScreen = ({ navigation }) => {
                         };
                         
                         targetSkeletonRef.current = mappedCoords;
+                        const analysis = analyzeExercisePose({
+                            exerciseName: currentEx?.name,
+                            skeleton: mappedCoords,
+                            previous: exerciseTrackerRef.current,
+                            targetReps: parseTargetReps(currentEx?.reps),
+                        });
+
+                        exerciseTrackerRef.current = analysis.tracker;
+                        setAiExerciseType(analysis.exerciseType);
+                        setPostureState(analysis.postureState);
+                        setAiFeedbackText(analysis.feedback);
+                        setAiFormScore(analysis.formScore);
+                        setAiRepCount(analysis.repCount);
+                        setAiFaultyJoints(analysis.faultyJoints);
+                        setAiPhase(analysis.phase);
                     }
                 }
                 tf.dispose(imageTensor);
@@ -224,7 +247,7 @@ const WorkoutPlayerScreen = ({ navigation }) => {
         }
 
         return () => clearInterval(intervalId);
-    }, [isAiCoachActive, screenState, isPaused, detector, tfReady]);
+    }, [isAiCoachActive, screenState, isPaused, detector, tfReady, currentEx?.id]);
 
     // Render loop for smooth LERP animation at 60fps
     useEffect(() => {
@@ -262,28 +285,11 @@ const WorkoutPlayerScreen = ({ navigation }) => {
     }, [isAiCoachActive, screenState, isPaused]);
 
     const isJointFaulty = (jointName) => {
-        if (postureState !== 'INCORRECT') return false;
-        const exName = currentEx?.name?.toLowerCase() || '';
-        if (exName.includes('squat')) {
-            return ['lKnee', 'rKnee', 'hipCenter', 'lHip', 'rHip'].includes(jointName);
-        }
-        if (exName.includes('push')) {
-            return ['hipCenter', 'neck', 'lShoulder', 'rShoulder'].includes(jointName);
-        }
-        return ['lWrist', 'rWrist', 'lElbow', 'rElbow'].includes(jointName);
+        return postureState === 'INCORRECT' && aiFaultyJoints.includes(jointName);
     };
 
     const isConnectionFaulty = (start, end) => {
-        if (postureState !== 'INCORRECT') return false;
-        const exName = currentEx?.name?.toLowerCase() || '';
-        if (exName.includes('squat')) {
-            return (start.includes('Hip') || start.includes('Knee') || start.includes('hipCenter')) && 
-                   (end.includes('Hip') || end.includes('Knee') || end.includes('Ankle') || end.includes('hipCenter'));
-        }
-        if (exName.includes('push')) {
-            return (start === 'neck' && end === 'hipCenter') || start.includes('Shoulder') || end.includes('Shoulder');
-        }
-        return start.includes('Wrist') || end.includes('Wrist') || start.includes('Elbow') || end.includes('Elbow');
+        return postureState === 'INCORRECT' && (aiFaultyJoints.includes(start) || aiFaultyJoints.includes(end));
     };
 
     /* =========================================================================
@@ -487,39 +493,34 @@ const WorkoutPlayerScreen = ({ navigation }) => {
         ).start();
     }, []);
 
-    // Posture and feedback simulator loop
     useEffect(() => {
-        let postureInterval;
+        exerciseTrackerRef.current = createExerciseTracker();
+        setAiRepCount(0);
+        setAiFormScore(0);
+        setAiPhase('up');
+        setAiFaultyJoints([]);
+        setAiExerciseType(getExerciseModelType(currentEx?.name));
+        setAiFeedbackText(currentEx ? `PoseForm ready for ${currentEx.name}. Turn on the AI camera.` : 'AI Coach standing by...');
+    }, [currentEx?.id]);
+
+    // Model loading feedback loop
+    useEffect(() => {
+        let postureInterval = null;
         if (isAiCoachActive && screenState === 'ACTIVE' && !isPaused) {
             postureInterval = setInterval(() => {
-                const randState = Math.random() > 0.35 ? 'CORRECT' : 'INCORRECT';
-                setPostureState(randState);
-                
-                // Select a comment based on posture state
-                const comments = AI_COACH_COMMENTS.filter(c => 
-                    randState === 'CORRECT' ? c.style === 'correct' || c.style === 'neutral' : c.style === 'incorrect'
-                );
-                const randComment = comments[Math.floor(Math.random() * comments.length)];
-                setAiFeedbackText(randComment.text);
-
-                // Highlight animation
+                if (tfReady && detector) return;
+                setPostureState('SCANNING');
+                setAiFeedbackText('Loading PoseForm model. Keep your full body in frame.');
                 slideFeedbackAnim.setValue(-20);
                 Animated.spring(slideFeedbackAnim, {
                     toValue: 0,
                     friction: 6,
                     useNativeDriver: true
                 }).start();
-
-                // Trigger Haptics
-                if (randState === 'INCORRECT') {
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                } else {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }
-            }, 4500);
+            }, 2500);
         }
         return () => clearInterval(postureInterval);
-    }, [isAiCoachActive, screenState, isPaused]);
+    }, [isAiCoachActive, screenState, isPaused, tfReady, detector]);
 
     const formatTime = (totalSeconds) => {
         const mins = Math.floor(totalSeconds / 60);
@@ -604,7 +605,6 @@ const WorkoutPlayerScreen = ({ navigation }) => {
 
     if (!activeWorkout) return null;
 
-    const currentEx = activeWorkout.exercises.find(ex => !activeWorkout.completedExercises.includes(ex.id)) || activeWorkout.exercises[0];
     const totalExercises = activeWorkout.exercises.length;
     const completedCount = activeWorkout.completedExercises.length;
     const progressPercent = totalExercises > 0 ? (completedCount / totalExercises) * 100 : 0;
@@ -792,6 +792,35 @@ const WorkoutPlayerScreen = ({ navigation }) => {
                                 </View>
                             </View>
 
+                            {isAiCoachActive && (
+                                <View style={styles.poseFormPanel}>
+                                    <View style={styles.poseFormHeader}>
+                                        <View>
+                                            <Text style={styles.poseFormEyebrow}>POSEFORM AI</Text>
+                                            <Text style={styles.poseFormMode}>{aiExerciseType.replace(/([A-Z])/g, ' $1').toUpperCase()} ANALYSIS</Text>
+                                        </View>
+                                        <View style={[styles.poseFormScorePill, { borderColor: getPostureColor() }]}>
+                                            <Text style={[styles.poseFormScore, { color: getPostureColor() }]}>{aiFormScore || '--'}</Text>
+                                            <Text style={styles.poseFormScoreLabel}>FORM</Text>
+                                        </View>
+                                    </View>
+                                    <View style={styles.poseMetricRow}>
+                                        <View style={styles.poseMetricBox}>
+                                            <Text style={styles.poseMetricValue}>{aiRepCount}</Text>
+                                            <Text style={styles.poseMetricLabel}>AI REPS</Text>
+                                        </View>
+                                        <View style={styles.poseMetricBox}>
+                                            <Text style={styles.poseMetricValue}>{aiPhase.toUpperCase()}</Text>
+                                            <Text style={styles.poseMetricLabel}>PHASE</Text>
+                                        </View>
+                                        <View style={styles.poseMetricBox}>
+                                            <Text style={styles.poseMetricValue}>{tfReady ? 'LIVE' : 'LOAD'}</Text>
+                                            <Text style={styles.poseMetricLabel}>MODEL</Text>
+                                        </View>
+                                    </View>
+                                </View>
+                            )}
+
                             {/* Completed Checklist button */}
                             <TouchableOpacity
                                 style={styles.completeCheckBtn}
@@ -938,11 +967,11 @@ const WorkoutPlayerScreen = ({ navigation }) => {
 
                             {/* Form Score Ring */}
                             <View style={styles.scoreContainer}>
-                                <Text style={styles.scoreNumber}>94%</Text>
+                                <Text style={styles.scoreNumber}>{aiFormScore || 0}%</Text>
                                 <Text style={styles.scoreLabel}>AI POSTURE SCORE</Text>
                                 <View style={styles.scoreTierBadge}>
                                     <Ionicons name="ribbon" size={12} color="#FFFFFF" style={{ marginRight: 4 }} />
-                                    <Text style={styles.scoreTierText}>ELITE FORM</Text>
+                                    <Text style={styles.scoreTierText}>{aiFormScore >= 86 ? 'ELITE FORM' : aiFormScore >= 70 ? 'GOOD FORM' : 'NEEDS WORK'}</Text>
                                 </View>
                             </View>
 
@@ -959,8 +988,8 @@ const WorkoutPlayerScreen = ({ navigation }) => {
                                 </View>
                                 <View style={styles.summaryDividerLine} />
                                 <View style={styles.summaryMetricItem}>
-                                    <Text style={styles.summaryMetricVal}>{totalExercises}</Text>
-                                    <Text style={styles.summaryMetricLab}>EXERCISES</Text>
+                                    <Text style={styles.summaryMetricVal}>{aiRepCount}</Text>
+                                    <Text style={styles.summaryMetricLab}>AI REPS</Text>
                                 </View>
                             </View>
 
@@ -1222,6 +1251,70 @@ const styles = StyleSheet.create({
         width: 1.5,
         height: 30,
         backgroundColor: 'rgba(255,255,255,0.08)'
+    },
+    poseFormPanel: {
+        backgroundColor: 'rgba(15, 23, 42, 0.72)',
+        borderWidth: 1,
+        borderColor: 'rgba(16, 185, 129, 0.28)',
+        borderRadius: 20,
+        padding: 14,
+        marginBottom: 20
+    },
+    poseFormHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 12
+    },
+    poseFormEyebrow: {
+        fontSize: 9,
+        fontWeight: '900',
+        color: '#10B981',
+        letterSpacing: 1.2
+    },
+    poseFormMode: {
+        fontSize: 12,
+        fontWeight: '900',
+        color: COLORS.white,
+        marginTop: 3
+    },
+    poseFormScorePill: {
+        minWidth: 58,
+        borderWidth: 1.5,
+        borderRadius: 14,
+        paddingVertical: 6,
+        alignItems: 'center'
+    },
+    poseFormScore: {
+        fontSize: 18,
+        fontWeight: '900'
+    },
+    poseFormScoreLabel: {
+        fontSize: 7,
+        fontWeight: '900',
+        color: '#94A3B8'
+    },
+    poseMetricRow: {
+        flexDirection: 'row',
+        gap: 8
+    },
+    poseMetricBox: {
+        flex: 1,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 13,
+        paddingVertical: 10,
+        alignItems: 'center'
+    },
+    poseMetricValue: {
+        fontSize: 14,
+        fontWeight: '900',
+        color: COLORS.white
+    },
+    poseMetricLabel: {
+        fontSize: 8,
+        fontWeight: '900',
+        color: '#64748B',
+        marginTop: 3
     },
     completeCheckBtn: {
         height: 60,

@@ -1,0 +1,73 @@
+{
+  "model": "PoseForm Exercise AI",
+  "version": "1.1.0",
+  "type": "pose-estimation + expert-rule scoring",
+  "updated": "2026-08-05",
+  "supported_exercises": [
+    "squat",
+    "pushup",
+    "lunge",
+    "plank",
+    "shoulderPress",
+    "bicepCurl",
+    "tricepDip",
+    "deadlift",
+    "row",
+    "jumpingJack",
+    "mountainClimber",
+    "gluteBridge",
+    "calfRaise"
+  ],
+  "tracked_metrics": [
+    "knee_angle",
+    "front_knee_angle",
+    "elbow_angle",
+    "hip_angle",
+    "shoulder_angle",
+    "torso_lean",
+    "body_line",
+    "arm_raise",
+    "ankle_lift",
+    "knee_gap_ratio",
+    "foot_hip_ratio",
+    "shoulder_hip_offset",
+    "elbow_flare",
+    "wrist_elbow_offset"
+  ],
+  "rep_counting": {
+    "method": "movement phase transition",
+    "pattern": "up -> down -> up",
+    "supported": [
+      "squat",
+      "pushup",
+      "lunge",
+      "shoulderPress",
+      "bicepCurl",
+      "tricepDip",
+      "deadlift",
+      "row",
+      "jumpingJack",
+      "mountainClimber",
+      "gluteBridge",
+      "calfRaise"
+    ],
+    "hold_exercises": ["plank"]
+  },
+  "validation": {
+    "script": "scripts/validate-exercise-ai.js",
+    "latest_result": "6/6 synthetic validation tests passed",
+    "checks": [
+      "expanded exercise-name detection",
+      "target rep parsing",
+      "low-visibility scanning state",
+      "squat repetition sequence",
+      "push-up repetition sequence",
+      "incorrect shallow-squat classification"
+    ]
+  },
+  "notes": [
+    "This is not a black-box video classifier.",
+    "The module is trained/tuned as an explainable biomechanics rule model over MoveNet pose landmarks.",
+    "Real-device camera testing is still required for lighting, phone placement, and user-distance calibration."
+  ]
+}
