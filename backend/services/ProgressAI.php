@@ -1,150 +1,115 @@
 <?php
-require_once __DIR__ . '/GeminiService.php';
 
 class ProgressAI {
     public function generateProgressAudit($userLogs, $profile, $weightHistory, $adherences) {
-        $gemini = new GeminiService();
-        if (!$gemini->isAvailable()) {
-            return [
-                "summary" => "Gemini API key is not configured. Please add GEMINI_API_KEY to your environment to enable AI coaching audits.",
-                "status" => "Config Needed",
-                "accomplishments" => ["Biometric and activity data logged successfully"],
-                "concerns" => ["Gemini API key missing in backend environment"],
-                "recommendations" => ["Go to AI Studio to get a free API key and set it in your .env as GEMINI_API_KEY"]
-            ];
+        $workout = round($adherences['workout'] ?? 0);
+        $nutrition = round($adherences['nutrition'] ?? 0);
+        $weights = array_values(array_filter(array_map(fn($row) => isset($row['weight']) ? (float)$row['weight'] : null, $weightHistory ?? [])));
+        $trend = $this->weightTrend($weights);
+        $status = "On Track";
+        $concerns = [];
+
+        if ($workout < 60 || $nutrition < 60) {
+            $status = "Needs Attention";
+            $concerns[] = "Weekly adherence is below the consistency threshold.";
+        }
+        if (abs($trend) < 0.1 && count($weights) >= 3) {
+            $status = $status === "On Track" ? "Stalled" : $status;
+            $concerns[] = "Weight trend is nearly flat across recent logs.";
         }
 
-        $prompt = "Generate an Elite Coach Progress Audit for a fitness user. Here is their context:\n";
-        $prompt .= "- Goal: " . ($profile['goal'] ?? 'General fitness') . "\n";
-        $prompt .= "- Target Weight: " . ($profile['target_weight'] ?? 'N/A') . " kg\n";
-        $prompt .= "- Training Days per Week: " . ($profile['training_days_per_week'] ?? 3) . "\n";
-        $prompt .= "- Meals per Day: " . ($profile['meals_per_day'] ?? 4) . "\n";
-        
-        $prompt .= "\nAdherence metrics over the last 7 days:\n";
-        $prompt .= "- Workout adherence: " . round($adherences['workout'] ?? 0) . "%\n";
-        $prompt .= "- Nutrition/Meal log adherence: " . round($adherences['nutrition'] ?? 0) . "%\n";
-
-        $prompt .= "\nBiometric logs (weight, sleep, steps, stress) over the last 7 days:\n";
-        if (empty($userLogs)) {
-            $prompt .= "- No recent biometric logs found.\n";
-        } else {
-            foreach ($userLogs as $log) {
-                $prompt .= "- Date: " . $log['date_logged'] . " | Weight: " . ($log['weight'] ?? 'N/A') . " kg | Sleep: " . ($log['sleep_hours'] ?? 'N/A') . "h | Stress: " . ($log['stress_level'] ?? 'medium') . " | Steps: " . ($log['steps_estimate'] ?? 0) . "\n";
-            }
-        }
-
-        $systemInstruction = "You are an Elite AI Fitness & Performance Coach. Analyze the user's weekly metrics, weight trends, lifestyle logs (sleep, stress, steps), and plan adherence. Create a detailed progress audit. Respond with a JSON object in this format:\n{\n  \"summary\": \"A short, motivational, and technical summary of the week's physiological status (2-3 sentences).\",\n  \"status\": \"On Track\" | \"Needs Attention\" | \"Stalled\",\n  \"accomplishments\": [\n    \"Accomplishment 1 (specific to sleep, steps, workouts, or weight logs)\",\n    \"Accomplishment 2\"\n  ],\n  \"concerns\": [\n    \"Concern 1 (specific issue like stress levels, poor sleep, or workout consistency, or empty if none)\"\n  ],\n  \"recommendations\": [\n    \"Specific advice 1 (e.g. adjust calories, prioritize sleep windows, or increase steps)\",\n    \"Specific advice 2\",\n    \"Specific advice 3\"\n  ]\n}";
-
-        $res = $gemini->askForJson($prompt, $systemInstruction);
-        if (!$res) {
-            return [
-                "summary" => "The AI could not analyze your progress at this time. Keep tracking your metrics, and try again shortly.",
-                "status" => "Scanning",
-                "accomplishments" => ["Data logged successfully"],
-                "concerns" => ["AI timeout or parse failure"],
-                "recommendations" => ["Try auditing again in a few moments"]
-            ];
-        }
-
-        return $res;
+        $goal = str_replace('_', ' ', $profile['goal'] ?? 'general fitness');
+        return [
+            "summary" => "Local progress analysis shows {$workout}% workout adherence and {$nutrition}% nutrition adherence for your {$goal} goal.",
+            "status" => $status,
+            "accomplishments" => [
+                "Progress data was logged and reviewed locally.",
+                "Workout and nutrition adherence were compared against the weekly target."
+            ],
+            "concerns" => $concerns ?: ["No major consistency risk detected from the available logs."],
+            "recommendations" => [
+                $workout < 75 ? "Prioritize completing the next scheduled workout before adding extra volume." : "Keep training volume stable and focus on clean execution.",
+                $nutrition < 75 ? "Improve meal logging and protein consistency for the next 3 days." : "Keep following NutriCore meals and avoid unnecessary swaps.",
+                count($userLogs ?? []) < 4 ? "Log sleep, stress, steps, and weight for more accurate weekly feedback." : "Use sleep and stress trends to adjust intensity before fatigue builds."
+            ],
+            "model" => "Local ProgressAI Rules"
+        ];
     }
 
-    /**
-     * Simulate 30-day weight trajectory based on user-specified lifestyle changes.
-     */
     public function generateTrajectorySimulation($currentWeight, $targetWeight, $goal, $scenario) {
-        $gemini = new GeminiService();
-        if (!$gemini->isAvailable()) {
-            return [
-                "predicted_weight" => $currentWeight,
-                "weekly_change" => 0,
-                "days_to_goal" => null,
-                "plateau_risk" => "unknown",
-                "efficiency_score" => 50,
-                "analysis" => "Gemini API key not configured.",
-                "key_factors" => [],
-                "warning" => "API key missing"
-            ];
+        $calorieDelta = (float)($scenario['calorie_delta'] ?? 0);
+        $steps = (int)($scenario['steps'] ?? 7000);
+        $sleep = (float)($scenario['sleep'] ?? 7);
+        $workoutDays = (int)($scenario['workout_days'] ?? 3);
+        $activityAdjustment = (($steps - 7000) / 3000) * 0.08 + (($workoutDays - 3) * 0.06);
+        $sleepPenalty = $sleep < 6 ? 0.18 : ($sleep < 7 ? 0.08 : 0);
+        $weeklyChange = (($calorieDelta * 7) / 7700) + $activityAdjustment;
+        if (str_contains((string)$goal, 'lose')) {
+            $weeklyChange -= $sleepPenalty;
+        } else {
+            $weeklyChange += max(0, $sleepPenalty * -0.25);
         }
+        $predicted = round((float)$currentWeight + ($weeklyChange * 4.285), 1);
+        $remaining = abs((float)$targetWeight - (float)$currentWeight);
+        $daysToGoal = abs($weeklyChange) > 0.05 ? (int)ceil(($remaining / abs($weeklyChange)) * 7) : null;
+        $efficiency = max(35, min(95, 70 + ($workoutDays - 3) * 5 + ($sleep >= 7 ? 8 : -8) + ($steps >= 9000 ? 7 : 0)));
 
-        $stepsLabel = $scenario['steps'] >= 10000 ? 'High Activity' : ($scenario['steps'] >= 7000 ? 'Moderate Activity' : 'Low Activity');
-        $sleepLabel = $scenario['sleep'] >= 8 ? 'Optimal Sleep' : ($scenario['sleep'] >= 6 ? 'Adequate Sleep' : 'Sleep Deprived');
-
-        $prompt = "Simulate a 30-day physiological trajectory for a fitness user under specific lifestyle conditions.\n\n";
-        $prompt .= "Current Stats:\n";
-        $prompt .= "- Current Weight: {$currentWeight} kg\n";
-        $prompt .= "- Target Weight: {$targetWeight} kg\n";
-        $prompt .= "- Goal: {$goal}\n\n";
-        $prompt .= "Proposed Lifestyle Scenario (next 30 days):\n";
-        $prompt .= "- Daily Steps: " . $scenario['steps'] . " ({$stepsLabel})\n";
-        $prompt .= "- Sleep Hours per Night: " . $scenario['sleep'] . " ({$sleepLabel})\n";
-        $prompt .= "- Stress Level: " . $scenario['stress'] . "\n";
-        $prompt .= "- Workout Days per Week: " . $scenario['workout_days'] . "\n";
-        $prompt .= "- Calorie Deficit/Surplus relative to maintenance: " . $scenario['calorie_delta'] . " kcal/day\n\n";
-
-        $systemInstruction = "You are a precision physiological simulation engine. Based on the user's lifestyle scenario, predict their 30-day body weight trajectory. Consider TDEE, metabolic adaptation, sleep quality's effect on cortisol and fat loss, step-count NEAT contribution, and workout intensity. Respond ONLY with a valid JSON object in this EXACT format:\n{\n  \"predicted_weight\": <float — predicted weight after 30 days in kg>,\n  \"weekly_change\": <float — estimated kg change per week, negative for loss>,\n  \"days_to_goal\": <integer or null — estimated days to reach target weight, null if impossible in 90 days>,\n  \"plateau_risk\": \"Low\" | \"Medium\" | \"High\",\n  \"efficiency_score\": <integer 0-100 — how optimized this plan is for the user's goal>,\n  \"analysis\": \"<2-3 sentence technical explanation of the predicted trajectory and why>\",\n  \"key_factors\": [\"<Factor 1 driving results>\", \"<Factor 2>\", \"<Factor 3>\"]\n}";
-
-        $res = $gemini->askForJson($prompt, $systemInstruction);
-        if (!$res) {
-            return [
-                "predicted_weight" => round($currentWeight - 1.5, 1),
-                "weekly_change" => -0.35,
-                "days_to_goal" => null,
-                "plateau_risk" => "Medium",
-                "efficiency_score" => 60,
-                "analysis" => "Could not reach AI at this time. Showing estimated values.",
-                "key_factors" => ["Calorie balance", "Activity level", "Sleep quality"]
-            ];
-        }
-
-        return $res;
+        return [
+            "predicted_weight" => $predicted,
+            "weekly_change" => round($weeklyChange, 2),
+            "days_to_goal" => $daysToGoal && $daysToGoal <= 180 ? $daysToGoal : null,
+            "plateau_risk" => abs($weeklyChange) < 0.15 ? "High" : (abs($weeklyChange) < 0.35 ? "Medium" : "Low"),
+            "efficiency_score" => $efficiency,
+            "analysis" => "Local simulation estimates the next 30 days from calorie balance, step volume, workout frequency, and sleep quality.",
+            "key_factors" => ["Calorie balance", "Daily steps", "Sleep and recovery quality"],
+            "model" => "Local ProgressAI Simulation"
+        ];
     }
 
-    /**
-     * Generate 3 personalized daily bio-advisory tips based on yesterday's biometric data.
-     */
     public function generateBioAdvisory($yesterdayLog, $profile, $weeklyStats) {
-        $gemini = new GeminiService();
-        if (!$gemini->isAvailable()) {
-            return [
-                "morning_status" => "System Ready",
-                "status_color" => "blue",
-                "advisories" => [
-                    ["icon" => "fitness", "color" => "#10B981", "category" => "TRAINING", "title" => "Stay Consistent", "advice" => "Maintain your training schedule today."],
-                    ["icon" => "restaurant", "color" => "#3B82F6", "category" => "NUTRITION", "title" => "Hit Your Macros", "advice" => "Focus on protein intake to support recovery."],
-                    ["icon" => "moon", "color" => "#6366F1", "category" => "RECOVERY", "title" => "Prioritize Rest", "advice" => "Aim for 7-8 hours of sleep tonight."]
+        $sleep = (float)($yesterdayLog['sleep_hours'] ?? 0);
+        $steps = (int)($yesterdayLog['steps'] ?? 0);
+        $stress = strtolower((string)($yesterdayLog['stress_level'] ?? 'medium'));
+        $workoutAdherence = round($weeklyStats['workout_adherence'] ?? 0);
+        $nutritionAdherence = round($weeklyStats['nutrition_adherence'] ?? 0);
+        $status = ($sleep < 6 || $stress === 'high') ? "Recovery Mode" : (($steps >= 9000 && $workoutAdherence >= 75) ? "Prime Zone" : "Build Rhythm");
+        $color = $status === "Recovery Mode" ? "yellow" : ($status === "Prime Zone" ? "green" : "blue");
+
+        return [
+            "morning_status" => $status,
+            "status_color" => $color,
+            "advisories" => [
+                [
+                    "icon" => "fitness",
+                    "color" => "#10B981",
+                    "category" => "TRAINING",
+                    "title" => $workoutAdherence >= 75 ? "Hold The Plan" : "Protect Consistency",
+                    "advice" => $workoutAdherence >= 75 ? "Keep today's session at planned intensity and avoid unnecessary extra sets." : "Complete the scheduled workout even if you need to reduce intensity."
+                ],
+                [
+                    "icon" => "restaurant",
+                    "color" => "#3B82F6",
+                    "category" => "NUTRITION",
+                    "title" => $nutritionAdherence >= 75 ? "Macro Control" : "Meal Logging",
+                    "advice" => $nutritionAdherence >= 75 ? "Stay close to NutriCore's protein target and keep meals simple." : "Log every meal today and prioritize protein first."
+                ],
+                [
+                    "icon" => "moon",
+                    "color" => "#6366F1",
+                    "category" => "RECOVERY",
+                    "title" => $sleep < 7 ? "Sleep Debt" : "Recovery Stable",
+                    "advice" => $sleep < 7 ? "Keep caffeine earlier, reduce late screen time, and target at least 7 hours tonight." : "Recovery looks stable; maintain hydration and normal bedtime."
                 ]
-            ];
+            ],
+            "model" => "Local ProgressAI Advisory"
+        ];
+    }
+
+    private function weightTrend(array $weights): float {
+        if (count($weights) < 2) {
+            return 0.0;
         }
-
-        $prompt = "Generate 3 hyper-personalized daily bio-advisory tips for a fitness user based on their data from yesterday.\n\n";
-        $prompt .= "Yesterday's Biometrics:\n";
-        $prompt .= "- Weight: " . ($yesterdayLog['weight'] ?? 'Not logged') . " kg\n";
-        $prompt .= "- Sleep: " . ($yesterdayLog['sleep_hours'] ?? 'Not logged') . " hours\n";
-        $prompt .= "- Stress Level: " . ($yesterdayLog['stress_level'] ?? 'medium') . "\n";
-        $prompt .= "- Steps: " . ($yesterdayLog['steps'] ?? 0) . "\n\n";
-        $prompt .= "User Profile:\n";
-        $prompt .= "- Goal: " . ($profile['goal'] ?? 'General fitness') . "\n";
-        $prompt .= "- Target Weight: " . ($profile['target_weight'] ?? 'N/A') . " kg\n\n";
-        $prompt .= "Weekly context: Workout adherence " . round($weeklyStats['workout_adherence'] ?? 0) . "%, Nutrition adherence " . round($weeklyStats['nutrition_adherence'] ?? 0) . "%\n";
-
-        $systemInstruction = "You are a world-class performance coach delivering a morning briefing. Based on yesterday's biometric data, generate exactly 3 specific, actionable daily bio-advisory tips — one for training, one for nutrition, one for recovery. Make them hyper-specific (not generic). Respond ONLY with this JSON:\n{\n  \"morning_status\": \"<A 3-5 word status phrase e.g. 'Prime Zone', 'Recovery Mode', 'High Alert'>\",\n  \"status_color\": \"green\" | \"yellow\" | \"red\" | \"blue\",\n  \"advisories\": [\n    {\"icon\": \"fitness\", \"color\": \"#10B981\", \"category\": \"TRAINING\", \"title\": \"<short title>\", \"advice\": \"<specific advice based on yesterday's data>\"},\n    {\"icon\": \"restaurant\", \"color\": \"#3B82F6\", \"category\": \"NUTRITION\", \"title\": \"<short title>\", \"advice\": \"<specific advice>\"},\n    {\"icon\": \"moon\", \"color\": \"#6366F1\", \"category\": \"RECOVERY\", \"title\": \"<short title>\", \"advice\": \"<specific advice based on sleep/stress data>\"}\n  ]\n}";
-
-        $res = $gemini->askForJson($prompt, $systemInstruction);
-        if (!$res) {
-            return [
-                "morning_status" => "System Ready",
-                "status_color" => "blue",
-                "advisories" => [
-                    ["icon" => "fitness", "color" => "#10B981", "category" => "TRAINING", "title" => "Stay Consistent", "advice" => "Maintain your training schedule today."],
-                    ["icon" => "restaurant", "color" => "#3B82F6", "category" => "NUTRITION", "title" => "Hit Your Macros", "advice" => "Focus on protein intake to support recovery."],
-                    ["icon" => "moon", "color" => "#6366F1", "category" => "RECOVERY", "title" => "Prioritize Rest", "advice" => "Aim for 7-8 hours of sleep tonight."]
-                ]
-            ];
-        }
-
-        return $res;
+        return end($weights) - $weights[0];
     }
 }
 ?>
-

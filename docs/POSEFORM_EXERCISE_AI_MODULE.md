@@ -1,312 +1,390 @@
 # PoseForm Exercise AI Module
 
-Last updated: 2026-08-05
+Last updated: 2026-08-25
 
-This document explains the custom exercise analysis module added to the workout player. The goal is to provide a realistic FYP-ready virtual trainer using camera pose estimation, joint-angle rules, real-time feedback, and automatic repetition counting for supported exercises.
+PoseForm is the project's custom exercise-analysis AI module. It acts as a virtual personal trainer inside the workout session by analyzing a recorded or uploaded exercise video, counting repetitions, scoring form, detecting movement mistakes, and recommending an expert-reviewed technique tutorial when needed.
+
+PoseForm is not a Gemini or external generative-AI feature. Exercise analysis is handled by local Python code and project-owned pose/form rules.
 
 ## Product Goal
 
-PoseForm acts as a virtual personal trainer inside the workout session.
+PoseForm is designed to:
 
-It can:
+- capture the user's exercise through the device camera or video upload
+- extract body landmarks from the full-set video
+- identify the expected exercise from the active workout item
+- count repetitions when the movement pattern is visible
+- score form quality
+- detect common mistakes
+- show correction notes after analysis
+- recommend a tutorial video for the same exercise
+- support expert validation through Jason's review screen
 
-- capture movement through the device camera
-- detect body joints through MoveNet pose estimation
-- calculate joint angles and body alignment
-- identify the active exercise from the workout plan name
-- analyze form quality
-- detect posture and movement mistakes
-- provide real-time correction feedback
-- count repetitions for clear up/down movements
-- show a form score in the workout summary
+The workflow is intentionally full-set based. The user presses `Start Recording`, completes the exercise, then presses `Stop & Analyze`. This avoids the unreliable high-FPS real-time camera limitations of Expo Go and gives a more stable FYP demo.
 
 ## Current Implementation
 
-Main screen:
+Main user screen:
 
 ```text
 src/screens/WorkoutPlayerScreen.js
 ```
 
-Custom AI module:
+Python recorded-video analyzer:
 
 ```text
-src/ai/exerciseFormModel.js
+ml/exercise_ai/video_pose_analyzer.py
 ```
 
-Training/rule metadata:
+Custom pose-template validation data:
 
 ```text
-ml/exercise_ai/poseform_training_rules.json
+ml/exercise_ai/poseform_pose_templates.json
 ```
 
-Validation script:
+Tutorial recommendation dataset:
 
 ```text
-scripts/validate-exercise-ai.js
+src/ai/exerciseTutorials.js
 ```
 
-The app already had:
+Backend API:
 
-- `expo-camera`
-- TensorFlow.js
-- `@tensorflow-models/pose-detection`
-- MoveNet SinglePose Lightning setup
-- live camera mode in the workout player
+```text
+backend/controllers/ExerciseAIController.php
+POST /api/analyzeExerciseVideo
+```
 
-The new work connects those pieces to a real local analysis module instead of random simulated feedback.
+Expert tutorial review API:
 
-## Supported Exercises
+```text
+backend/controllers/FitnessController.php
+GET  /api/getExerciseTutorialReviews
+POST /api/saveExerciseTutorialReview
+```
 
-The current version supports a broader but still controlled exercise library:
+Validation commands:
+
+```bash
+npm run validate:exercise-ai
+npm run train:exercise-ai
+```
+
+## High-Level Flow
+
+```text
+Workout exercise selected
+        |
+        v
+User watches optional tutorial
+        |
+        v
+User records or uploads full-set video
+        |
+        v
+Backend receives video
+        |
+        v
+Python PoseForm analyzer extracts landmarks with MediaPipe
+        |
+        v
+Custom exercise templates score reps and form
+        |
+        v
+API returns reps, form score, confidence, feedback, mistakes
+        |
+        v
+WorkoutPlayer shows analysis result and tutorial recommendation
+```
+
+## Recorded Video Runtime
+
+The current runtime uses:
+
+- Expo CameraView for recording
+- Expo ImagePicker for video upload
+- PHP backend upload endpoint
+- local Python analyzer
+- MediaPipe pose landmark extraction
+- custom PoseForm rule/template scoring
+
+Why recorded video is used:
+
+- Expo Go does not provide reliable native frame processors.
+- Live frame-by-frame AI was too slow and unstable on mobile.
+- Recorded video gives PoseForm enough frames to detect a complete movement pattern.
+- Upload mode allows the team to test known squat, curl, push-up, and other sample videos during demo preparation.
+
+Current video behavior:
+
+- the recording ends when the user presses `Stop & Analyze`
+- uploaded videos are accepted through the same analyzer path
+- upload timeout is longer to support larger clips
+- the UI shows duration, usable frames, confidence, reps, form score, and coaching notes
+- the user can retake, accept result, or mark the exercise complete
+- the user can return from PoseForm to the exercise list
+
+## Supported Exercise Coverage
+
+PoseForm has custom recorded-video profiles for the core supported exercise set in:
+
+```text
+ml/exercise_ai/poseform_pose_templates.json
+ml/exercise_ai/video_pose_analyzer.py
+```
+
+Supported movement families include:
+
+- squat
+- push-up
+- lunge
+- plank
+- shoulder press
+- bicep curl
+- tricep dip
+- deadlift
+- row
+- jumping jack
+- mountain climber
+- glute bridge
+- calf raise
+- bench press
+- lat pulldown
+- pull-up
+- leg press
+- leg extension
+- leg curl
+- lateral raise
+- chest fly
+- crunch
+- burpee / push-up based conditioning
+- locomotion / walking style movement
+
+The UI tutorial-review layer currently exposes 30 exercise tutorial rows for Jason approval:
 
 - Squat
-- Push-up
-- Lunge
-- Plank
-- Shoulder press / overhead press
-- Bicep curl
-- Tricep dip
-- Deadlift / Romanian deadlift
+- Jump Squat
+- Leg Press
+- Leg Extension
+- Push-Up
+- Burpee
+- Deadlift
+- Glute Bridge
+- Leg Curl
+- Bench Press
+- Incline Dumbbell Press
+- Chest Fly
+- Shoulder Press
+- Lateral Raise
+- Pull-Up
+- Lat Pulldown
+- Bicep Curl
 - Row
-- Jumping jack
-- Mountain climber
-- Glute bridge / hip thrust
-- Calf raise
+- Tricep Dip
+- Plank
+- Mountain Climber
+- Lunge
+- Warrior I
+- Jumping Jack
+- Calf Raise
+- Crunch
+- Sun Salutation
+- Downward Dog
+- Cat Cow
+- Nature Walk
 
-Unsupported exercises still receive general pose locking feedback, but detailed correction rules and rep counting are strongest for the supported exercises.
+Some tutorial rows share a source video when the exercise is a close variation of the same movement family. Each row still has its own approval status, so Jason can approve or reject exercises individually.
 
-## Pipeline
+## Exercise Identification
 
-```text
-Expo Camera
-        |
-        v
-MoveNet pose detector
-        |
-        v
-17 body keypoints
-        |
-        v
-screen-space skeleton mapping
-        |
-        v
-PoseForm exercise model
-        |
-        +--> joint angles
-        +--> movement phase
-        +--> form score
-        +--> faulty joints
-        +--> correction feedback
-        +--> repetition count
-        |
-        v
-WorkoutPlayer UI
-```
-
-## Exercise Detection
-
-Exercise detection currently uses the active workout exercise name.
+PoseForm does not guess the exercise from zero context. It uses the active workout exercise name as the expected label, then maps that name to a supported movement profile.
 
 Examples:
 
 ```text
-Squats -> squat model
-Push Ups -> pushup model
-Lunges -> lunge model
-Plank -> plank model
-Shoulder Press -> shoulderPress model
+Squats -> squat profile
+Bicep Curls -> bicepCurl profile
+Mountain Climbers -> mountainClimber profile
+Bench Press -> benchPress profile
+Downward Dog -> yoga tutorial profile
 ```
 
-This is more reliable for the app than trying to guess every exercise only from movement, because the workout plan already knows what the user is supposed to perform.
+This is more reliable for the project because the workout plan already knows what the user is supposed to perform.
 
-## Form Rules
+## Form Analysis
 
-PoseForm calculates angles such as:
+The Python analyzer extracts landmarks, normalizes movement, and computes exercise-specific metrics such as:
 
 - knee angle
-- front knee angle
-- elbow angle
 - hip angle
+- elbow angle
 - shoulder angle
 - torso lean
 - body-line angle
-- arm raise
-- ankle lift
-- knee gap ratio
-- foot-to-hip width ratio
-- shoulder/hip alignment
-- elbow flare
-- wrist/elbow drift
+- wrist and elbow alignment
+- knee tracking
+- range of motion
+- movement phase
+- pose visibility
 
-Example squat rules:
+Then the custom PoseForm rules compare those metrics against curated templates and movement thresholds.
 
-- shallow depth -> ask the user to go lower
-- excessive torso lean -> ask the user to keep chest up
-- knee collapse -> ask the user to keep knees aligned over toes
+Example mistakes:
 
-Example push-up rules:
+- squat: shallow depth, knee collapse, excessive torso lean
+- push-up: shallow depth, hip sag, elbow flare
+- bicep curl: elbow swing, incomplete curl, wrist drift
+- deadlift: rounded back, knee-dominant hinge, poor lockout
+- bench press: shallow depth, elbow flare, wrist stack issue
+- mountain climber: hips too high, weak knee drive, poor shoulder stack
+- lateral raise: shoulder shrug, torso swing, low raise
+- crunch: neck pulling, fast tempo, low curl
 
-- shallow depth -> lower chest more
-- hip sag -> brace core and keep hips aligned
-- elbow flare -> keep elbows closer to body
+The response includes:
 
-Example plank rules:
+```json
+{
+  "success": true,
+  "exercise": "bicepCurl",
+  "reps": 10,
+  "form_score": 84,
+  "confidence": 82,
+  "rep_reliability": 80,
+  "valid_frames": 142,
+  "feedback": ["Good elbow control."],
+  "mistakes": ["Avoid swinging the torso."]
+}
+```
 
-- hips sagging -> lift hips and brace core
-- hips too high -> lower hips into one line
-- shoulders not stacked -> stack shoulders over elbows/wrists
-
-Additional supported rule examples:
-
-- bicep curl: shoulder swing, incomplete curl, wrist drift
-- tricep dip: shallow depth, shoulder shrug, hip drift
-- deadlift: rounded back, knee-dominant hinge, weight drifting away
-- row: torso rocking, short pull, shoulder shrug
-- jumping jack: low arms, narrow feet, stiff landing
-- mountain climber: hips too high, slow knee drive, shoulder stack
-- glute bridge: low hips, over-arching, knee drift
-- calf raise: low lift, knee bend, rushing the top position
-
-## Rep Counting
+## Repetition Counting
 
 Rep counting uses movement phases:
 
 ```text
-up -> down -> up = 1 rep
+ready -> working position -> returned position = 1 rep
 ```
 
-For each supported rep-based exercise, PoseForm watches a primary angle:
+For each supported exercise, PoseForm watches the most relevant movement metric:
 
-- Squat: knee angle
-- Push-up: elbow angle
-- Lunge: front knee angle
-- Shoulder press: elbow angle
+- squat and leg press: hip/knee depth pattern
+- push-up and bench press: elbow flexion/extension
+- bicep curl: elbow angle curl pattern
+- shoulder press: arm press pattern
+- deadlift and glute bridge: hip hinge/extension pattern
+- jumping jack: arm and leg opening/closing
+- mountain climber: alternating knee drive
+- calf raise: ankle lift
 
-Plank is treated as a hold exercise, so it does not count reps.
+The model uses denoising, adaptive thresholds, and minimum movement range checks so it does not count tiny random motion as a rep.
 
-Current rep-counting support:
+## Tutorial Recommendation
 
-- Squat
-- Push-up
-- Lunge
-- Shoulder press
-- Bicep curl
-- Tricep dip
-- Deadlift
-- Row
-- Jumping jack
-- Mountain climber
-- Glute bridge
-- Calf raise
-
-## UI Behavior
-
-When the AI camera is active, the workout player now shows:
-
-- live skeleton overlay
-- form feedback toast
-- PoseForm AI panel
-- detected exercise mode
-- form score
-- AI rep count
-- movement phase
-- model status
-- highlighted faulty joints
-
-The workout summary now uses the real PoseForm score instead of a fixed fake score.
-
-## Training Approach
-
-This first version is a custom explainable model, not a black-box deep-learning classifier.
-
-That is intentional because:
-
-- it is easier to validate for an FYP
-- corrections are explainable
-- rules can be tuned per exercise
-- it works with a small dataset
-- it reduces the need for thousands of labeled videos
-
-Future training can improve it with:
-
-- labeled correct/incorrect exercise videos
-- per-exercise mistake datasets
-- learned thresholds per body type
-- personalized calibration
-- model confidence tracking
-- expert-reviewed form examples
-
-Current training/tuning assets:
+Exercise tutorial data is stored locally:
 
 ```text
-ml/exercise_ai/poseform_training_rules.json
+src/ai/exerciseTutorials.js
 ```
 
-This file records the supported exercise library, tracked body metrics, rep-counting method, and latest validation result.
+The app maps the active exercise to a curated YouTube tutorial or trusted YouTube search query. The user sees:
 
-Validation command:
+- `Technique Tutorial` before opening PoseForm
+- `Watch Technique First` inside PoseForm
+- `Improve This Set` after a weak form score
 
-```bash
-npm run validate:exercise-ai
-```
+The tutorial feature is not an AI API. It is a local recommendation dataset linked to the current workout exercise.
 
-Latest local validation:
+## Expert Approval
+
+Jason approves both meals and exercise tutorials in the same screen:
 
 ```text
-PoseForm validation passed 6/6 tests.
+src/screens/MealReviewScreen.js
 ```
 
-The validation checks:
+The screen is now titled:
 
-- expanded exercise-name detection
+```text
+Expert Review
+```
+
+It includes:
+
+- `Meals` tab
+- `Tutorials` tab
+- status filters
+- note input
+- approve / needs adjustment / reject / pending actions
+- direct tutorial video opening
+
+Tutorial approval is stored in:
+
+```text
+exercise_tutorial_reviews
+```
+
+Normal users cannot approve tutorials. They can only see whether a tutorial is `Expert Approved` or `Pending Expert Review`.
+
+## Training And Validation
+
+PoseForm is trained and tuned as an explainable custom pose-template and rule-ranking model, not as a black-box generative model.
+
+Training/tuning assets:
+
+```text
+ml/exercise_ai/poseform_pose_templates.json
+ml/exercise_ai/video_pose_analyzer.py
+```
+
+The Python analyzer implements the movement classes, angle ranges, camera-view handling, and runtime form rules. The template dataset is used by validation to confirm supported exercise coverage.
+
+Validation covers:
+
+- supported exercise name mapping
+- pose template coverage
 - target rep parsing
-- low-visibility scanning state
-- squat repetition sequence
-- push-up repetition sequence
-- incorrect shallow-squat classification
+- recorded-video analyzer execution
+- all supported video-analysis profiles
+- common bad-form cases
+- rep counting behavior
+
+Latest recorded metadata:
+
+```text
+17/17 JS/template validation tests passed
+3/3 Python recorded-video analyzer tests passed
+24/24 recorded-video smoke profiles passed
+```
 
 ## Current Limitations
 
-- It depends on camera visibility and lighting.
-- It uses snapshot-based inference, not high-FPS native frame processing.
-- It is strongest for the supported exercises only.
-- It does not yet save detailed form analytics to the backend.
-- It does not yet generate automatic workout recommendations based on repeated form mistakes.
+- Accuracy depends on camera angle, lighting, and full-body visibility.
+- A phone placed too close can hide joints and reduce confidence.
+- Some movements are approximated from 2D landmarks.
+- PoseForm is strongest when the user records the full target set from the recommended angle.
+- Real clinical safety still requires human judgment for injuries or pain.
 
 ## Future Improvements
 
-Next logical steps:
+The strongest future upgrades are:
 
-1. Add backend storage for form sessions.
-2. Save rep count, form score, detected mistakes, and exercise name.
-3. Show a history chart of form improvement.
-4. Recommend safer alternatives when the user repeatedly performs an exercise incorrectly.
-5. Add expert validation data for exercise form rules.
-6. Expand supported exercises gradually.
-7. Replace snapshot inference with a faster native camera frame processor if needed.
+1. Save PoseForm results to backend history.
+2. Show form improvement charts per exercise.
+3. Let Jason approve form-rule templates, not only tutorial resources.
+4. Add a native Android dev build with true frame processors.
+5. Expand video datasets with expert-labeled correct and incorrect reps.
+6. Add automatic exercise alternatives when the same mistake repeats.
 
-## FYP Status
+## FYP Defense Summary
 
-The AI Exercise Analysis model is now partially implemented as `PoseForm`.
+PoseForm is now a custom AI module with:
 
-Implemented:
-
-- camera-based pose estimation
-- custom local analysis module
-- joint-angle calculations
-- form scoring
-- real-time feedback
-- faulty joint highlighting
-- rep counting for supported rep-based exercises
-- workout summary integration
-- expanded expert-rule library for 13 exercise patterns
-- validation script and curated rule metadata
-
-Still future work:
-
-- larger real-video training dataset
-- expert-reviewed exercise dataset
-- backend analytics storage
-- full automatic recommendation engine
-- more exercises
+- local Python recorded-video analysis
+- MediaPipe landmark extraction
+- custom exercise-specific rep logic
+- form scoring and mistake detection
+- curated pose-template metadata
+- 24 recorded-video analyzer profiles
+- 30 expert-reviewable tutorial resources
+- Jason approval workflow
+- normal-user tutorial visibility
+- no Gemini dependency for exercise analysis

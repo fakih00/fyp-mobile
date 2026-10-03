@@ -8,7 +8,7 @@ export const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
     // Initial state matching mock structure but ready for updates
-    const [user, setUser] = useState({ ...USERS }); // Fallback to mock until loaded
+    const [user, setUser] = useState({ ...USERS }); // Default mock state until loaded
     const [workouts, setWorkouts] = useState([]);
     const [meals, setMeals] = useState([]);
     const [challenges, setChallenges] = useState(CHALLENGES);
@@ -86,7 +86,8 @@ export const AppProvider = ({ children }) => {
 
         const nutRes = await api.getNutritionPlan();
         if (nutRes.status === 200 && nutRes.data) {
-            setMeals(nutRes.data.meals || []);
+            const nutritionMeals = Array.isArray(nutRes.data.meals) ? nutRes.data.meals : [];
+            setMeals(nutritionMeals);
             setNutritionGoal(nutRes.data.calories || 2200);
             setIsRecomp(nutRes.data.is_recomp || false);
             setMacroTargets({
@@ -106,12 +107,13 @@ export const AppProvider = ({ children }) => {
                 Sunday: { calories: 0, protein: 0, carbs: 0, fats: 0 }
             };
 
-            (nutRes.data.meals || []).forEach(m => {
+            nutritionMeals.forEach(m => {
+                const mealDay = newMacros[m.day] ? m.day : 'Monday';
                 if (m.completed) {
-                    newMacros[m.day].calories += m.calories;
-                    newMacros[m.day].protein += m.protein;
-                    newMacros[m.day].carbs += m.carbs;
-                    newMacros[m.day].fats += m.fats;
+                    newMacros[mealDay].calories += Number(m.calories || 0);
+                    newMacros[mealDay].protein += Number(m.protein || 0);
+                    newMacros[mealDay].carbs += Number(m.carbs || 0);
+                    newMacros[mealDay].fats += Number(m.fats || 0);
                 }
             });
             setConsumedMacros(newMacros);
@@ -166,26 +168,32 @@ export const AppProvider = ({ children }) => {
                     setHistory(prevHist => [newHistoryItem, ...prevHist]);
 
                     // Update consumed macros for that specific day
-                    setConsumedMacros(prev => ({
-                        ...prev,
-                        [mealItem.day]: {
-                            calories: prev[mealItem.day].calories + mealItem.calories,
-                            protein: prev[mealItem.day].protein + mealItem.protein,
-                            carbs: prev[mealItem.day].carbs + mealItem.carbs,
-                            fats: prev[mealItem.day].fats + mealItem.fats
-                        }
-                    }));
+                    setConsumedMacros(prev => {
+                        const mealDay = prev[mealItem.day] ? mealItem.day : 'Monday';
+                        return {
+                            ...prev,
+                            [mealDay]: {
+                                calories: prev[mealDay].calories + Number(mealItem.calories || 0),
+                                protein: prev[mealDay].protein + Number(mealItem.protein || 0),
+                                carbs: prev[mealDay].carbs + Number(mealItem.carbs || 0),
+                                fats: prev[mealDay].fats + Number(mealItem.fats || 0)
+                            }
+                        };
+                    });
                 } else {
                     // Update consumed macros (subtract)
-                    setConsumedMacros(prev => ({
-                        ...prev,
-                        [m.day]: {
-                            calories: Math.max(0, prev[m.day].calories - m.calories),
-                            protein: Math.max(0, prev[m.day].protein - m.protein),
-                            carbs: Math.max(0, prev[m.day].carbs - m.carbs),
-                            fats: Math.max(0, prev[m.day].fats - m.fats)
-                        }
-                    }));
+                    setConsumedMacros(prev => {
+                        const mealDay = prev[m.day] ? m.day : 'Monday';
+                        return {
+                            ...prev,
+                            [mealDay]: {
+                                calories: Math.max(0, prev[mealDay].calories - Number(m.calories || 0)),
+                                protein: Math.max(0, prev[mealDay].protein - Number(m.protein || 0)),
+                                carbs: Math.max(0, prev[mealDay].carbs - Number(m.carbs || 0)),
+                                fats: Math.max(0, prev[mealDay].fats - Number(m.fats || 0))
+                            }
+                        };
+                    });
                 }
 
                 // 2. BACKGROUND SYNC
@@ -239,14 +247,14 @@ export const AppProvider = ({ children }) => {
             id: 'f' + (friends.length + 1),
             name,
             status: 'Just Added',
-            avatar: null // Will be handled by backend or fallback to initial
+            avatar: null // Will be handled by backend or default to initial
         };
         setFriends([...friends, newFriend]);
     };
 
     const startWorkout = (workout, forceReset = false) => {
         // Enforce: Don't let user redo a completed workout
-        if (workout.completed) {
+        if (workout.completed && !forceReset) {
             console.log("Workout already completed. Redo blocked.");
             return;
         }

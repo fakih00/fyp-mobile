@@ -124,7 +124,7 @@ export const THEMES = {
 export const DEFAULT_THEME = 'Emerald';
 
 export const COLORS = {
-  primary: '#10B981', // Fallback
+  primary: '#10B981', // Default
   secondary: '#34D399',
   background: '#F5F2ED', // Soft Oat Beige
   surface: '#FFFCF9', // Ivory White

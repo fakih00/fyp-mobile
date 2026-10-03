@@ -39,7 +39,7 @@ class BaseController {
     protected function getRequestData() {
         $data = json_decode(file_get_contents("php://input"));
         if ($data === null) {
-            // Fallback to $_POST or $_GET if JSON body is empty
+            // Accept form/query data when the JSON body is empty.
             return (object) array_merge($_GET, $_POST);
         }
         return $data;

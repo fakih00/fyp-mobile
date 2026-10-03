@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
     View,
     Text,
@@ -17,7 +17,6 @@ import * as Haptics from 'expo-haptics';
 import { AppContext } from '../context/AppContext';
 import { COLORS } from '../constants/Theme';
 import { INGREDIENT_CATALOG } from '../ai/mealDataset';
-import { evaluateNutritionModel, recommendMeals } from '../ai/nutritionRecommendationModel';
 import { api } from '../services/api';
 
 const DEFAULT_FRIDGE = ['chicken', 'rice', 'eggs', 'oats', 'banana', 'tomato', 'greek_yogurt', 'spinach', 'avocado'];
@@ -50,43 +49,26 @@ const SmartMealAIScreen = ({ navigation }) => {
     const [selectedSwap, setSelectedSwap] = useState(null);
     const [swapTargetId, setSwapTargetId] = useState(null);
     const [isApplyingSwap, setIsApplyingSwap] = useState(false);
-    const [approvalReviews, setApprovalReviews] = useState({});
     const [canReviewMeals, setCanReviewMeals] = useState(false);
     const [visibleSwapCount, setVisibleSwapCount] = useState(SWAPS_PER_PAGE);
+    const [isLoadingSwaps, setIsLoadingSwaps] = useState(false);
+    const [modelOutput, setModelOutput] = useState({
+        targets: { targetCalories: 0, protein: 0, carbs: 0, fats: 0 },
+        recommendations: [],
+        model: {
+            name: 'NutriCore AI',
+            version: '1.4.0',
+            learnedSamples: 0,
+            validationMetrics: null,
+        },
+    });
 
     const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const today = daysOfWeek[new Date().getDay()];
     const todaysMeals = useMemo(() => (meals || []).filter((meal) => meal.day === today), [meals, today]);
     const openTodaysMeals = useMemo(() => todaysMeals.filter((meal) => !meal.completed), [todaysMeals]);
     const allTodaysMealsLogged = todaysMeals.length > 0 && openTodaysMeals.length === 0;
-    const goal = normalizeGoal(user?.goal || user?.fitness_goal || 'maintain');
-
-    const profile = useMemo(() => ({
-        age: user?.age || 22,
-        gender: user?.gender || 'male',
-        height: user?.height || 175,
-        weight: user?.weight || 75,
-        activityLevel: user?.activity_level || user?.activityLevel || 'moderate',
-        targetCalories: nutritionGoal,
-        protein: macroTargets?.protein,
-        carbs: macroTargets?.carbs,
-        fats: macroTargets?.fats,
-        goal,
-    }), [user, goal, nutritionGoal, macroTargets]);
-
-    const preferences = useMemo(() => ({
-        dislikedIngredients: splitList(user?.dislikes || ''),
-        allergies: splitList(user?.allergies || ''),
-    }), [user]);
-
-    const modelOutput = useMemo(() => recommendMeals({
-        profile,
-        fridge: selectedFridge,
-        preferences,
-        feedback,
-        approvalReviews,
-        maxResults: 50,
-    }), [profile, selectedFridge, preferences, feedback, approvalReviews]);
+    const displayGoal = String(user?.goal || user?.fitness_goal || 'maintain');
     const visibleSwapMeals = useMemo(
         () => modelOutput.recommendations.slice(0, visibleSwapCount),
         [modelOutput.recommendations, visibleSwapCount]
@@ -102,7 +84,12 @@ const SmartMealAIScreen = ({ navigation }) => {
         return map;
     }, [feedback]);
 
-    const validation = useMemo(() => evaluateNutritionModel(), []);
+    const validation = modelOutput.model.validationMetrics || {
+        goalRecommendationAccuracy: 0,
+        allergyFilteringAccuracy: 0,
+        averageIngredientMatch: 0,
+        averageTopMatch: 0,
+    };
     const planReadiness = useMemo(
         () => todaysMeals.map((meal) => analyzeMealReadiness(meal, selectedFridge)),
         [todaysMeals, selectedFridge]
@@ -125,14 +112,22 @@ const SmartMealAIScreen = ({ navigation }) => {
             : INGREDIENT_CATALOG.filter((item) => item.category === activeCategory),
         [activeCategory]
     );
+    const compatibleOpenMeals = useMemo(
+        () => {
+            if (!selectedSwap?.type) return openTodaysMeals;
+            const selectedType = normalizeTerm(selectedSwap.type);
+            return openTodaysMeals.filter((meal) => normalizeTerm(meal.type) === selectedType);
+        },
+        [openTodaysMeals, selectedSwap?.type]
+    );
     const swapTargetMeal = useMemo(
         () => (
-            openTodaysMeals.find((meal) => meal.id === swapTargetId)
-            || openTodaysMeals.find((meal) => meal.id === leastReadyMeal?.id)
-            || openTodaysMeals[0]
+            compatibleOpenMeals.find((meal) => meal.id === swapTargetId)
+            || compatibleOpenMeals.find((meal) => meal.id === leastReadyMeal?.id)
+            || compatibleOpenMeals[0]
             || null
         ),
-        [openTodaysMeals, swapTargetId, leastReadyMeal]
+        [compatibleOpenMeals, swapTargetId, leastReadyMeal]
     );
     const canApplySwap = !!swapTargetMeal && !allTodaysMealsLogged && !isApplyingSwap;
 
@@ -145,23 +140,54 @@ const SmartMealAIScreen = ({ navigation }) => {
         ));
     };
 
+    const loadPythonSwaps = useCallback(async () => {
+        setIsLoadingSwaps(true);
+        const res = await api.getMealSwaps(selectedFridge, 50);
+        if (res.status === 200) {
+            setModelOutput({
+                targets: res.data?.targets || {
+                    targetCalories: nutritionGoal || 0,
+                    protein: macroTargets?.protein || 0,
+                    carbs: macroTargets?.carbs || 0,
+                    fats: macroTargets?.fats || 0,
+                },
+                recommendations: res.data?.recommendations || [],
+                model: res.data?.model || {
+                    name: 'NutriCore AI',
+                    version: '1.4.0',
+                    learnedSamples: 0,
+                    validationMetrics: null,
+                },
+            });
+        } else {
+            setModelOutput((prev) => ({
+                ...prev,
+                targets: {
+                    targetCalories: nutritionGoal || prev.targets.targetCalories || 0,
+                    protein: macroTargets?.protein || prev.targets.protein || 0,
+                    carbs: macroTargets?.carbs || prev.targets.carbs || 0,
+                    fats: macroTargets?.fats || prev.targets.fats || 0,
+                },
+                recommendations: [],
+            }));
+        }
+        setIsLoadingSwaps(false);
+    }, [selectedFridge, nutritionGoal, macroTargets?.protein, macroTargets?.carbs, macroTargets?.fats]);
+
     useEffect(() => {
         setVisibleSwapCount(SWAPS_PER_PAGE);
-    }, [selectedFridge, preferences, feedback, approvalReviews]);
+        loadPythonSwaps();
+    }, [loadPythonSwaps]);
 
     useEffect(() => {
         let active = true;
         const loadFeedback = async () => {
-            const [feedbackRes, reviewRes, accessRes] = await Promise.all([
+            const [feedbackRes, accessRes] = await Promise.all([
                 api.getMealFeedback(),
-                api.getMealReviews(),
                 api.getMealReviewAccess(),
             ]);
             if (active && feedbackRes.status === 200) {
                 setFeedback(feedbackRes.data?.feedback || []);
-            }
-            if (active && reviewRes.status === 200) {
-                setApprovalReviews(reviewRes.data?.reviews || {});
             }
             if (active && accessRes.status === 200) {
                 setCanReviewMeals(!!accessRes.data?.can_review);
@@ -180,12 +206,17 @@ const SmartMealAIScreen = ({ navigation }) => {
         const res = await api.saveMealFeedback(meal.id, rating, meal.ingredients);
         if (res.status !== 200) {
             Alert.alert('Rating Not Saved', 'The rating changed this screen, but the backend did not save it.');
+        } else {
+            loadPythonSwaps();
         }
     };
 
     const openSwap = (meal) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        const defaultTarget = openTodaysMeals.find((item) => item.id === leastReadyMeal?.id) || openTodaysMeals[0];
+        const selectedType = normalizeTerm(meal.type);
+        const defaultTarget = openTodaysMeals.find((item) => normalizeTerm(item.type) === selectedType && item.id === leastReadyMeal?.id)
+            || openTodaysMeals.find((item) => normalizeTerm(item.type) === selectedType)
+            || null;
         setSwapTargetId(defaultTarget?.id || null);
         setSelectedSwap(meal);
     };
@@ -196,7 +227,7 @@ const SmartMealAIScreen = ({ navigation }) => {
             return;
         }
         if (!selectedSwap || !swapTargetMeal) {
-            Alert.alert('No open meal', 'All available meals are already logged. Swaps can only replace meals that are not completed yet.');
+            Alert.alert('No compatible meal', 'This swap can only replace an unlogged meal with the same meal type.');
             return;
         }
 
@@ -204,6 +235,7 @@ const SmartMealAIScreen = ({ navigation }) => {
         try {
             const hint = `replace with a meal like ${selectedSwap.name}; use ${selectedSwap.ingredients.join(', ')}`;
             const exactReplacement = {
+                id: selectedSwap.id,
                 name: selectedSwap.name,
                 type: selectedSwap.type || swapTargetMeal.type,
                 calories: selectedSwap.calories,
@@ -215,7 +247,7 @@ const SmartMealAIScreen = ({ navigation }) => {
                 image: selectedSwap.image,
                 matchPercent: selectedSwap.matchPercent,
             };
-            const res = await api.replaceMeal(swapTargetMeal.id, hint, exactReplacement);
+            const res = await api.replaceMeal(swapTargetMeal.id, hint, exactReplacement, selectedFridge);
             if (res.status === 200 && res.data?.new_meal) {
                 replaceMealInContext?.(res.data.new_meal);
                 setSelectedSwap(null);
@@ -287,7 +319,7 @@ const SmartMealAIScreen = ({ navigation }) => {
                     <View style={styles.planStrip}>
                         <Ionicons name="restaurant-outline" size={14} color={themeColors.accent} />
                         <Text style={styles.planStripText}>{todaysMeals.length} meals in today's plan</Text>
-                        <Text style={styles.planStripGoal}>{goal.replace('_', ' ').toUpperCase()}</Text>
+                        <Text style={styles.planStripGoal}>{displayGoal.replace('_', ' ').toUpperCase()}</Text>
                     </View>
                     {allTodaysMealsLogged && (
                         <View style={styles.todayCompleteNotice}>
@@ -416,7 +448,13 @@ const SmartMealAIScreen = ({ navigation }) => {
                     <Text style={styles.sectionTitle}>Fridge-Based Swaps</Text>
                 </View>
 
-                {modelOutput.recommendations.length === 0 ? (
+                {isLoadingSwaps ? (
+                    <View style={styles.emptyPlanCard}>
+                        <ActivityIndicator color={themeColors.accent} />
+                        <Text style={styles.emptyPlanTitle}>Ranking swaps with NutriCore</Text>
+                        <Text style={styles.emptyPlanText}>Python is checking fridge match, macros, allergies, preferences, ratings, and approval rules.</Text>
+                    </View>
+                ) : modelOutput.recommendations.length === 0 ? (
                     <View style={styles.emptyPlanCard}>
                         <Ionicons name="shield-checkmark-outline" size={26} color="#94A3B8" />
                         <Text style={styles.emptyPlanTitle}>No approved swaps yet</Text>
@@ -424,8 +462,17 @@ const SmartMealAIScreen = ({ navigation }) => {
                     </View>
                 ) : (
                     <>
-                        {visibleSwapMeals.map((meal) => (
-                            <TouchableOpacity key={meal.id} activeOpacity={0.88} style={styles.mealCard} onPress={() => openSwap(meal)}>
+                        {visibleSwapMeals.map((meal) => {
+                            const canUseMealSwap = !allTodaysMealsLogged && openTodaysMeals.some((item) => normalizeTerm(item.type) === normalizeTerm(meal.type));
+                            return (
+                            <TouchableOpacity
+                                key={meal.id}
+                                activeOpacity={0.88}
+                                style={[styles.mealCard, !canUseMealSwap && styles.mealCardLocked]}
+                                onPress={() => {
+                                    if (canUseMealSwap) openSwap(meal);
+                                }}
+                            >
                                 <Image source={{ uri: meal.image }} style={styles.mealImage} />
                                 <View style={styles.mealBody}>
                                     <View style={styles.mealTopRow}>
@@ -447,21 +494,21 @@ const SmartMealAIScreen = ({ navigation }) => {
                                         <Macro label="carb" value={`${meal.carbs}g`} color="#3B82F6" />
                                         <Macro label="fat" value={`${meal.fats}g`} color="#F59E0B" />
                                     </View>
-                                    {meal.ingredientMatch.alternatives.length > 0 && (
+                                    {(meal.ingredientMatch?.alternatives || []).length > 0 && (
                                         <Text style={styles.altText}>
                                             Fridge shortcut: use {meal.ingredientMatch.alternatives.map((a) => a.use).join(', ')}
                                         </Text>
                                     )}
                                     <View style={styles.rateRow}>
                                         <TouchableOpacity
-                                            style={[styles.useSwapBtn, allTodaysMealsLogged && styles.useSwapBtnDisabled]}
-                                            disabled={allTodaysMealsLogged}
+                                            style={[styles.useSwapBtn, !canUseMealSwap && styles.useSwapBtnDisabled]}
+                                            disabled={!canUseMealSwap}
                                             onPress={(event) => {
                                             event.stopPropagation?.();
                                             openSwap(meal);
                                         }}>
-                                            <Text style={styles.useSwapText}>{allTodaysMealsLogged ? 'Today Done' : 'Use Swap'}</Text>
-                                            <Ionicons name={allTodaysMealsLogged ? 'lock-closed' : 'arrow-forward'} size={14} color={COLORS.white} />
+                                            <Text style={styles.useSwapText}>{allTodaysMealsLogged ? 'Today Done' : canUseMealSwap ? 'Use Swap' : 'Type Locked'}</Text>
+                                            <Ionicons name={canUseMealSwap ? 'arrow-forward' : 'lock-closed'} size={14} color={COLORS.white} />
                                         </TouchableOpacity>
                                         <View style={styles.ratingCluster}>
                                             <View style={styles.starRow}>
@@ -485,7 +532,8 @@ const SmartMealAIScreen = ({ navigation }) => {
                                     </View>
                                 </View>
                             </TouchableOpacity>
-                        ))}
+                        );
+                        })}
                         {hasMoreSwaps ? (
                             <TouchableOpacity
                                 style={styles.moreSwapsBtn}
@@ -513,10 +561,10 @@ const SmartMealAIScreen = ({ navigation }) => {
                         <Text style={styles.sectionTitle}>NutriCore Confidence</Text>
                     </View>
                     <View style={styles.validationGrid}>
-                        <Metric label="Plan fit" value={`${validation.accuracy.goalRecommendationAccuracy}%`} />
-                        <Metric label="Allergy safety" value={`${validation.accuracy.allergyFilteringAccuracy}%`} />
-                        <Metric label="Fridge match" value={`${validation.accuracy.averageIngredientMatch}%`} />
-                        <Metric label="Swap score" value={`${validation.accuracy.averageTopMatch}%`} />
+                        <Metric label="Plan fit" value={`${validation.goalRecommendationAccuracy}%`} />
+                        <Metric label="Allergy safety" value={`${validation.allergyFilteringAccuracy}%`} />
+                        <Metric label="Fridge match" value={`${validation.averageIngredientMatch}%`} />
+                        <Metric label="Swap score" value={`${validation.averageTopMatch}%`} />
                     </View>
                 </View>
             </ScrollView>
@@ -541,7 +589,7 @@ const SmartMealAIScreen = ({ navigation }) => {
                                         <View style={{ flex: 1 }}>
                                             <Text style={styles.swapTitle}>{selectedSwap.name}</Text>
                                             <Text style={styles.swapSub}>
-                                                {allTodaysMealsLogged ? 'Today is complete, so this swap is saved for browsing only.' : 'Choose an unlogged meal in today\'s plan to replace.'}
+                                                {allTodaysMealsLogged ? 'Today is complete, so this swap is saved for browsing only.' : 'Choose an unlogged meal with the same type.'}
                                             </Text>
                                         </View>
                                         {selectedSwap.approval?.status === 'approved' && (
@@ -566,7 +614,8 @@ const SmartMealAIScreen = ({ navigation }) => {
                                             <Text style={styles.noSelectionText}>No meals in today's plan yet.</Text>
                                         ) : todaysMeals.map((meal) => {
                                             const active = swapTargetMeal?.id === meal.id;
-                                            const locked = meal.completed;
+                                            const typeMismatch = normalizeTerm(meal.type) !== normalizeTerm(selectedSwap.type);
+                                            const locked = meal.completed || typeMismatch;
                                             return (
                                                 <TouchableOpacity
                                                     key={meal.id}
@@ -579,7 +628,8 @@ const SmartMealAIScreen = ({ navigation }) => {
                                                 >
                                                     <Text style={[styles.targetMealType, active && styles.targetMealTypeActive]}>{meal.type}</Text>
                                                     <Text style={[styles.targetMealName, active && styles.targetMealNameActive]} numberOfLines={1}>{meal.name}</Text>
-                                                    {locked && <Text style={styles.targetMealLockedText}>LOGGED</Text>}
+                                                    {meal.completed && <Text style={styles.targetMealLockedText}>LOGGED</Text>}
+                                                    {!meal.completed && typeMismatch && <Text style={styles.targetMealLockedText}>TYPE LOCKED</Text>}
                                                 </TouchableOpacity>
                                             );
                                         })}
@@ -614,20 +664,6 @@ const SmartMealAIScreen = ({ navigation }) => {
             </Modal>
         </View>
     );
-};
-
-const splitList = (value) => value
-    ? String(value)
-    .split(',')
-    .map((item) => item.trim().toLowerCase().replace(/\s+/g, '_'))
-    .filter(Boolean)
-    : [];
-
-const normalizeGoal = (goal = 'maintain') => {
-    const normalized = String(goal).toLowerCase();
-    if (normalized === 'gain_muscle') return 'muscle_gain';
-    if (normalized === 'lose_weight') return 'weight_loss';
-    return normalized;
 };
 
 const analyzeMealReadiness = (meal, selectedFridge) => {
@@ -756,6 +792,7 @@ const styles = StyleSheet.create({
     ruleValue: { fontSize: 12, color: '#0F172A', fontWeight: '800' },
     learningNote: { fontSize: 11, color: '#64748B', lineHeight: 16, fontWeight: '600' },
     mealCard: { backgroundColor: COLORS.white, borderRadius: 24, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: '#E2E8F0', flexDirection: 'row' },
+    mealCardLocked: { opacity: 0.68 },
     mealImage: { width: 104, height: 132, borderRadius: 18 },
     mealBody: { flex: 1, marginLeft: 13 },
     mealTopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },

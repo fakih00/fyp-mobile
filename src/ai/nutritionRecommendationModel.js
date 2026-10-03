@@ -17,7 +17,7 @@ const GOAL_CALORIE_DELTA = {
     weight_gain: 450,
 };
 
-const FALLBACK_WEIGHTS = {
+const DEFAULT_WEIGHTS = {
     calories: 0.22,
     protein: 0.18,
     goal: 0.17,
@@ -26,7 +26,7 @@ const FALLBACK_WEIGHTS = {
     expert: 0.1,
 };
 
-const MODEL_WEIGHTS = trainedModel?.weights || FALLBACK_WEIGHTS;
+const MODEL_WEIGHTS = trainedModel?.weights || DEFAULT_WEIGHTS;
 const LEBANESE_MEAL_DATASET = [
     {
         id: 'lb_chicken_tawouk_bowl',
@@ -318,7 +318,7 @@ export function recommendMeals({ profile = {}, fridge = [], preferences = {}, fe
         model: {
             name: 'Custom Adaptive Nutrition Recommendation Model',
             version: trainedModel?.version || '1.0.0',
-            trainedWith: trainedModel?.trainedWith || 'Local weighted ranking model',
+            trainedWith: trainedModel?.trainedWith || 'Local neural-network ranking model',
             trainingSamples: (trainedModel?.trainingSamples || MEAL_DATASET.length) + feedback.length,
             learnedSamples: learned.samples,
             weights: MODEL_WEIGHTS,

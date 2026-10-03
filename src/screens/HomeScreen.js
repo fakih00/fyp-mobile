@@ -873,7 +873,7 @@ const HomeScreen = ({ navigation }) => {
                                     <Ionicons name="time-outline" size={14} color="#64748B" />
                                     <Text style={styles.nextMetaText}>
                                         {dashboardData?.next_workout
-                                            ? `${dashboardData.next_workout.duration || '45m'} • ${dashboardData.next_workout.calories || '300'} kcal`
+                                            ? `${dashboardData.next_workout.duration || '45m'} • ${String(dashboardData.next_workout.calories || '300').replace(/\s*kcal$/i, '')} kcal`
                                             : "No workout scheduled"}
                                     </Text>
                                 </View>

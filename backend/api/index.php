@@ -1,4 +1,6 @@
 <?php
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
 /**
  * Centralized API Router
  * 
@@ -41,14 +43,18 @@ $routes = [
     'getNutritionPlan'         => ['FitnessController', 'getNutritionPlan', true, false],
     'generatePlan'             => ['FitnessController', 'generatePlan', true, false],
     'replaceMeal'              => ['FitnessController', 'replaceMeal', true, false],
+    'getMealSwaps'             => ['FitnessController', 'getMealSwaps', true, false],
     'getMealFeedback'          => ['FitnessController', 'getMealFeedback', true, false],
     'saveMealFeedback'         => ['FitnessController', 'saveMealFeedback', true, false],
     'getMealReviews'           => ['FitnessController', 'getMealReviews', true, false],
     'saveMealReview'           => ['FitnessController', 'saveMealReview', true, false],
     'getMealReviewAccess'      => ['FitnessController', 'getMealReviewAccess', true, false],
+    'getExerciseTutorialReviews' => ['FitnessController', 'getExerciseTutorialReviews', true, false],
+    'saveExerciseTutorialReview' => ['FitnessController', 'saveExerciseTutorialReview', true, false],
     'updateWorkoutProgress'    => ['FitnessController', 'updateWorkoutProgress', true, false],
     'updateMealProgress'       => ['FitnessController', 'updateMealProgress', true, false],
     'getSuggestedGoalWeight'   => ['FitnessController', 'getSuggestedGoalWeight', true, false],
+    'analyzeExerciseVideo'     => ['ExerciseAIController', 'analyzeVideo', true, false],
 
     // ─── User & Profile ───────────────────────────────────
     'getUser'                  => ['UserController', 'getUser', true, false],
@@ -161,14 +167,19 @@ if (!file_exists($controllerFile)) {
     exit;
 }
 
-require_once $controllerFile;
-$controller = new $controllerClass();
+try {
+    require_once $controllerFile;
+    $controller = new $controllerClass();
 
-if (!method_exists($controller, $method)) {
+    if (!method_exists($controller, $method)) {
+        throw new RuntimeException("Method not found: {$controllerClass}::{$method}");
+    }
+
+    // 8. Dispatch — the controller method handles auth internally via requireAuth()
+    $controller->$method();
+} catch (Throwable $error) {
+    error_log("API {$endpoint} failed: " . $error);
     http_response_code(500);
-    echo json_encode(["message" => "Method not found: {$controllerClass}::{$method}"]);
-    exit;
+    header('Content-Type: application/json; charset=UTF-8');
+    echo json_encode(["message" => "Internal server error"]);
 }
-
-// 8. Dispatch — the controller method handles auth internally via requireAuth()
-$controller->$method();

@@ -22,7 +22,7 @@ try {
     echo "ERROR applying schema: " . $e->getMessage() . "\n";
     echo "Trying alternative: Split queries...\n";
     
-    // Fallback: Split by semicolon (crude but often works for basic schemas)
+    // Alternative path: split by semicolon for basic schemas.
     // Note: This might break on triggers/procedures, but our schema is relatively simple.
     $queries = explode(";", $sql);
     foreach($queries as $query) {

@@ -21,7 +21,6 @@ import MessagesScreen from './MessagesScreen';
 import AchievementsScreen from './AchievementsScreen';
 import NotificationsScreen from './NotificationsScreen';
 import FindFriendsScreen from './FindFriendsScreen';
-import DebugScreen from './DebugScreen';
 import EditProfileScreen from './EditProfileScreen';
 import NotificationsSettingsScreen from './NotificationsSettingsScreen';
 import PrivacyScreen from './PrivacyScreen';
@@ -78,7 +77,6 @@ export {
     AchievementsScreen,
     NotificationsScreen,
     FindFriendsScreen,
-    DebugScreen,
     EditProfileScreen,
     NotificationsSettingsScreen,
     PrivacyScreen,
@@ -89,4 +87,3 @@ export {
     BodyRecoveryScreen,
     CompetitionPrepScreen
 };
-export * from './PlaceholderScreens';

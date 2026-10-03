@@ -26,11 +26,11 @@ import { AppContext } from '../context/AppContext';
 const { width } = Dimensions.get('window');
 
 const QUICK_ACTIONS = [
-    "Protein tips 🥩",
-    "Workout plan 🏋️‍♂️",
-    "Fat loss help 🔥",
-    "Stretching 🧘",
-    "Water goal 💧"
+    { label: "Protein tips", icon: "restaurant-outline" },
+    { label: "Workout plan", icon: "barbell-outline" },
+    { label: "Fat loss help", icon: "flame-outline" },
+    { label: "Stretching", icon: "body-outline" },
+    { label: "Water goal", icon: "water-outline" },
 ];
 
 const AIChatScreen = ({ navigation }) => {
@@ -38,7 +38,7 @@ const AIChatScreen = ({ navigation }) => {
     const [messages, setMessages] = useState([
         {
             _id: 1,
-            text: "Hello! I'm your Elite AI Coach, powered by Google Gemini. Ready to reach the next level? Ask me anything about your training, nutrition, or recovery. 💪",
+            text: "Hello! I'm your Elite AI Coach. Ask me about training, nutrition, or recovery. Workout, meal, fridge, and video analysis use the app's custom AI modules.",
             createdAt: new Date(),
             user: { _id: 2, name: 'AI' },
         }
@@ -52,7 +52,7 @@ const AIChatScreen = ({ navigation }) => {
     const chatHistoryRef = useRef([]);
     const [historyLoaded, setHistoryLoaded] = useState(false);
 
-    // ── Load persisted history from DB on first mount ────────────────────
+    // Load persisted history from DB on first mount.
     useEffect(() => {
         const loadHistory = async () => {
             try {
@@ -86,7 +86,7 @@ const AIChatScreen = ({ navigation }) => {
 
     const INITIAL_MESSAGE = {
         _id: 1,
-        text: `Hello${user?.name ? ` ${user.name}` : ''}! I'm your Elite AI Coach, powered by Google Gemini. I know your full profile — your goals, diet preferences, injuries, and training setup — so every answer I give you is 100% personalized. Ask me anything. 💪`,
+        text: `Hello${user?.name ? ` ${user.name}` : ''}! I'm your Elite AI Coach. Ask me about training, nutrition, or recovery. Workout, meal, fridge, and video analysis use the app's custom AI modules.`,
         createdAt: new Date(),
         user: { _id: 2, name: 'AI' },
     };
@@ -94,14 +94,14 @@ const AIChatScreen = ({ navigation }) => {
     const handleHeaderMenu = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         const goal = user?.profile?.goal?.replace(/_/g, ' ') || 'general fitness';
-        const weight = user?.profile?.weight ? `${user.profile.weight}kg` : '—';
+        const weight = user?.profile?.weight ? `${user.profile.weight}kg` : '-';
         const streak = user?.profile?.streak || 0;
         Alert.alert(
-            '⚡ Coach Elite',
+            'Coach Elite',
             `What would you like to do?`,
             [
                 {
-                    text: '🗑️ Clear Chat',
+                    text: 'Clear Chat',
                     onPress: async () => {
                         try { await api.clearAIChatHistory(); } catch (e) {}
                         chatHistoryRef.current = [];
@@ -110,10 +110,10 @@ const AIChatScreen = ({ navigation }) => {
                     },
                 },
                 {
-                    text: '📊 My Active Profile',
+                    text: 'Active Profile',
                     onPress: () => Alert.alert(
-                        '📊 Active Profile',
-                        `Name: ${user?.name || '—'}\nGoal: ${goal}\nWeight: ${weight}\nStreak: ${streak} days\nInjuries: ${user?.profile?.injuries || 'None'}\nAllergies: ${user?.profile?.allergies || 'None'}\n\nThe AI Coach uses all this data to give you personalized advice.`,
+                        'Active Profile',
+                        `Name: ${user?.name || '-'}\nGoal: ${goal}\nWeight: ${weight}\nStreak: ${streak} days\nInjuries: ${user?.profile?.injuries || '-'}\nAllergies: ${user?.profile?.allergies || '-'}\n\nThe AI Coach uses all this data to give you personalized advice.`,
                         [{ text: 'Got it', style: 'default' }]
                     ),
                 },
@@ -125,7 +125,6 @@ const AIChatScreen = ({ navigation }) => {
     const sendMessage = async (text) => {
         const messageText = text || inputText;
         if (messageText.trim().length === 0) return;
-        console.log("Sending chat message query to Gemini Coach backend: ", messageText);
 
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
@@ -141,7 +140,7 @@ const AIChatScreen = ({ navigation }) => {
         setIsTyping(true);
 
         try {
-            // Call the real Gemini backend
+            // Call the AI Coach backend; it uses Gemini for chat if configured, otherwise local coach logic.
             const result = await api.aiChat(messageText, chatHistoryRef.current);
 
             let replyText = "Sorry, I couldn't connect to my AI brain. Please try again!";
@@ -271,9 +270,10 @@ const AIChatScreen = ({ navigation }) => {
                             <TouchableOpacity
                                 key={i}
                                 style={styles.actionChip}
-                                onPress={() => sendMessage(action)}
+                                onPress={() => sendMessage(action.label)}
                             >
-                                <Text style={styles.actionChipText}>{action}</Text>
+                                <Ionicons name={action.icon} size={13} color={themeColors.accent} />
+                                <Text style={styles.actionChipText}>{action.label}</Text>
                             </TouchableOpacity>
                         ))}
                     </ScrollView>
@@ -461,6 +461,9 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     actionChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
         paddingHorizontal: 14,
         paddingVertical: 8,
         backgroundColor: 'rgba(255,255,255,0.8)',

@@ -5,10 +5,33 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow mobile_fitness to access your camera for PoseForm exercise analysis."
+        }
+      ],
+      "expo-font"
+    ],
+    "ios": {
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow mobile_fitness to use the camera for real-time PoseForm exercise coaching."
+      }
+    },
+    "android": {
+      "permissions": [
+        "android.permission.CAMERA"
+      ],
+      "package": "com.anonymous.mobile_fitness"
     }
   }
 }

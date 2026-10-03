@@ -420,7 +420,7 @@ const ProfileScreen = ({ route, navigation }) => {
                                         <View style={styles.aboutAppMetaRow}>
                                             <View style={styles.aboutAppMetaItem}>
                                                 <Text style={styles.aboutAppMetaTitle}>AI Model</Text>
-                                                <Text style={[styles.aboutAppMetaValue, { color: themeColors.accent }]}>Gemini 3.5 Pro</Text>
+                                                <Text style={[styles.aboutAppMetaValue, { color: themeColors.accent }]}>Local Custom AI</Text>
                                             </View>
                                             <View style={styles.aboutAppMetaItem}>
                                                 <Text style={styles.aboutAppMetaTitle}>Platform</Text>
@@ -477,7 +477,7 @@ const ProfileScreen = ({ route, navigation }) => {
                                     </View>
                                 ) : (
                                     <Text style={styles.modalPlaceholderText}>
-                                        This section is coming soon. Here you'll be able to manage your {selectedSetting?.toLowerCase()} settings with our advanced AI interface.
+                                        Manage your profile, notifications, privacy, theme, support, and account details from the available profile settings.
                                     </Text>
                                 )}
                             </View>

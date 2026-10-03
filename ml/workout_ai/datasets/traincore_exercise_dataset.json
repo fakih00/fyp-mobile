@@ -1,0 +1,3018 @@
+{
+  "dataset_name": "TrainCore Exercise Dataset",
+  "version": "1.0.0",
+  "source_type": "kaggle_or_public_dataset_import",
+  "primary_source": "RepDB Exercise Dataset free tier",
+  "source_url": "https://exercise-dataset.com/exercises.json",
+  "records": 220,
+  "fields": [
+    "id",
+    "name",
+    "loc",
+    "muscles",
+    "cat"
+  ],
+  "preprocessing": "CSV/JSON rows are deduplicated, normalized, mapped to TrainCore locations, target muscles, and exercise categories.",
+  "labeling": "Training labels are generated locally from TrainCore expert-rule suitability scoring.",
+  "exercises": [
+    {
+      "id": "k1",
+      "name": "Ab Wheel Rollout",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Rectus Abdominis",
+        "Transverse Abdominis",
+        "Anterior Deltoid",
+        "Latissimus Dorsi"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k2",
+      "name": "Air Bike",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Hamstrings",
+        "Quadriceps",
+        "Gluteus Maximus",
+        "Latissimus Dorsi"
+      ],
+      "cat": "cardio"
+    },
+    {
+      "id": "k3",
+      "name": "Archer Pull Ups",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Biceps Brachii",
+        "Forearm Flexors",
+        "Posterior Deltoid"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k4",
+      "name": "Archer Push Ups",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Anterior Deltoid",
+        "Rectus Abdominis",
+        "Serratus Anterior"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k5",
+      "name": "Arnold Press",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Lateral Deltoid",
+        "Serratus Anterior",
+        "Trapezius"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k6",
+      "name": "Machine Assisted Dips",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Triceps Brachii",
+        "Anterior Deltoid",
+        "Rhomboids"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k7",
+      "name": "Assisted Pull Ups",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Biceps Brachii",
+        "Forearm Flexors",
+        "Posterior Deltoid"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k8",
+      "name": "Back Extension",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Erector Spinae",
+        "Gluteus Maximus",
+        "Hamstrings"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k9",
+      "name": "Back Lever",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Erector Spinae",
+        "Latissimus Dorsi",
+        "Anterior Deltoid",
+        "Gluteus Maximus"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k10",
+      "name": "Stability Ball Leg Curl",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Hamstrings",
+        "Gastrocnemius",
+        "Gluteus Maximus"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k11",
+      "name": "Ball Pike",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Obliques",
+        "Rectus Abdominis",
+        "Anterior Deltoid",
+        "Hip Flexors"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k12",
+      "name": "Band Assisted Pull Ups",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Biceps Brachii",
+        "Forearm Flexors",
+        "Posterior Deltoid"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k13",
+      "name": "Band Pull Apart",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Posterior Deltoid",
+        "Rhomboids",
+        "Trapezius"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k14",
+      "name": "Banded Adductor Stretch",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Adductors",
+        "Hamstrings"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k15",
+      "name": "Banded Ankle Stretch",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gastrocnemius",
+        "Soleus"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k16",
+      "name": "Banded Calf Stretch",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gastrocnemius",
+        "Soleus"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k17",
+      "name": "Banded Chest Stretch",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Anterior Deltoid"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k18",
+      "name": "Banded Clamshell",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Medius",
+        "Gluteus Maximus"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k19",
+      "name": "Banded Figure-4 Stretch",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Gluteus Medius"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k20",
+      "name": "Banded Fire Hydrant",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Medius",
+        "Gluteus Maximus"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k21",
+      "name": "Banded Glute Bridge",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Gluteus Medius",
+        "Hamstrings"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k22",
+      "name": "Banded Good Morning",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Hamstrings",
+        "Erector Spinae"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k23",
+      "name": "Banded Hamstring Stretch",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Hamstrings",
+        "Gastrocnemius"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k24",
+      "name": "Banded Hip Thrust",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Gluteus Medius",
+        "Hamstrings"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k25",
+      "name": "Banded IT-Band Stretch",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Abductors",
+        "Gluteus Maximus",
+        "Gluteus Medius"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k26",
+      "name": "Banded Kneeling Hip Thrust",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Hamstrings"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k27",
+      "name": "Banded Lat Stretch",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Posterior Deltoid"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k28",
+      "name": "Banded Lateral Walk",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Medius",
+        "Gluteus Maximus",
+        "Quadriceps"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k29",
+      "name": "Banded Rear Delt Stretch",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Posterior Deltoid",
+        "Rhomboids",
+        "Trapezius"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k30",
+      "name": "Banded Romanian Deadlift",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Hamstrings",
+        "Erector Spinae"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k31",
+      "name": "Banded Seated Hip Abduction",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Medius",
+        "Gluteus Maximus"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k32",
+      "name": "Banded Shoulder Stretch",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Pectoralis Major"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k33",
+      "name": "Banded Squat",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Quadriceps",
+        "Gluteus Medius",
+        "Hamstrings"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k34",
+      "name": "Banded Standing Leg Curl",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Hamstrings",
+        "Gastrocnemius"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k35",
+      "name": "Banded Standing Hip Abduction",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Medius",
+        "Gluteus Maximus"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k36",
+      "name": "Banded Standing Hip Adduction",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Adductors"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k37",
+      "name": "Banded Sumo Walk",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Gluteus Medius",
+        "Quadriceps"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k38",
+      "name": "Banded Terminal Knee Extension",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Quadriceps"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k39",
+      "name": "Banded Triceps Stretch",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Triceps Brachii",
+        "Latissimus Dorsi"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k40",
+      "name": "Barbell Ab Rollout",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Rectus Abdominis",
+        "Latissimus Dorsi",
+        "Obliques",
+        "Transverse Abdominis"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k41",
+      "name": "Barbell Calf Raise",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Gastrocnemius",
+        "Soleus"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k42",
+      "name": "Barbell Curl",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Biceps Brachii",
+        "Brachialis",
+        "Forearm Flexors"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k43",
+      "name": "Barbell Front Raise",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Lateral Deltoid",
+        "Pectoralis Major",
+        "Serratus Anterior"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k44",
+      "name": "Barbell Glute Bridge",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Hamstrings"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k45",
+      "name": "Barbell Lunge",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Quadriceps",
+        "Erector Spinae",
+        "Gluteus Medius"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k46",
+      "name": "Barbell Overhead Extension",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Triceps Brachii"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k47",
+      "name": "Barbell Preacher Curl",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Biceps Brachii",
+        "Brachialis"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k48",
+      "name": "Barbell Pullover",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Pectoralis Major",
+        "Triceps Brachii"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k49",
+      "name": "Barbell Rear Delt Row",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Posterior Deltoid",
+        "Latissimus Dorsi",
+        "Rhomboids",
+        "Trapezius"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k50",
+      "name": "Barbell Reverse Lunge",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Quadriceps",
+        "Erector Spinae",
+        "Gluteus Medius"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k51",
+      "name": "Bent-Over Barbell Row",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Rhomboids",
+        "Biceps Brachii",
+        "Posterior Deltoid"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k52",
+      "name": "Barbell Wrist Curl",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Forearm Flexors"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k53",
+      "name": "Battle Rope Double Slam",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Latissimus Dorsi",
+        "Forearm Flexors",
+        "Gluteus Maximus"
+      ],
+      "cat": "cardio"
+    },
+    {
+      "id": "k54",
+      "name": "Battle Ropes",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Lateral Deltoid",
+        "Latissimus Dorsi",
+        "Forearm Flexors"
+      ],
+      "cat": "cardio"
+    },
+    {
+      "id": "k55",
+      "name": "Bear Crawl",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Rectus Abdominis",
+        "Obliques",
+        "Quadriceps"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k56",
+      "name": "Behind the Back Barbell Shrug",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Trapezius",
+        "Forearm Flexors",
+        "Rhomboids"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k57",
+      "name": "Behind-the-Neck Lat Pulldown",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Posterior Deltoid",
+        "Rhomboids",
+        "Trapezius"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k58",
+      "name": "Behind the Neck Press",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Lateral Deltoid",
+        "Trapezius",
+        "Triceps Brachii"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k59",
+      "name": "Behind-the-Neck Pull-Up",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Biceps Brachii",
+        "Posterior Deltoid",
+        "Rhomboids"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k60",
+      "name": "Bench Adductor Stretch",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Adductors",
+        "Hamstrings"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k61",
+      "name": "Bench Ankle Stretch",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Gastrocnemius",
+        "Soleus"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k62",
+      "name": "Bench Bulgarian Split Stretch",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Hip Flexors",
+        "Quadriceps",
+        "Gluteus Maximus"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k63",
+      "name": "Bench Calf Stretch",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Gastrocnemius",
+        "Soleus"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k64",
+      "name": "Bench Chest Stretch",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Anterior Deltoid"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k65",
+      "name": "Bench Child's Pose",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Erector Spinae",
+        "Latissimus Dorsi"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k66",
+      "name": "Bench Couch Stretch",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Hip Flexors",
+        "Quadriceps"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k67",
+      "name": "Bench Dips",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Triceps Brachii",
+        "Anterior Deltoid",
+        "Pectoralis Major"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k68",
+      "name": "Bench Figure-4 Glute Stretch",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Gluteus Medius"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k69",
+      "name": "Bench Hamstring Stretch",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Hamstrings",
+        "Erector Spinae"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k70",
+      "name": "Bench Lat Stretch",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Posterior Deltoid"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k71",
+      "name": "Bench Leg Pull-In",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Rectus Abdominis",
+        "Hip Flexors",
+        "Obliques"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k72",
+      "name": "Barbell Bench Press",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Anterior Deltoid",
+        "Triceps Brachii"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k73",
+      "name": "Bench Pull",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Rhomboids",
+        "Biceps Brachii",
+        "Posterior Deltoid"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k74",
+      "name": "Bent Arm Barbell Pullover",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Pectoralis Major",
+        "Serratus Anterior",
+        "Triceps Brachii"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k75",
+      "name": "Bent-Arm EZ-Bar Pullover",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Pectoralis Major",
+        "Posterior Deltoid",
+        "Serratus Anterior"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k76",
+      "name": "Bent-Over Dumbbell Row",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Rhomboids",
+        "Biceps Brachii",
+        "Posterior Deltoid"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k77",
+      "name": "Bent-Over EZ-Bar Row",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Rhomboids",
+        "Biceps Brachii",
+        "Posterior Deltoid"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k78",
+      "name": "Dumbbell Bicep Curl",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Biceps Brachii",
+        "Brachialis",
+        "Forearm Flexors"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k79",
+      "name": "Bicycle Crunch",
+      "loc": [
+        "outdoor",
+        "gym"
+      ],
+      "muscles": [
+        "Obliques",
+        "Rectus Abdominis",
+        "Hip Flexors"
+      ],
+      "cat": "cardio"
+    },
+    {
+      "id": "k80",
+      "name": "Bird-Dog",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Erector Spinae",
+        "Transverse Abdominis",
+        "Gluteus Maximus"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k81",
+      "name": "Bird Dog Hold",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Erector Spinae",
+        "Rectus Abdominis",
+        "Gluteus Maximus",
+        "Obliques"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k82",
+      "name": "Boat Pose",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Hip Flexors",
+        "Rectus Abdominis",
+        "Erector Spinae",
+        "Quadriceps"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k83",
+      "name": "Bodyweight Calf Raise",
+      "loc": [
+        "home",
+        "outdoor",
+        "gym"
+      ],
+      "muscles": [
+        "Gastrocnemius",
+        "Soleus"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k84",
+      "name": "Bodyweight Good Morning",
+      "loc": [
+        "home",
+        "outdoor",
+        "gym"
+      ],
+      "muscles": [
+        "Erector Spinae",
+        "Hamstrings",
+        "Gluteus Maximus"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k85",
+      "name": "Bodyweight Lateral Raise",
+      "loc": [
+        "home",
+        "outdoor",
+        "gym"
+      ],
+      "muscles": [
+        "Lateral Deltoid",
+        "Anterior Deltoid",
+        "Trapezius"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k86",
+      "name": "Bodyweight Overhead Press",
+      "loc": [
+        "home",
+        "outdoor",
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Triceps Brachii",
+        "Serratus Anterior",
+        "Trapezius"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k87",
+      "name": "Bodyweight Reverse Lunge",
+      "loc": [
+        "home",
+        "outdoor",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Quadriceps",
+        "Hamstrings"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k88",
+      "name": "Bodyweight Squat",
+      "loc": [
+        "home",
+        "outdoor",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Quadriceps",
+        "Erector Spinae",
+        "Gluteus Medius"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k89",
+      "name": "Bow Pose",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Erector Spinae",
+        "Gluteus Maximus",
+        "Hamstrings",
+        "Pectoralis Major"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k90",
+      "name": "Box Jump",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Quadriceps",
+        "Gastrocnemius",
+        "Hamstrings"
+      ],
+      "cat": "power"
+    },
+    {
+      "id": "k91",
+      "name": "Box Squat",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Quadriceps",
+        "Erector Spinae",
+        "Gluteus Medius"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k92",
+      "name": "Bulgarian Split Squat",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Quadriceps",
+        "Hamstrings"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k93",
+      "name": "Burpees",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Pectoralis Major",
+        "Quadriceps",
+        "Anterior Deltoid"
+      ],
+      "cat": "cardio"
+    },
+    {
+      "id": "k94",
+      "name": "Butterfly Stretch",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Adductors",
+        "Hip Flexors"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k95",
+      "name": "Cable Bent-Over Row",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Rhomboids",
+        "Biceps Brachii",
+        "Posterior Deltoid"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k96",
+      "name": "Cable Chest Press",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Anterior Deltoid",
+        "Serratus Anterior",
+        "Triceps Brachii"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k97",
+      "name": "Cable Crunch",
+      "loc": [
+        "outdoor",
+        "gym"
+      ],
+      "muscles": [
+        "Rectus Abdominis",
+        "Obliques",
+        "Transverse Abdominis"
+      ],
+      "cat": "cardio"
+    },
+    {
+      "id": "k98",
+      "name": "Cable Curl",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Biceps Brachii",
+        "Brachialis"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k99",
+      "name": "Cable External Rotation",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Posterior Deltoid",
+        "Rhomboids",
+        "Trapezius"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k100",
+      "name": "Cable Fly",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Anterior Deltoid"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k101",
+      "name": "Cable Front Raise",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Lateral Deltoid",
+        "Pectoralis Major"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k102",
+      "name": "Cable Hammer Curl",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Biceps Brachii",
+        "Brachialis",
+        "Brachioradialis",
+        "Forearm Flexors"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k103",
+      "name": "Cable Glute Kickback",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Hamstrings"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k104",
+      "name": "Cable Lateral Raise",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Lateral Deltoid",
+        "Anterior Deltoid",
+        "Trapezius"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k105",
+      "name": "Cable Pallof Press",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Obliques",
+        "Transverse Abdominis",
+        "Anterior Deltoid",
+        "Erector Spinae"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k106",
+      "name": "Cable Tricep Kickback",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Triceps Brachii",
+        "Posterior Deltoid"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k107",
+      "name": "Cable Upright Row",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Lateral Deltoid",
+        "Trapezius",
+        "Anterior Deltoid",
+        "Biceps Brachii"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k108",
+      "name": "Cable Wrist Curl",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Forearm Flexors"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k109",
+      "name": "Camel Pose",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Erector Spinae",
+        "Hip Flexors",
+        "Pectoralis Major",
+        "Quadriceps"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k110",
+      "name": "Captain's Chair Knee Raise",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Hip Flexors",
+        "Rectus Abdominis",
+        "Obliques",
+        "Transverse Abdominis"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k111",
+      "name": "Captain's Chair Leg Raise",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Hip Flexors",
+        "Rectus Abdominis",
+        "Obliques",
+        "Transverse Abdominis"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k112",
+      "name": "Cat-Cow",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Erector Spinae",
+        "Rectus Abdominis",
+        "Transverse Abdominis",
+        "Trapezius"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k113",
+      "name": "Cat Stretch",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Erector Spinae",
+        "Rhomboids",
+        "Trapezius"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k114",
+      "name": "Chair Pose",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Quadriceps",
+        "Anterior Deltoid",
+        "Erector Spinae"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k115",
+      "name": "Cheat Curl",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Biceps Brachii",
+        "Brachialis",
+        "Brachioradialis",
+        "Erector Spinae"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k116",
+      "name": "Machine Chest Press",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Anterior Deltoid",
+        "Triceps Brachii"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k117",
+      "name": "Chest-Supported Dumbbell Row",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Rhomboids",
+        "Biceps Brachii",
+        "Posterior Deltoid"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k118",
+      "name": "Chest Supported Dumbbell Shrug",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Trapezius",
+        "Posterior Deltoid",
+        "Rhomboids"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k119",
+      "name": "Chest-Supported Kettlebell Row",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Rhomboids",
+        "Biceps Brachii",
+        "Posterior Deltoid"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k120",
+      "name": "Chest-Supported Smith Machine Row",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Rhomboids",
+        "Biceps Brachii",
+        "Posterior Deltoid"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k121",
+      "name": "Child's Pose",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Erector Spinae",
+        "Latissimus Dorsi",
+        "Trapezius"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k122",
+      "name": "Chin Tuck Hold",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Trapezius",
+        "Rhomboids"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k123",
+      "name": "Chin-Ups",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Biceps Brachii",
+        "Latissimus Dorsi",
+        "Rhomboids"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k124",
+      "name": "Clamshells",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Abductors",
+        "Gluteus Medius",
+        "Gluteus Maximus"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k125",
+      "name": "Clamshell Hold",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Abductors",
+        "Gluteus Medius",
+        "Gluteus Maximus"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k126",
+      "name": "Clap Push-Ups",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Triceps Brachii"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k127",
+      "name": "Clean",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Quadriceps",
+        "Anterior Deltoid",
+        "Erector Spinae"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k128",
+      "name": "Clean and Jerk",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Gluteus Maximus",
+        "Quadriceps",
+        "Erector Spinae"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k129",
+      "name": "Close-Grip Barbell Curl",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Biceps Brachii",
+        "Brachialis",
+        "Brachioradialis"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k130",
+      "name": "Close-Grip Bench Press",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Triceps Brachii",
+        "Anterior Deltoid",
+        "Pectoralis Major"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k131",
+      "name": "Close-Grip Dumbbell Bench Press",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Triceps Brachii",
+        "Anterior Deltoid",
+        "Pectoralis Major"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k132",
+      "name": "Close-Grip EZ-Bar Bench Press",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Triceps Brachii",
+        "Anterior Deltoid",
+        "Pectoralis Major"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k133",
+      "name": "Close-Grip EZ-Bar Curl",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Biceps Brachii",
+        "Brachialis"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k134",
+      "name": "Close-Grip Incline Bench Press",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Triceps Brachii",
+        "Anterior Deltoid",
+        "Pectoralis Major"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k135",
+      "name": "Close Grip Lat Pulldown",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Biceps Brachii",
+        "Brachialis",
+        "Posterior Deltoid"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k136",
+      "name": "Close-Grip Pull-Ups",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Biceps Brachii",
+        "Latissimus Dorsi",
+        "Rhomboids"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k137",
+      "name": "Close Grip Push Ups",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Triceps Brachii",
+        "Anterior Deltoid",
+        "Serratus Anterior"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k138",
+      "name": "Close-Stance Leg Press",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Quadriceps",
+        "Gluteus Maximus",
+        "Hamstrings"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k139",
+      "name": "Cobra Stretch",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Rectus Abdominis",
+        "Hip Flexors",
+        "Transverse Abdominis"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k140",
+      "name": "Cocoons",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Rectus Abdominis",
+        "Hip Flexors",
+        "Obliques"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k141",
+      "name": "Concentration Curl",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Biceps Brachii",
+        "Brachialis"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k142",
+      "name": "Cossack Squat",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Quadriceps",
+        "Adductors",
+        "Hamstrings"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k143",
+      "name": "Cow Face Pose",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Gluteus Medius",
+        "Posterior Deltoid",
+        "Triceps Brachii"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k144",
+      "name": "Crab Dips",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Triceps Brachii",
+        "Anterior Deltoid",
+        "Gluteus Maximus",
+        "Pectoralis Major"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k145",
+      "name": "Crescent Lunge",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Quadriceps",
+        "Erector Spinae",
+        "Hip Flexors"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k146",
+      "name": "Cross-Body Crunch",
+      "loc": [
+        "outdoor",
+        "gym"
+      ],
+      "muscles": [
+        "Obliques",
+        "Rectus Abdominis"
+      ],
+      "cat": "cardio"
+    },
+    {
+      "id": "k147",
+      "name": "Cross Body Hammer Curl",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Brachialis",
+        "Brachioradialis",
+        "Biceps Brachii",
+        "Forearm Flexors"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k148",
+      "name": "Cross-Body Shoulder Stretch",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Posterior Deltoid",
+        "Rhomboids"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k149",
+      "name": "Crow Pose",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Triceps Brachii",
+        "Rectus Abdominis",
+        "Serratus Anterior"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k150",
+      "name": "Crunches",
+      "loc": [
+        "outdoor",
+        "gym"
+      ],
+      "muscles": [
+        "Rectus Abdominis",
+        "Obliques"
+      ],
+      "cat": "cardio"
+    },
+    {
+      "id": "k151",
+      "name": "Dancer Pose",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Quadriceps",
+        "Erector Spinae",
+        "Hip Flexors"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k152",
+      "name": "Dumbbell Bench Press",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Anterior Deltoid",
+        "Triceps Brachii"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k153",
+      "name": "Dumbbell Fly",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Anterior Deltoid"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k154",
+      "name": "Dumbbell Kickstand Deadlift",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Hamstrings",
+        "Adductors",
+        "Erector Spinae"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k155",
+      "name": "Dumbbell Lunge",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Quadriceps",
+        "Hamstrings"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k156",
+      "name": "Dumbbell Overhead Carry",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Lateral Deltoid",
+        "Obliques",
+        "Quadratus Lumborum"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k157",
+      "name": "Dumbbell Pullover",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Pectoralis Major",
+        "Triceps Brachii"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k158",
+      "name": "Dumbbell Reverse Curl",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Brachialis",
+        "Forearm Extensors",
+        "Biceps Brachii"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k159",
+      "name": "Dumbbell Reverse Wrist Curl",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Forearm Extensors"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k160",
+      "name": "Dumbbell Shrug",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Trapezius",
+        "Rhomboids"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k161",
+      "name": "Dumbbell Skull Crusher",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Triceps Brachii"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k162",
+      "name": "Dumbbell Somersault Squat",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Quadriceps",
+        "Hamstrings",
+        "Obliques"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k163",
+      "name": "Dumbbell Squat",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Quadriceps",
+        "Hamstrings"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k164",
+      "name": "Dumbbell Sumo Squat",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Quadriceps",
+        "Adductors",
+        "Gluteus Medius"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k165",
+      "name": "Dumbbell Svend Press",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Anterior Deltoid",
+        "Triceps Brachii"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k166",
+      "name": "Dead Bug",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Rectus Abdominis",
+        "Transverse Abdominis",
+        "Hip Flexors"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k167",
+      "name": "Dead Bug Hold",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Rectus Abdominis",
+        "Transverse Abdominis",
+        "Hip Flexors"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k168",
+      "name": "Dead Hang",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Forearm Flexors",
+        "Latissimus Dorsi",
+        "Rectus Abdominis",
+        "Trapezius"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k169",
+      "name": "Barbell Deadlift",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Erector Spinae",
+        "Gluteus Maximus",
+        "Hamstrings",
+        "Quadriceps"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k170",
+      "name": "Decline Bench Press",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Anterior Deltoid",
+        "Triceps Brachii"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k171",
+      "name": "Decline Barbell Bench Press",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Anterior Deltoid",
+        "Triceps Brachii"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k172",
+      "name": "Decline EZ-Bar Bench Press",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Anterior Deltoid",
+        "Triceps Brachii"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k173",
+      "name": "Decline Crunch",
+      "loc": [
+        "outdoor",
+        "gym"
+      ],
+      "muscles": [
+        "Rectus Abdominis",
+        "Hip Flexors",
+        "Obliques"
+      ],
+      "cat": "cardio"
+    },
+    {
+      "id": "k174",
+      "name": "Decline Dumbbell Fly",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Anterior Deltoid"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k175",
+      "name": "Decline Push-Up",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Anterior Deltoid",
+        "Triceps Brachii"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k176",
+      "name": "Deficit Deadlift",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Erector Spinae",
+        "Gluteus Maximus",
+        "Hamstrings",
+        "Latissimus Dorsi"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k177",
+      "name": "Deficit Push Ups",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Anterior Deltoid",
+        "Serratus Anterior",
+        "Triceps Brachii"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k178",
+      "name": "Diamond Push Ups",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Triceps Brachii",
+        "Anterior Deltoid",
+        "Serratus Anterior"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k179",
+      "name": "Chest Dips",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Triceps Brachii",
+        "Anterior Deltoid"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k180",
+      "name": "Dolphin Pose",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Trapezius",
+        "Hamstrings",
+        "Serratus Anterior"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k181",
+      "name": "Donkey Calf Raise",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Gastrocnemius",
+        "Soleus"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k182",
+      "name": "Doorway Chest Stretch",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Anterior Deltoid"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k183",
+      "name": "Double Dumbbell Kickstand Deadlift",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Hamstrings",
+        "Adductors",
+        "Erector Spinae"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k184",
+      "name": "Double Dumbbell Overhead Carry",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Lateral Deltoid",
+        "Erector Spinae",
+        "Serratus Anterior"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k185",
+      "name": "Double Kettlebell Bicep Curl",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Biceps Brachii",
+        "Brachialis",
+        "Forearm Flexors"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k186",
+      "name": "Double Kettlebell Clean",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Hamstrings",
+        "Anterior Deltoid",
+        "Erector Spinae"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k187",
+      "name": "Double Kettlebell Clean and Press",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Lateral Deltoid",
+        "Gluteus Maximus",
+        "Quadriceps"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k188",
+      "name": "Double Kettlebell Dead Clean",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Hamstrings",
+        "Erector Spinae",
+        "Forearm Flexors"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k189",
+      "name": "Double Kettlebell Dead Split Snatch",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Gluteus Maximus",
+        "Erector Spinae",
+        "Hamstrings"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k190",
+      "name": "Double Kettlebell Jerk",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Quadriceps",
+        "Gluteus Maximus",
+        "Trapezius"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k191",
+      "name": "Double Kettlebell Overhead Carry",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Lateral Deltoid",
+        "Erector Spinae",
+        "Forearm Extensors"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k192",
+      "name": "Double Kettlebell Overhead Press",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Triceps Brachii",
+        "Rectus Abdominis",
+        "Serratus Anterior"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k193",
+      "name": "Double Kettlebell Push Press",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Gluteus Maximus",
+        "Lateral Deltoid",
+        "Quadriceps"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k194",
+      "name": "Double Kettlebell Rear Delt Row",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Posterior Deltoid",
+        "Rhomboids",
+        "Biceps Brachii",
+        "Erector Spinae"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k195",
+      "name": "Double Kettlebell Row",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Rhomboids",
+        "Biceps Brachii",
+        "Erector Spinae"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k196",
+      "name": "Double Kettlebell Split Jerk",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Quadriceps",
+        "Gluteus Maximus",
+        "Trapezius"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k197",
+      "name": "Double Kettlebell Swing Snatch",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Hamstrings",
+        "Anterior Deltoid",
+        "Erector Spinae"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k198",
+      "name": "Downward-Facing Dog",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Gastrocnemius",
+        "Hamstrings",
+        "Erector Spinae",
+        "Gluteus Maximus"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k199",
+      "name": "Downward Dog Knee Tuck",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Hip Flexors",
+        "Rectus Abdominis",
+        "Anterior Deltoid",
+        "Serratus Anterior"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k200",
+      "name": "Downward Dog Pedal",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Gastrocnemius",
+        "Soleus",
+        "Hamstrings"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k201",
+      "name": "Downward Dog to Knee Drive",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Hip Flexors",
+        "Rectus Abdominis",
+        "Anterior Deltoid",
+        "Gluteus Maximus"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k202",
+      "name": "Downward Dog to Low Lunge",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Hip Flexors",
+        "Gluteus Maximus",
+        "Quadriceps"
+      ],
+      "cat": "mobility"
+    },
+    {
+      "id": "k203",
+      "name": "Downward Dog to Plank",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Rectus Abdominis",
+        "Hamstrings",
+        "Serratus Anterior"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k204",
+      "name": "Downward Dog to Upward Dog",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Erector Spinae",
+        "Pectoralis Major",
+        "Serratus Anterior"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k205",
+      "name": "Drag Curl",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Biceps Brachii",
+        "Brachialis"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k206",
+      "name": "Dragon Flag",
+      "loc": [
+        "gym"
+      ],
+      "muscles": [
+        "Rectus Abdominis",
+        "Erector Spinae",
+        "Hip Flexors",
+        "Obliques"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k207",
+      "name": "Dumbbell Bench Pull",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Latissimus Dorsi",
+        "Rhomboids",
+        "Biceps Brachii",
+        "Posterior Deltoid"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k208",
+      "name": "Dumbbell Calf Raise",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gastrocnemius",
+        "Soleus",
+        "Forearm Flexors"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k209",
+      "name": "Dumbbell Deadlift",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Erector Spinae",
+        "Gluteus Maximus",
+        "Hamstrings",
+        "Latissimus Dorsi"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k210",
+      "name": "Dumbbell Face Pull",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Posterior Deltoid",
+        "Rhomboids",
+        "Biceps Brachii",
+        "Trapezius"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k211",
+      "name": "Dumbbell Farmer's Walk",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Forearm Flexors",
+        "Trapezius",
+        "Gluteus Maximus",
+        "Obliques"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k212",
+      "name": "Dumbbell Floor Press",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Pectoralis Major",
+        "Anterior Deltoid",
+        "Triceps Brachii"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k213",
+      "name": "Dumbbell Front Raise",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Lateral Deltoid"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k214",
+      "name": "Dumbbell Front Squat",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Quadriceps",
+        "Erector Spinae",
+        "Hamstrings"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k215",
+      "name": "Dumbbell Hip Thrust",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Hamstrings",
+        "Quadriceps"
+      ],
+      "cat": "base"
+    },
+    {
+      "id": "k216",
+      "name": "Dumbbell Pistol Squat",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Quadriceps",
+        "Gluteus Medius",
+        "Hamstrings"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k217",
+      "name": "Dumbbell Push Press",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Triceps Brachii",
+        "Gluteus Maximus",
+        "Lateral Deltoid"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k218",
+      "name": "Dumbbell Reverse Fly",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Posterior Deltoid",
+        "Rhomboids",
+        "Trapezius"
+      ],
+      "cat": "accessory"
+    },
+    {
+      "id": "k219",
+      "name": "Dumbbell Romanian Deadlift",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Gluteus Maximus",
+        "Hamstrings",
+        "Erector Spinae",
+        "Forearm Flexors"
+      ],
+      "cat": "strength"
+    },
+    {
+      "id": "k220",
+      "name": "Dumbbell Shoulder Press",
+      "loc": [
+        "home",
+        "gym"
+      ],
+      "muscles": [
+        "Anterior Deltoid",
+        "Lateral Deltoid",
+        "Trapezius",
+        "Triceps Brachii"
+      ],
+      "cat": "strength"
+    }
+  ]
+}

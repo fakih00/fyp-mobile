@@ -5,9 +5,8 @@ require_once __DIR__ . '/../services/GeminiService.php';
 /**
  * AIChatController.php
  * 
- * Handles AI chatbot conversations powered by Google Gemini.
- * Receives a message history from the frontend and returns
- * a contextually-aware AI coach response.
+ * Handles conversational coaching. Gemini is optional and only used for chat;
+ * custom AI modules own workout, meal, fridge, pose, progress, and recovery logic.
  */
 class AIChatController extends BaseController {
 
@@ -33,40 +32,30 @@ class AIChatController extends BaseController {
         $stmt->execute([$user_id]);
         $profile = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        // Build conversation history from the frontend
-        // Expected: [{ role: 'user'|'model', text: '...' }]
         $history = [];
         if (!empty($data->history) && is_array($data->history)) {
             foreach ($data->history as $msg) {
-                $role = ($msg->role === 'user') ? 'user' : 'model';
-                $history[] = ['role' => $role, 'text' => $msg->text];
+                $role = ($msg->role ?? '') === 'user' ? 'user' : 'model';
+                $text = trim((string)($msg->text ?? ''));
+                if ($text !== '') {
+                    $history[] = ['role' => $role, 'text' => $text];
+                }
+            }
+        }
+        $history[] = ['role' => 'user', 'text' => (string)$data->message];
+
+        $reply = null;
+        $modelName = "Local Coach Rules";
+        $gemini = new GeminiService();
+        if ($gemini->isAvailable()) {
+            $reply = $gemini->chat($history, $this->buildChatSystemPrompt($profile ?: []));
+            if ($reply !== null) {
+                $modelName = "Gemini Chat Assistant";
             }
         }
 
-        // Always append the latest user message at the end
-        $history[] = ['role' => 'user', 'text' => $data->message];
-
-        // Build a personalized system prompt
-        $systemPrompt = $this->buildSystemPrompt($profile);
-
-        // Call Gemini
-        $gemini = new GeminiService();
-
-        if (!$gemini->isAvailable()) {
-            $this->jsonResponse([
-                "reply" => "I'm your AI Coach! However, my AI brain isn't connected yet. Please ask your developer to add the GEMINI_API_KEY to the backend.",
-                "ai_powered" => false
-            ]);
-        }
-
-        $reply = $gemini->chat($history, $systemPrompt);
-
         if ($reply === null) {
-            // Fallback if Gemini fails
-            $this->jsonResponse([
-                "reply" => "Sorry, I'm having trouble thinking right now. Please try again in a moment!",
-                "ai_powered" => false
-            ]);
+            $reply = $this->generateLocalCoachReply((string)$data->message, $profile ?: []);
         }
 
         // ── Persist both messages to the database ──────────────────────────
@@ -78,7 +67,8 @@ class AIChatController extends BaseController {
 
         $this->jsonResponse([
             "reply"      => $reply,
-            "ai_powered" => true
+            "ai_powered" => $modelName === "Gemini Chat Assistant",
+            "model" => $modelName
         ]);
     }
 
@@ -117,68 +107,69 @@ class AIChatController extends BaseController {
     }
 
 
-    private function buildSystemPrompt($profile): string {
-        if (!$profile) {
-            return "You are Coach Elite, an advanced AI athletic performance coach. Be concise, motivating, and science-backed. Do not generate meal plans or meal replacements; direct users to the Nutrition module for those.";
+    private function generateLocalCoachReply(string $message, array $profile): string {
+        $text = strtolower($message);
+        $name = $profile['name'] ?? 'Champion';
+        $goal = str_replace('_', ' ', $profile['goal'] ?? 'general fitness');
+        $days = (int)($profile['training_days_per_week'] ?? 3);
+        $location = $profile['training_location'] ?? 'gym';
+        $injuries = strtolower((string)($profile['injuries'] ?? 'none'));
+        $allergies = trim((string)($profile['allergies'] ?? ''));
+
+        if (str_contains($text, 'meal') || str_contains($text, 'food') || str_contains($text, 'nutrition') || str_contains($text, 'diet')) {
+            return "{$name}, your meal plans are handled by NutriCore AI, the local Python nutrition model. Use Nutrition Plan or Fridge Sync so it can apply your allergies" . ($allergies ? " ({$allergies})" : "") . ", fridge ingredients, calorie target, and macro needs safely.";
         }
 
-        $goal      = str_replace('_', ' ', $profile['goal'] ?? 'general fitness');
-        $name      = $profile['name'] ?? 'Champion';
-        $weight    = $profile['weight'] ?? '?';
-        $height    = $profile['height'] ?? '?';
-        $age       = $profile['age'] ?? '?';
-        $gender    = $profile['gender'] ?? 'person';
-        $level     = $profile['level'] ?? 1;
-        $streak    = $profile['streak'] ?? 0;
-        $intensity = $profile['training_intensity'] ?? 'moderate';
-        $location  = $profile['training_location'] ?? 'gym';
-        $days      = $profile['training_days_per_week'] ?? 3;
+        if (str_contains($text, 'pain') || str_contains($text, 'injury') || str_contains($text, 'hurt')) {
+            return "Treat pain as a signal, not a challenge. Because your profile lists injuries as '{$injuries}', reduce load, avoid painful ranges, use the Recovery screen for the local rehab plan, and seek professional care if pain is sharp, worsening, or persistent.";
+        }
 
-        // Nutritional preferences
-        $likes     = $profile['likes'] ?? 'None specified';
-        $dislikes  = $profile['dislikes'] ?? 'None specified';
-        $allergies = $profile['allergies'] ?? 'None specified';
+        if (str_contains($text, 'workout') || str_contains($text, 'train') || str_contains($text, 'exercise')) {
+            return "For {$goal}, stay consistent with {$days} focused sessions per week at your {$location} setup. Generate the plan with TrainCore AI, then use PoseForm AI on key exercises so reps, form score, and technique feedback are measured from video.";
+        }
 
-        // Recovery / Medical constraints
-        $injuries           = $profile['injuries'] ?? 'None';
-        $painPoints         = $profile['pain_points'] ?? 'None';
-        $strongSide         = $profile['strong_side'] ?? 'right';
-        $postureProblems    = $profile['posture_problems'] ?? 'None';
-        $mobilityLimit      = $profile['mobility_limitations'] ?? 'None';
-        $avoidAreas         = $profile['avoid_areas'] ?? 'None';
-        $chronicPain        = $profile['chronic_pain'] ?? 'None';
+        if (str_contains($text, 'progress') || str_contains($text, 'plateau') || str_contains($text, 'weight')) {
+            return "Check the Progress screen after logging workouts, meals, sleep, steps, and weight for at least a few days. The local progress logic will be much more useful when it has a full weekly pattern instead of one isolated log.";
+        }
+
+        return "{$name}, focus on the next measurable action: complete today's plan, log meals honestly, and analyze one exercise with PoseForm AI. Your current target is {$goal}, so consistency and clean execution matter more than adding random extra work.";
+    }
+
+    private function buildChatSystemPrompt(array $profile): string {
+        $name = $profile['name'] ?? 'Champion';
+        $goal = str_replace('_', ' ', $profile['goal'] ?? 'general fitness');
+        $days = $profile['training_days_per_week'] ?? 3;
+        $location = $profile['training_location'] ?? 'gym';
+        $injuries = $profile['injuries'] ?? 'None';
+        $allergies = $profile['allergies'] ?? 'None';
+        $likes = $profile['likes'] ?? 'None specified';
+        $dislikes = $profile['dislikes'] ?? 'None specified';
 
         return <<<PROMPT
-        You are "Coach Elite", a world-class AI Personal Trainer, Sports Medicine Specialist, and Precision Nutrition Advisor.
-        
-        You are currently advising a user with the following physiological profile:
-        - Name: {$name} (User ID: {$name})
-        - Goals & Activity: Target is "{$goal}", training {$days} days/week at {$intensity} intensity.
-        - Primary Location: {$location}
-        - Metrics: {$weight}kg, {$height}cm, Age {$age}, Gender: {$gender}
-        - User Progress: Level {$level}, Streak {$streak} days
-        
-        Nutrition & Dietary Constraints:
-        - Preferences (Likes): {$likes}
-        - Dislikes: {$dislikes}
-        - Allergies / Avoid: {$allergies}
-        
-        Biomechanical / Safety Context:
-        - Active Injuries: {$injuries}
-        - Chronic Pain: {$chronicPain}
-        - Pain Points: {$painPoints}
-        - Dominant Side: {$strongSide}
-        - Posture Issues: {$postureProblems}
-        - Mobility Restrictions: {$mobilityLimit}
-        - Specific Movements to Avoid: {$avoidAreas}
-        
-        Coaching Directive:
-        1. PERSONALIZATION: Always tailor your coaching response to the user's specific injuries, allergies, training location, and goals. NEVER recommend movements they must avoid or foods they are allergic to.
-        2. STYLE: Direct, expert, highly motivating, science-backed. Sound like a dedicated premium private trainer. Use 1-2 emojis max per response.
-        3. SAFETY: If the user mentions pain, refer to their pain points or injuries, and provide safe, modification exercises. Never give medical diagnoses; advise seeking professional care if pain persists.
-        4. NUTRITION BOUNDARY: Do not generate meal plans, recipes, or meal replacements. The app's local Nutrition module owns all meal generation and replacement. If asked for a meal plan or meal swap, tell the user to use the Nutrition Plan screen and only provide high-level macro or habit guidance.
-        5. BREVITY: Keep answers concise and direct. Avoid generic introductory filler like "Sure, I can help with that!". Dive straight into high-value information. Keep responses to 2-4 sentences for questions, or structured lists up to 8 sentences if planning.
-        PROMPT;
+You are the app's optional Gemini-powered conversational coach.
+
+Important boundaries:
+- Do not generate full workout plans. TrainCore AI, the local Python module, owns workout generation.
+- Do not generate meal plans, fridge swaps, recipes, or meal replacements. NutriCore AI, the local Python module, owns nutrition decisions.
+- Do not analyze exercise videos. PoseForm AI, the local Python module, owns video analysis.
+- You may explain concepts, motivate, answer questions, give high-level habits, and tell the user which local module to use.
+- If the user reports pain or medical symptoms, give conservative safety advice and recommend professional care for sharp, worsening, or persistent pain.
+
+User context:
+- Name: {$name}
+- Goal: {$goal}
+- Training days/week: {$days}
+- Training location: {$location}
+- Injuries: {$injuries}
+- Allergies: {$allergies}
+- Likes: {$likes}
+- Dislikes: {$dislikes}
+
+Style:
+- Concise, practical, motivating.
+- 2-5 sentences unless the user asks for details.
+- Never claim you are the core AI module. You are only the chat interface.
+PROMPT;
     }
 }
 ?>

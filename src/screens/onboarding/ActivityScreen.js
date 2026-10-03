@@ -56,7 +56,7 @@ const ActivityScreen = ({ navigation, route }) => {
         if (score === 3) return 'moderately_active';
         if (score >= 1) return 'lightly_active';
         
-        // Safety Fallback
+        // Lowest activity classification
         return 'sedentary';
     };
 
@@ -119,7 +119,7 @@ const ActivityScreen = ({ navigation, route }) => {
                     setPrediction(suggestRes.data);
                     setShowModal(true); // Show instantly without artificial timeout
                 } else {
-                    // Fallback completely to finishing if AI prediction fails
+                    // Continue onboarding if AI prediction fails
                     finishOnboarding(finalProfile);
                 }
 

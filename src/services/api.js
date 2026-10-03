@@ -1,8 +1,11 @@
+import { Platform } from 'react-native';
+
 // Replace with your computer's local IP if testing on a physical device.
 // For Android Emulator, use 'http://10.0.2.2:8000/api'
 // For iOS Simulator, use 'http://localhost:8000/api'
-const BASE_URL = 'http://192.168.1.17:8000/api';
+const BASE_URL = 'http://172.16.189.14:8000/api';
 const REQUEST_TIMEOUT_MS = 10000;
+const UPLOAD_TIMEOUT_MS = 300000;
 
 // Internal token store — set after login, cleared on logout
 let _token = null;
@@ -55,16 +58,43 @@ async function fetchWithTimeout(url, options = {}) {
     }
 }
 
+async function fetchUploadWithTimeout(url, options = {}) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
+
+    try {
+        return await fetch(url, {
+            ...options,
+            signal: controller.signal,
+        });
+    } finally {
+        clearTimeout(timeoutId);
+    }
+}
+
+function parseApiJson(raw) {
+    try {
+        return JSON.parse(raw);
+    } catch (error) {
+        const start = raw.indexOf('{');
+        const end = raw.lastIndexOf('}');
+        if (start >= 0 && end > start) {
+            try {
+                return JSON.parse(raw.slice(start, end + 1));
+            } catch (nestedError) {
+                return { message: 'Invalid server response' };
+            }
+        }
+        return { message: 'Invalid server response' };
+    }
+}
+
 /**
  * Internal: handle response, checking for 401 globally.
  */
 async function handleResponse(response, ignoreUnauthorized = false) {
-    let data;
-    try {
-        data = await response.json();
-    } catch (e) {
-        data = { message: 'Invalid server response' };
-    }
+    const raw = await response.text();
+    const data = parseApiJson(raw);
 
     if (response.status === 401 && _onUnauthorized && !ignoreUnauthorized) {
         _onUnauthorized(data.message || 'Session expired');
@@ -176,10 +206,18 @@ export const api = {
         return this.post('generatePlan');
     },
 
-    async replaceMeal(mealId, hint, replacement = null) {
+    async replaceMeal(mealId, hint, replacement = null, fridgeIngredients = []) {
         const payload = { meal_id: mealId, hint };
         if (replacement) payload.replacement = replacement;
+        if (Array.isArray(fridgeIngredients)) payload.fridge_ingredients = fridgeIngredients;
         return this.post('replaceMeal', payload);
+    },
+
+    async getMealSwaps(fridgeIngredients = [], maxResults = 50) {
+        return this.post('getMealSwaps', {
+            fridge_ingredients: fridgeIngredients,
+            max_results: maxResults,
+        });
     },
 
     async getMealFeedback() {
@@ -207,12 +245,66 @@ export const api = {
         });
     },
 
+    async getExerciseTutorialReviews() {
+        return this.get('getExerciseTutorialReviews');
+    },
+
+    async saveExerciseTutorialReview(tutorialId, status, notes = '', reviewedBy = 'Reviewer') {
+        return this.post('saveExerciseTutorialReview', {
+            tutorial_id: tutorialId,
+            status,
+            notes,
+            reviewed_by: reviewedBy,
+        });
+    },
+
     async updateWorkoutProgress(day, exerciseId, completed) {
         return this.post('updateWorkoutProgress', {
             day: day,
             exercise_id: exerciseId,
             completed: completed
         });
+    },
+
+    async uploadExerciseVideo(video, exerciseName, targetReps = null) {
+        try {
+            const form = new FormData();
+            const videoUri = typeof video === 'string' ? video : video?.uri;
+            if (!videoUri) throw new Error('No exercise video was selected.');
+            const extension = String(video?.fileName || videoUri).split('.').pop()?.split('?')[0]?.toLowerCase() || 'mp4';
+            const fileName = `poseform-analysis.${extension}`;
+            const fileType = video?.mimeType || (extension === 'mov' ? 'video/quicktime' : 'video/mp4');
+            if (Platform.OS === 'web') {
+                const file = video?.file || new File([await (await fetch(videoUri)).blob()], fileName, { type: fileType });
+                form.append('video', file, file.name || fileName);
+            } else {
+                form.append('video', { uri: videoUri, name: fileName, type: fileType });
+            }
+            form.append('exercise_name', exerciseName || 'general');
+            if (targetReps) {
+                form.append('target_reps', String(targetReps));
+            }
+
+            const headers = {};
+            if (_token) {
+                headers.Authorization = `Bearer ${_token}`;
+            }
+
+            const response = await fetchUploadWithTimeout(`${BASE_URL}/analyzeExerciseVideo`, {
+                method: 'POST',
+                headers,
+                body: form,
+            });
+            const raw = await response.text();
+            const data = parseApiJson(raw);
+            return { status: response.status, data };
+        } catch (error) {
+            console.error("API Exercise Video Upload Error:", error);
+            const reason = error?.name === 'AbortError'
+                ? 'Video analysis timed out. Try a shorter clip, keep it under 20 seconds, and retry.'
+                : `Cannot analyze video. Backend is reachable only if your phone and laptop are on the same Wi-Fi. ${error?.message || ''}`.trim();
+            return { status: 500, data: { message: reason } };
+        }
     },
 
     async updateMealProgress(day, mealId, completed) {
@@ -435,7 +527,7 @@ export const api = {
 
     // ─── AI Chat ──────────────────────────────────────────────────
     /**
-     * Send a message to the Gemini AI Coach.
+     * Send a message to the local AI Coach.
      * @param {string} message - The user's latest message.
      * @param {Array} history - Previous messages [{ role: 'user'|'model', text: '...' }]
      */
@@ -546,7 +638,7 @@ export const api = {
         return this.get('getFriendRequests');
     },
 
-    async respondToFriendRequest(requestId, accept) {
-        return this.post('respondToFriendRequest', { request_id: requestId, accept });
+    async respondToFriendRequest(friendId, action) {
+        return this.post('respondToFriendRequest', { friend_id: friendId, action });
     },
 };

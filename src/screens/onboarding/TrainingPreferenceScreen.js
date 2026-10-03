@@ -58,7 +58,6 @@ const TrainingPreferenceScreen = ({ navigation, route }) => {
 
     const LOCATIONS = getLocationsByGoal(userData?.goal);
     const [selectedLocation, setSelectedLocation] = useState(LOCATIONS[0]?.id || 'gym');
-    const [selectedDays, setSelectedDays] = useState(3);
     const [selectedIntensity, setSelectedIntensity] = useState('moderate');
 
     const INTENSITIES = [
@@ -67,15 +66,13 @@ const TrainingPreferenceScreen = ({ navigation, route }) => {
         { id: 'heavy', title: 'Heavy', desc: 'Elite muscle and power building.', icon: 'barbell' },
     ];
 
-    const DAYS = [1, 2, 3, 4, 5, 6, 7];
-
     const handleNext = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         navigation.navigate('PhysicalAssessment', {
             userData: {
                 ...userData,
                 training_location: selectedLocation,
-                training_days_per_week: selectedDays,
+                training_days_per_week: userData?.training_days_per_week || 3,
                 training_intensity: selectedIntensity
             }
         });
@@ -112,7 +109,7 @@ const TrainingPreferenceScreen = ({ navigation, route }) => {
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                     <AnimatedCard delay={100} style={styles.titleSection}>
                         <Text style={styles.title}>TRAINING HUB</Text>
-                        <Text style={styles.subtitle}>Where do you plan to conquer your sessions and how often per week?</Text>
+                        <Text style={styles.subtitle}>Choose where you plan to train and how intense the sessions should feel.</Text>
                     </AnimatedCard>
 
                     <Text style={styles.sectionLabel}>PRESET ENVIRONMENT</Text>
@@ -164,26 +161,6 @@ const TrainingPreferenceScreen = ({ navigation, route }) => {
                             </TouchableOpacity>
                         ))}
                     </View>
-
-                    <Text style={styles.sectionLabel}>WEEKLY FREQUENCY</Text>
-                    <View style={styles.daysGrid}>
-                        {DAYS.map((day) => (
-                            <TouchableOpacity
-                                key={day}
-                                onPress={() => {
-                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                    setSelectedDays(day);
-                                }}
-                                style={[
-                                    styles.dayCircle,
-                                    selectedDays === day && styles.selectedDayCircle
-                                ]}
-                            >
-                                <Text style={[styles.dayText, selectedDays === day && styles.selectedDayText]}>{day}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                    <Text style={styles.daySubtext}>{selectedDays} sessions per week configured.</Text>
                 </ScrollView>
 
                 <View style={styles.footer}>
@@ -319,38 +296,6 @@ const styles = StyleSheet.create({
     },
     selectedLocTitle: {
         color: '#059669',
-    },
-    daysGrid: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 15,
-    },
-    dayCircle: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: COLORS.white,
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    selectedDayCircle: {
-        backgroundColor: '#10B981',
-        borderColor: '#10B981',
-    },
-    dayText: {
-        fontSize: 14,
-        fontWeight: '900',
-        color: '#64748B',
-    },
-    selectedDayText: {
-        color: COLORS.white,
-    },
-    daySubtext: {
-        fontSize: 12,
-        color: '#94A3B8',
-        fontStyle: 'italic',
     },
     footer: {
         paddingHorizontal: 30,

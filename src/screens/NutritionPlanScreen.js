@@ -1,7 +1,7 @@
 import React, { useContext, useState, useMemo, useCallback, useEffect } from 'react';
 import {
     View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ScrollView,
-    Dimensions, Modal, Animated, ActivityIndicator, RefreshControl, Alert, TextInput
+    Dimensions, Modal, Animated, ActivityIndicator, RefreshControl, Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +18,39 @@ import { INGREDIENT_CATALOG } from '../ai/mealDataset';
 const { width } = Dimensions.get('window');
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const DEFAULT_FRIDGE = ['chicken', 'rice', 'eggs', 'oats', 'banana', 'tomato', 'greek_yogurt', 'spinach', 'avocado'];
+const DEFAULT_MEAL_IMAGE = 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=900&q=70';
+const BOUNDED_SWAP_RULES = [
+    { id: 'fridge', label: 'More fridge match', hint: 'more fridge match', icon: 'basket-outline' },
+    { id: 'protein', label: 'Higher protein', hint: 'higher protein', icon: 'barbell-outline' },
+    { id: 'calories', label: 'Lower calories', hint: 'lower calories', icon: 'flame-outline' },
+    { id: 'carb', label: 'Lower carb', hint: 'low carb', icon: 'layers-outline' },
+    { id: 'fat', label: 'Lower fat', hint: 'low fat', icon: 'water-outline' },
+    { id: 'dairy', label: 'No dairy', hint: 'no dairy', icon: 'remove-circle-outline' },
+    { id: 'fish', label: 'No fish', hint: 'no fish', icon: 'remove-circle-outline' },
+    { id: 'eggs', label: 'No eggs', hint: 'no eggs', icon: 'remove-circle-outline' },
+    { id: 'gluten', label: 'No gluten', hint: 'no gluten', icon: 'remove-circle-outline' },
+    { id: 'plant', label: 'Plant based', hint: 'plant based', icon: 'leaf-outline' },
+];
+
+const normalizeMealForDisplay = (meal = {}, index = 0, selectedDay = 'Monday') => ({
+    ...meal,
+    id: meal.id ?? meal.meal_id ?? `${selectedDay}-${index}`,
+    day: meal.day || selectedDay,
+    type: meal.type || meal.meal_type || 'Meal',
+    name: meal.name || meal.title || 'NutriCore Meal',
+    image: meal.image || meal.image_url || DEFAULT_MEAL_IMAGE,
+    calories: Number(meal.calories ?? meal.cals ?? 0),
+    protein: Number(meal.protein ?? 0),
+    carbs: Number(meal.carbs ?? 0),
+    fats: Number(meal.fats ?? meal.fat ?? 0),
+    ingredients: Array.isArray(meal.ingredients) ? meal.ingredients : [],
+    instructions: meal.instructions || meal.preparation || '',
+    completed: !!meal.completed,
+    datasetMealId: meal.dataset_meal_id || meal.source_meal_id || meal.meal_id,
+    approval: meal.approval || null,
+    expertApproved: !!meal.expert_approved,
+    modelApproved: !!meal.model_approved,
+});
 
 const NutritionPlanScreen = ({ navigation }) => {
     const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -49,7 +82,9 @@ const NutritionPlanScreen = ({ navigation }) => {
     const carbTarget = macroTargets?.carbs || Math.round((nutritionGoal * 0.4) / 4);
     const fatTarget = macroTargets?.fats || Math.round((nutritionGoal * 0.3) / 9);
 
-    const filteredMeals = useMemo(() => (meals || []).filter(m => m.day === selectedDay), [meals, selectedDay]);
+    const filteredMeals = useMemo(() => (meals || [])
+        .filter(m => (m.day || selectedDay) === selectedDay)
+        .map((meal, index) => normalizeMealForDisplay(meal, index, selectedDay)), [meals, selectedDay]);
 
     const totalCals = useMemo(() => (filteredMeals || []).reduce((a, m) => a + (m.calories || 0), 0) || nutritionGoal, [filteredMeals, nutritionGoal]);
     const consumedCals = useMemo(() => (filteredMeals || []).filter(m => m.completed).reduce((a, m) => a + (m.calories || 0), 0), [filteredMeals]);
@@ -129,13 +164,13 @@ const NutritionPlanScreen = ({ navigation }) => {
 
     const handleReplaceMeal = async () => {
         if (!replaceHint.trim()) {
-            Alert.alert('Hint Required', 'Tell NutriCore what to change about this meal (e.g., "no chicken", "make it vegan").');
+            Alert.alert('Swap Boundary Required', 'Choose one approved NutriCore swap boundary first.');
             return;
         }
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         setIsReplacing(true);
         try {
-            const res = await api.replaceMeal(selectedMeal.id, replaceHint);
+            const res = await api.replaceMeal(selectedMeal.id, replaceHint, null, selectedFridgeIngredients);
             if (res.status === 200 && res.data?.new_meal) {
                 replaceMealInContext(res.data.new_meal);
                 setSelectedMeal(res.data.new_meal);
@@ -329,6 +364,19 @@ const NutritionPlanScreen = ({ navigation }) => {
                             </TouchableOpacity>
                         </View>
 
+                        {(item.expertApproved || item.modelApproved) && (
+                            <View style={[styles.approvalPill, item.expertApproved ? styles.expertApprovalPill : styles.modelApprovalPill]}>
+                                <Ionicons
+                                    name={item.expertApproved ? 'shield-checkmark' : 'sparkles-outline'}
+                                    size={11}
+                                    color={item.expertApproved ? '#047857' : '#2563EB'}
+                                />
+                                <Text style={[styles.approvalPillText, { color: item.expertApproved ? '#047857' : '#2563EB' }]}>
+                                    {item.expertApproved ? 'Expert Approved' : 'Model Approved'}
+                                </Text>
+                            </View>
+                        )}
+
                         <View style={styles.macroChips}>
                             {[
                                 { val: item.calories, lab: 'kcal', color: '#EF4444' },
@@ -510,6 +558,26 @@ const NutritionPlanScreen = ({ navigation }) => {
                                         ))}
                                     </View>
 
+                                    {selectedMeal.approval && (
+                                        <View style={styles.approvalBox}>
+                                            <View style={styles.approvalBoxIcon}>
+                                                <Ionicons
+                                                    name={selectedMeal.expertApproved ? 'shield-checkmark' : 'sparkles-outline'}
+                                                    size={18}
+                                                    color={selectedMeal.expertApproved ? '#047857' : '#2563EB'}
+                                                />
+                                            </View>
+                                            <View style={styles.approvalBoxCopy}>
+                                                <Text style={styles.approvalBoxTitle}>
+                                                    {selectedMeal.expertApproved ? 'Expert Approved' : selectedMeal.approval.label || 'Model Approved'}
+                                                </Text>
+                                                <Text style={styles.approvalBoxText}>
+                                                    {selectedMeal.approval.reason || 'NutriCore checked goal, macros, ingredients, and safety rules.'}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    )}
+
                                     {(selectedMeal.ingredients || []).length > 0 && (
                                         <View style={styles.detailSection}>
                                             <Text style={styles.detailTitle}>INGREDIENTS</Text>
@@ -545,17 +613,26 @@ const NutritionPlanScreen = ({ navigation }) => {
                                             </TouchableOpacity>
                                         ) : (
                                             <View style={styles.aiInputContainer}>
-                                                <Text style={styles.aiInputHint}>Tell NutriCore what to change (e.g., "no dairy", "swap chicken for beef", "higher protein")</Text>
-                                                <TextInput
-                                                    style={styles.aiTextInput}
-                                                    placeholder="Enter your replacement hint..."
-                                                    placeholderTextColor="#94A3B8"
-                                                    value={replaceHint}
-                                                    onChangeText={setReplaceHint}
-                                                    multiline
-                                                    numberOfLines={3}
-                                                    editable={!isReplacing}
-                                                />
+                                                <Text style={styles.aiInputHint}>Choose one controlled boundary. NutriCore will only search approved dataset meals that match your profile, allergies, macros, and selected fridge ingredients.</Text>
+                                                <View style={styles.swapRuleGrid}>
+                                                    {BOUNDED_SWAP_RULES.map((rule) => {
+                                                        const active = replaceHint === rule.hint;
+                                                        return (
+                                                            <TouchableOpacity
+                                                                key={rule.id}
+                                                                style={[styles.swapRuleChip, active && { borderColor: themeColors.accent, backgroundColor: themeColors.accent + '14' }]}
+                                                                onPress={() => {
+                                                                    Haptics.selectionAsync();
+                                                                    setReplaceHint(rule.hint);
+                                                                }}
+                                                                disabled={isReplacing}
+                                                            >
+                                                                <Ionicons name={rule.icon} size={14} color={active ? themeColors.accent : '#64748B'} />
+                                                                <Text style={[styles.swapRuleText, active && { color: themeColors.accent }]}>{rule.label}</Text>
+                                                            </TouchableOpacity>
+                                                        );
+                                                    })}
+                                                </View>
                                                 <View style={styles.aiActionRow}>
                                                     <TouchableOpacity 
                                                         style={[styles.aiCancelBtn, isReplacing && { opacity: 0.5 }]} 
@@ -569,9 +646,9 @@ const NutritionPlanScreen = ({ navigation }) => {
                                                     </TouchableOpacity>
                                                     
                                                     <TouchableOpacity 
-                                                        style={[styles.aiSubmitBtn, { backgroundColor: themeColors.accent }]} 
+                                                        style={[styles.aiSubmitBtn, { backgroundColor: themeColors.accent }, !replaceHint && { opacity: 0.55 }]}
                                                         onPress={handleReplaceMeal}
-                                                        disabled={isReplacing}
+                                                        disabled={isReplacing || !replaceHint}
                                                     >
                                                         {isReplacing ? (
                                                             <ActivityIndicator size="small" color={COLORS.white} />
@@ -842,6 +919,10 @@ const styles = StyleSheet.create({
     macroChip: { flex: 1, paddingVertical: 5, borderRadius: 10, alignItems: 'center' },
     macroChipVal: { fontSize: 11, fontWeight: '900' },
     macroChipLab: { fontSize: 7, fontWeight: '800', color: '#94A3B8', marginTop: 1 },
+    approvalPill: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10, marginBottom: 9 },
+    expertApprovalPill: { backgroundColor: '#ECFDF5' },
+    modelApprovalPill: { backgroundColor: '#EFF6FF' },
+    approvalPillText: { fontSize: 9, fontWeight: '900' },
 
     // ── Empty
     emptyWrap: { alignItems: 'center', paddingVertical: 40, paddingHorizontal: 30 },
@@ -885,6 +966,11 @@ const styles = StyleSheet.create({
     modalMacroPill: { flex: 1, marginHorizontal: 4, borderRadius: 18, paddingVertical: 14, alignItems: 'center', gap: 4 },
     modalMacroVal: { fontSize: 16, fontWeight: '900' },
     modalMacroLab: { fontSize: 9, fontWeight: '800', color: '#64748B' },
+    approvalBox: { flexDirection: 'row', gap: 12, padding: 14, borderRadius: 18, backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 22 },
+    approvalBoxIcon: { width: 38, height: 38, borderRadius: 13, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center' },
+    approvalBoxCopy: { flex: 1 },
+    approvalBoxTitle: { fontSize: 13, fontWeight: '900', color: '#0F172A' },
+    approvalBoxText: { fontSize: 12, color: '#64748B', fontWeight: '600', lineHeight: 18, marginTop: 3 },
     detailSection: { marginBottom: 24 },
     detailTitle: { fontSize: 12, fontWeight: '900', color: '#0F172A', letterSpacing: 1.5, marginBottom: 12 },
     ingredientRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 12 },
@@ -955,16 +1041,28 @@ const styles = StyleSheet.create({
         lineHeight: 18,
         fontWeight: '500',
     },
-    aiTextInput: {
-        backgroundColor: '#FFFFFF',
+    swapRuleGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    swapRuleChip: {
+        width: '48%',
+        minHeight: 42,
+        borderRadius: 13,
         borderWidth: 1,
         borderColor: '#E2E8F0',
-        borderRadius: 12,
-        padding: 12,
-        fontSize: 14,
-        color: '#0F172A',
-        minHeight: 60,
-        textAlignVertical: 'top',
+        backgroundColor: '#FFFFFF',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 10,
+        gap: 7,
+    },
+    swapRuleText: {
+        flex: 1,
+        fontSize: 11,
+        color: '#64748B',
+        fontWeight: '800',
     },
     aiActionRow: {
         flexDirection: 'row',

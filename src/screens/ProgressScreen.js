@@ -610,7 +610,7 @@ const ProgressScreen = ({ navigation }) => {
                             </View>
                             <Text style={styles.auditTriggerTitle}>Request AI Progress Audit</Text>
                             <Text style={styles.auditTriggerDesc}>
-                                Let Gemini analyze your workouts, nutrition logs, sleep, stress, and weight changes to generate a custom performance report.
+                                Let Local ProgressAI analyze your workouts, nutrition logs, sleep, stress, and weight changes to generate a custom performance report.
                             </Text>
                             <TouchableOpacity 
                                 style={[styles.auditBtn, { backgroundColor: themeColors.accent }]} 
@@ -1138,7 +1138,7 @@ const ProgressScreen = ({ navigation }) => {
                                     </LinearGradient>
                                     <Text style={[styles.bioTriggerTitle, { color: themeColors.isDark ? '#FFFFFF' : '#0F172A' }]}>Get Today's Bio-Advisory</Text>
                                     <Text style={styles.bioTriggerDesc}>
-                                        Gemini analyzes your sleep, steps, and stress from yesterday to generate 3 hyper-personalized action tips for today.
+                                        Local ProgressAI analyzes your sleep, steps, and stress from yesterday to generate 3 personalized action tips for today.
                                     </Text>
                                     <TouchableOpacity
                                         style={[styles.bioLoadBtn, { backgroundColor: themeColors.accent, shadowColor: themeColors.accent }]}
@@ -3705,6 +3705,7 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         color: '#0F172A',
         flex: 1,
+        minWidth: 0,
     },
     unitTextElite: {
         fontSize: 16,

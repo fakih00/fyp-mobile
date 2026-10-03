@@ -6,7 +6,7 @@
 require_once __DIR__ . '/../config/env.php';
 
 // Read allowed origins from .env
-$allowedOriginsStr = getenv('CORS_ORIGINS') ?: 'http://localhost:8081';
+$allowedOriginsStr = getenv('CORS_ORIGINS') ?: 'http://localhost:8081,http://127.0.0.1:8081';
 $allowedOrigins = array_map('trim', explode(',', $allowedOriginsStr));
 
 $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';

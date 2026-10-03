@@ -5,6 +5,45 @@ require_once __DIR__ . '/ChallengeController.php';
 require_once __DIR__ . '/AchievementController.php';
 
 class FitnessController extends BaseController {
+    private function isAllowedNutriCoreSwapHint($hint) {
+        $hint = strtolower(trim((string)$hint));
+        if ($hint === '') {
+            return false;
+        }
+
+        $allowed = [
+            'more fridge match',
+            'higher protein',
+            'lower calories',
+            'low calories',
+            'low calorie',
+            'low carb',
+            'lower carb',
+            'low fat',
+            'lower fat',
+            'no dairy',
+            'without dairy',
+            'no fish',
+            'without fish',
+            'no eggs',
+            'without eggs',
+            'no gluten',
+            'without gluten',
+            'no peanuts',
+            'without peanuts',
+            'plant based',
+            'vegan',
+            'lebanese style',
+            'home food',
+        ];
+
+        foreach ($allowed as $term) {
+            if (strpos($hint, $term) !== false) {
+                return true;
+            }
+        }
+        return false;
+    }
     
     public function getDashboard() {
         $user_id = $this->requireAuth();
@@ -194,7 +233,7 @@ class FitnessController extends BaseController {
     public function getWorkouts() {
         $user_id = $this->requireAuth();
 
-        $query = "SELECT * FROM workouts WHERE user_id = ? ORDER BY date_generated DESC LIMIT 1";
+        $query = "SELECT * FROM workouts WHERE user_id = ? ORDER BY date_generated DESC, id DESC LIMIT 1";
         $stmt = $this->db->prepare($query);
         $stmt->execute([$user_id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -305,7 +344,12 @@ class FitnessController extends BaseController {
             if (!empty($data->fridge_ingredients) && is_array($data->fridge_ingredients)) {
                 $fridgeIngredients = array_values(array_filter(array_map('strval', $data->fridge_ingredients)));
             }
-            $plan = $ai->generateMealPlan($calories, $profile, $fridgeIngredients);
+            $approvalReviews = $this->getMealReviewMap();
+            $plan = $ai->generateMealPlan($calories, $profile, $fridgeIngredients, $approvalReviews);
+
+            if (!is_array($plan) || count($plan) === 0) {
+                $this->errorResponse("NutriCore could not generate an expert-approved nutrition plan. Ask the meal reviewer to approve meals first.", 409);
+            }
 
             // Detect recomp for macro ratios
             $weight = $profile['weight'];
@@ -358,6 +402,10 @@ class FitnessController extends BaseController {
             $this->errorResponse("Missing meal_id or replacement details", 400);
         }
 
+        if (empty($data->replacement) && !$this->isAllowedNutriCoreSwapHint($data->hint ?? '')) {
+            $this->errorResponse("Choose an approved NutriCore swap boundary instead of typing a custom request.", 400);
+        }
+
         // Fetch user profile for AI (optional, if we need it)
         $stmt = $this->db->prepare("SELECT * FROM user_profiles WHERE user_id = ?");
         $stmt->execute([$user_id]);
@@ -393,35 +441,15 @@ class FitnessController extends BaseController {
 
         require_once __DIR__ . '/../services/NutritionAI.php';
         $ai = new NutritionAI();
-        $newMeal = null;
-
+        $replacement = null;
         if (!empty($data->replacement) && is_object($data->replacement)) {
             $replacement = (array)$data->replacement;
-            $ingredients = $replacement['ingredients'] ?? [];
-            if (!is_array($ingredients)) {
-                $ingredients = [$ingredients];
-            }
-
-            $newMeal = [
-                "id" => $targetMeal['id'],
-                "day" => $targetMeal['day'],
-                "type" => $replacement['type'] ?? $targetMeal['type'],
-                "name" => trim((string)($replacement['name'] ?? 'Fridge Sync Meal')),
-                "calories" => (int)($replacement['calories'] ?? $targetMeal['calories']),
-                "protein" => (int)($replacement['protein'] ?? $targetMeal['protein']),
-                "carbs" => (int)($replacement['carbs'] ?? $targetMeal['carbs']),
-                "fats" => (int)($replacement['fats'] ?? $targetMeal['fats']),
-                "ingredients" => array_values(array_map('strval', $ingredients)),
-                "instructions" => $replacement['instructions'] ?? "Prepare with the selected Fridge Sync ingredients.",
-                "image" => $replacement['image'] ?? $targetMeal['image'],
-                "completed" => false,
-                "fridge_match" => (int)($replacement['matchPercent'] ?? 0),
-                "fridge_used" => array_values(array_map('strval', $ingredients)),
-                "missing_ingredients" => [],
-            ];
-        } else {
-            $newMeal = $ai->replaceMealWithHint($targetMeal, $data->hint);
         }
+        $fridgeIngredients = [];
+        if (!empty($data->fridge_ingredients) && is_array($data->fridge_ingredients)) {
+            $fridgeIngredients = array_values(array_filter(array_map('strval', $data->fridge_ingredients)));
+        }
+        $newMeal = $ai->replaceMealWithHint($targetMeal, $data->hint ?? '', is_array($profile) ? $profile : [], $replacement, $fridgeIngredients);
 
         if ($newMeal) {
             $meals[$targetMealIdx] = $newMeal;
@@ -433,7 +461,7 @@ class FitnessController extends BaseController {
                 $this->errorResponse("Failed to save new meal.", 500);
             }
         } else {
-            $this->errorResponse("Failed to generate replacement meal.", 500);
+            $this->errorResponse($ai->getLastError() ?: "Failed to generate replacement meal.", 409);
         }
     }
 
@@ -497,23 +525,49 @@ class FitnessController extends BaseController {
 
     public function getMealReviews() {
         $this->requireAuth();
-        $this->ensureMealReviewTable();
+        $reviews = $this->getMealReviewMap();
+        $this->jsonResponse(["reviews" => $reviews]);
+    }
 
-        $stmt = $this->db->query("SELECT meal_id, status, notes, reviewed_by, updated_at FROM meal_reviews ORDER BY updated_at DESC");
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $reviews = [];
+    public function getMealSwaps() {
+        $user_id = $this->requireAuth();
+        $data = $this->getRequestData();
 
-        foreach ($rows as $row) {
-            $reviews[$row['meal_id']] = [
+        $stmt = $this->db->prepare("SELECT * FROM user_profiles WHERE user_id = ?");
+        $stmt->execute([$user_id]);
+        $profile = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$profile) {
+            $this->errorResponse("User profile not found. Please complete setup.", 404);
+        }
+
+        $fridgeIngredients = [];
+        if (!empty($data->fridge_ingredients) && is_array($data->fridge_ingredients)) {
+            $fridgeIngredients = array_values(array_filter(array_map('strval', $data->fridge_ingredients)));
+        }
+        $maxResults = isset($data->max_results) ? max(1, min(80, (int)$data->max_results)) : 50;
+
+        $this->ensureMealFeedbackTable();
+        $stmtFeedback = $this->db->prepare("SELECT meal_id, rating, ingredients, created_at FROM meal_feedback WHERE user_id = ? ORDER BY created_at DESC LIMIT 100");
+        $stmtFeedback->execute([$user_id]);
+        $feedback = [];
+        foreach ($stmtFeedback->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $ingredients = json_decode($row['ingredients'] ?? '[]', true);
+            $feedback[] = [
                 "mealId" => $row['meal_id'],
-                "status" => $row['status'],
-                "notes" => $row['notes'] ?? '',
-                "reviewedBy" => $row['reviewed_by'] ?? 'Reviewer',
-                "updatedAt" => $row['updated_at'],
+                "rating" => (int)$row['rating'],
+                "ingredients" => is_array($ingredients) ? $ingredients : [],
+                "createdAt" => $row['created_at'],
             ];
         }
 
-        $this->jsonResponse(["reviews" => $reviews]);
+        $reviews = $this->getMealReviewMap();
+
+        require_once __DIR__ . '/../services/NutritionAI.php';
+        $ai = new NutritionAI();
+        $calories = $ai->calculateCalories($profile);
+        $result = $ai->recommendSwaps($profile, $calories, $fridgeIngredients, $feedback, $reviews, $maxResults);
+        $result["fridge_ingredients"] = $fridgeIngredients;
+        $this->jsonResponse($result);
     }
 
     public function saveMealReview() {
@@ -559,6 +613,48 @@ class FitnessController extends BaseController {
         ]);
     }
 
+    public function getExerciseTutorialReviews() {
+        $this->requireAuth();
+        $reviews = $this->getExerciseTutorialReviewMap();
+        $this->jsonResponse(["reviews" => $reviews]);
+    }
+
+    public function saveExerciseTutorialReview() {
+        $user_id = $this->requireAuth();
+        $this->requireMealReviewer($user_id);
+        $data = $this->getRequestData();
+
+        $allowed = ['approved', 'pending', 'needs_adjustment', 'rejected'];
+        if (empty($data->tutorial_id) || empty($data->status) || !in_array($data->status, $allowed, true)) {
+            $this->errorResponse("Missing tutorial_id or invalid status", 400);
+        }
+
+        $this->ensureExerciseTutorialReviewTable();
+        $notes = isset($data->notes) ? trim((string)$data->notes) : '';
+        $reviewedBy = isset($data->reviewed_by) ? trim((string)$data->reviewed_by) : 'Reviewer';
+
+        $stmt = $this->db->prepare("
+            INSERT INTO exercise_tutorial_reviews (tutorial_id, status, notes, reviewed_by, updated_at)
+            VALUES (?, ?, ?, ?, NOW())
+            ON DUPLICATE KEY UPDATE
+                status = VALUES(status),
+                notes = VALUES(notes),
+                reviewed_by = VALUES(reviewed_by),
+                updated_at = NOW()
+        ");
+        $stmt->execute([(string)$data->tutorial_id, (string)$data->status, $notes, $reviewedBy]);
+
+        $this->jsonResponse([
+            "message" => "Exercise tutorial review saved",
+            "review" => [
+                "tutorialId" => (string)$data->tutorial_id,
+                "status" => (string)$data->status,
+                "notes" => $notes,
+                "reviewedBy" => $reviewedBy,
+            ]
+        ]);
+    }
+
     private function ensureMealFeedbackTable() {
         $this->db->exec("CREATE TABLE IF NOT EXISTS meal_feedback (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -582,6 +678,54 @@ class FitnessController extends BaseController {
             updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_meal_reviews_status (status)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+
+    private function getMealReviewMap(): array {
+        $this->ensureMealReviewTable();
+        $stmt = $this->db->query("SELECT meal_id, status, notes, reviewed_by, updated_at FROM meal_reviews ORDER BY updated_at DESC");
+        $reviews = [];
+
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $reviews[$row['meal_id']] = [
+                "mealId" => $row['meal_id'],
+                "status" => $row['status'],
+                "notes" => $row['notes'] ?? '',
+                "reviewedBy" => $row['reviewed_by'] ?? 'Reviewer',
+                "updatedAt" => $row['updated_at'],
+            ];
+        }
+
+        return $reviews;
+    }
+
+    private function ensureExerciseTutorialReviewTable() {
+        $this->db->exec("CREATE TABLE IF NOT EXISTS exercise_tutorial_reviews (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            tutorial_id VARCHAR(100) NOT NULL UNIQUE,
+            status ENUM('approved','pending','needs_adjustment','rejected') NOT NULL DEFAULT 'pending',
+            notes TEXT NULL,
+            reviewed_by VARCHAR(100) NOT NULL DEFAULT 'Reviewer',
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_exercise_tutorial_reviews_status (status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+
+    private function getExerciseTutorialReviewMap(): array {
+        $this->ensureExerciseTutorialReviewTable();
+        $stmt = $this->db->query("SELECT tutorial_id, status, notes, reviewed_by, updated_at FROM exercise_tutorial_reviews ORDER BY updated_at DESC");
+        $reviews = [];
+
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $reviews[$row['tutorial_id']] = [
+                "tutorialId" => $row['tutorial_id'],
+                "status" => $row['status'],
+                "notes" => $row['notes'] ?? '',
+                "reviewedBy" => $row['reviewed_by'] ?? 'Reviewer',
+                "updatedAt" => $row['updated_at'],
+            ];
+        }
+
+        return $reviews;
     }
 
     private function requireMealReviewer(int $user_id) {

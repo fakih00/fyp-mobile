@@ -25,6 +25,15 @@ expo-env.d.ts
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+*.log
+*.pid
+*.jobid
+expo-*.svg
+expo-*.png
+/tmp/
+backend/last-login-test.json
+__pycache__/
+**/__pycache__/
 
 # macOS
 .DS_Store
@@ -43,3 +52,7 @@ yarn-error.*
 # backend sensitive files
 backend/.env
 backend/*.log
+backend/uploads/
+ml/exercise_ai/.matplotlib-cache/
+ml/exercise_ai/__pycache__/
+ml/exercise_ai/vendor/

@@ -61,7 +61,7 @@ class AuthMiddleware {
 
     /**
      * Extract Bearer token from Authorization header only.
-     * No query-string fallback (security risk).
+     * Query-string tokens are intentionally rejected for security.
      */
     private function extractToken() {
         $headers = $this->getHeaders();
@@ -84,7 +84,7 @@ class AuthMiddleware {
             return array_change_key_case(getallheaders(), CASE_LOWER);
         }
 
-        // Fallback for non-Apache servers
+        // Header extraction for non-Apache servers
         $headers = [];
         foreach ($_SERVER as $key => $value) {
             if (substr($key, 0, 5) === 'HTTP_') {

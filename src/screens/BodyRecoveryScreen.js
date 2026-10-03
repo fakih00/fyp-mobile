@@ -123,7 +123,7 @@ const BodyRecoveryScreen = ({ navigation }) => {
         const matches = durationStr.match(/(\d+)\s*s/i) || durationStr.match(/(\d+)\s*sec/i) || durationStr.match(/(\d+)/);
         if (matches) {
             seconds = parseInt(matches[1], 10);
-            if (seconds < 5) seconds = 30; // safety fallback for set count
+            if (seconds < 5) seconds = 30; // minimum duration guard
         }
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         setActiveTimer({ id, duration: seconds });
@@ -379,7 +379,7 @@ const BodyRecoveryScreen = ({ navigation }) => {
         return { color: 'rgba(16, 185, 129, 0.3)', width: 0.8 }; // Soft cyber-teal wire edge
     };
 
-    // Submitting questionnaire triggers backend Gemini synthesis
+    // Submitting questionnaire triggers backend local recovery synthesis
     const handleGenerateAnalysis = async () => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setPhase('analyzing');
@@ -684,7 +684,7 @@ const BodyRecoveryScreen = ({ navigation }) => {
                 <View style={styles.hudTerminal}>
                     <ActivityIndicator size="large" color="#06B6D4" style={{ marginBottom: 20 }} />
                     <Text style={styles.scanningTitle}>NEUROMUSCULAR RECONSTRUCTION...</Text>
-                    <Text style={styles.scanningSubtitle}>Gemini AI is integrating joint limitations & active symptoms...</Text>
+                    <Text style={styles.scanningSubtitle}>Local Recovery AI is integrating joint limitations & active symptoms...</Text>
 
                     <View style={styles.scrollingHUDLog}>
                         {HUD_TEXTS.map((txt, i) => {

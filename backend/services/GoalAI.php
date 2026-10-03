@@ -21,7 +21,7 @@ class GoalAI {
             }
         }
         
-        // fallback if still null
+        // Default if still null
         if ($bodyFat === null) $bodyFat = ($gender === 'male') ? 25 : 32;
 
         // 2. Calculate Lean Body Mass (LBM)

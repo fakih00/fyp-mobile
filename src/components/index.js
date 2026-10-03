@@ -10,7 +10,6 @@ import WeeklyChart from './WeeklyChart';
 import GoalRings from './GoalRings';
 import WaterMug from './WaterMug';
 import AuraBackground from './AuraBackground';
-import AICoachOverlay from './AICoachOverlay';
 
 
 export {
@@ -26,5 +25,4 @@ export {
     CreateClubModal,
     PostDetailModal,
     ClubDetailModal,
-    AICoachOverlay,
 };

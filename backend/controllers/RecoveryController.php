@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/BaseController.php';
-require_once __DIR__ . '/../services/GeminiService.php';
 
 /**
  * RecoveryController.php
@@ -43,126 +42,12 @@ class RecoveryController extends BaseController {
         $seen_doctor             = $data->seen_doctor ?? 'Not specified';
         $injury_age              = $data->injury_age ?? 'Not specified';
 
-        // 3. Connect to Google Gemini
-        $gemini = new GeminiService();
-
-        if (!$gemini->isAvailable()) {
-            // Friendly mock response in case the key is missing (fallback)
-            $this->jsonResponse([
-                "pain_analysis" => "It looks like you are experiencing discomfort. Based on our clinical rulebook, your joint loading is exceeding standard thresholds.",
-                "recovery_plan" => "Initiate a localized active rest protocol. Restrict movements that cause discomfort and emphasize light tissue mobilization twice daily.",
-                "supplements" => [
-                    ["name" => "Omega-3 Fish Oils", "dosage" => "2000mg daily", "reason" => "High EPA/DHA contents to naturally down-regulate joint inflammation pathways."],
-                    ["name" => "Magnesium Glycinate", "dosage" => "350mg before sleep", "reason" => "Improves neuromuscular recovery and reduces deep muscle spasms."]
-                ],
-                "stretching" => [
-                    ["name" => "Static Decompression Hold", "sets" => "3 sets", "frequency" => "Daily", "guide" => "Hold the stretched state for 30 seconds, breathing deeply into the diaphragm to relieve localized tension."]
-                ],
-                "mobility_exercises" => [
-                    ["name" => "Active Range Controlled Rotations (CARs)", "sets" => "2 sets", "reps" => "5 rotations per direction", "guide" => "Slowly trace the outermost boundary of your joint range without eliciting sharp pain."]
-                ],
-                "exercises_to_avoid" => [
-                    ["name" => "Heavy Compound Bilateral Movements", "reason" => "Bilateral compression may trigger nervous system compensation, exacerbating tissue strain."]
-                ],
-                "ai_recommendations" => [
-                    "sleep" => "Target 8-9 hours of restorative sleep to maximize growth hormone levels essential for soft-tissue remodeling.",
-                    "hydration" => "Consume 35ml of water per kg of bodyweight daily to maintain intervertebral disc and articular cartilage hydration.",
-                    "posture" => "Perform shoulder blade squeezes (scapular retractions) every 45 minutes of sedentary desk work.",
-                    "estimated_timeline" => "2 - 4 weeks of consistent prehab mobilization before re-introducing heavy axial loads."
-                ],
-                "ai_powered" => false
-            ]);
-        }
-
-        // 4. Construct deep-context medical-tech prompt
-        $name      = $profile['name'] ?? 'Athlete';
-        $age       = $profile['age'] ?? 25;
-        $gender    = $profile['gender'] ?? 'unknown';
-        $weight    = $profile['weight'] ?? 70;
-        $height    = $profile['height'] ?? 175;
-        $goal      = str_replace('_', ' ', $profile['goal'] ?? 'general fitness');
-        $intensity = $profile['training_intensity'] ?? 'moderate';
-        
-        $injuries   = $profile['injuries'] ?: 'None registered';
-        $painPoints = $profile['pain_points'] ?: 'None registered';
-        $posture    = $profile['posture_problems'] ?: 'None registered';
-        $mobility   = $profile['mobility_limitations'] ?: 'None registered';
-        $avoid      = $profile['avoid_areas'] ?: 'None registered';
-
-        $prompt = <<<PROMPT
-You are a world-class clinical Sports Rehabilitation Specialist, Physiotherapist, and Athletic Training Expert.
-Provide a highly detailed, professional, and science-backed sports medicine recovery and prehab plan for our athlete, {$name}.
-
-### Athlete Biometric Context:
-- Age: {$age}, Gender: {$gender}, Weight: {$weight}kg, Height: {$height}cm
-- Fitness Goal: {$goal} (intensity level: {$intensity})
-- Registered Onboarding Injuries: {$injuries}
-- Sore areas / Pain points: {$painPoints}
-- Postural issues: {$posture}
-- Joint mobility limitations: {$mobility}
-- Areas to avoid under load: {$avoid}
-
-### Active Symptom Assessment Questionnaire Answers:
-- How the injury happened: {$how_happened}
-- Onset (when it started): {$pain_start}
-- Subjective Pain Level (1 to 10 scale): {$pain_level}/10
-- Pain Quality (Sharp or Sore): {$pain_type}
-- Pain Aggravation (does it increase during workouts?): {$increase_during_workout}
-- Most Painful movements: {$hurt_movements}
-- Medical History (has seen a doctor?): {$seen_doctor}
-- Chronicity (old injury or recent/acute?): {$injury_age}
-
-### Requirements for the Plan:
-1. Provide a comprehensive biomechanical explanation in "pain_analysis" detailing what tissue or biomechanical mechanism is likely stressed under loading (explain in high-end sports medicine terms but write so it is motivating and clear).
-2. Create highly targeted active recovery protocols. Detail specific recovery exercises, dynamic mobility moves, and clinical static stretches.
-3. Formulate high-relevance supplement guidelines to accelerate soft-tissue, tendon, or muscular healing.
-4. List specific exercises or training motions that MUST BE AVOIDED to prevent further joint strain.
-5. Provide actionable guidelines for recovery, sleep hygiene, joint lubrication hydration, posture corrections, and an estimated healing timeframe.
-
-### Rules:
-- Return valid raw JSON ONLY. No markdown, no HTML, no explanation, no backticks (```json).
-- Maintain an elite, science-backed, supportive medical-tech tone.
-
-### Output JSON Format:
-{
-  "pain_analysis": "biomechanical sports-science assessment text...",
-  "recovery_plan": "step-by-step active rest recovery roadmap...",
-  "supplements": [
-    { "name": "e.g., Omega-3 Fish Oil", "dosage": "e.g., 2-3g daily", "reason": "reasoning based on inflammatory markers..." }
-  ],
-  "stretching": [
-    { "name": "stretch name...", "sets": "duration/sets...", "frequency": "frequency...", "guide": "exact execution instructions..." }
-  ],
-  "mobility_exercises": [
-    { "name": "exercise name...", "sets": "sets...", "reps": "reps/duration...", "guide": "biomechanical instructions..." }
-  ],
-  "exercises_to_avoid": [
-    { "name": "exercise/movement name...", "reason": "why it stresses the active injury joint..." }
-  ],
-  "ai_recommendations": {
-    "sleep": "sleep and recovery repair tips...",
-    "hydration": "hydration guidelines for synovial fluid/disc volume...",
-    "posture": "posture mechanics pointers...",
-    "estimated_timeline": "estimated healing window..."
-  }
-}
-PROMPT;
-
-        // 5. Generate plan using Gemini Service (JSON forced mode)
-        $systemInstruction = "You are a Sports Medicine Doctor and Athletic Therapist. Output raw structured JSON complying exactly with the provided schema.";
-        $plan = $gemini->askForJson($prompt, $systemInstruction);
-
-        if ($plan === null) {
-            // Fall back to personalized dynamic local plan compilation in case Gemini API is blocked or offline
-            $plan = $this->generateLocalFallback($profile, [
-                'pain_level' => $pain_level,
-                'pain_type' => $pain_type,
-                'how_happened' => $how_happened,
-                'hurt_movements' => $hurt_movements
-            ]);
-        } else {
-            $plan['ai_powered'] = true;
-        }
+        $plan = $this->generateLocalPlan($profile, [
+            'pain_level' => $pain_level,
+            'pain_type' => $pain_type,
+            'how_happened' => $how_happened,
+            'hurt_movements' => $hurt_movements
+        ]);
 
         // Save generated plan to database
         $stmtSave = $this->db->prepare("
@@ -183,7 +68,7 @@ PROMPT;
         $this->jsonResponse($plan);
     }
 
-    private function generateLocalFallback($profile, $answers) {
+    private function generateLocalPlan($profile, $answers) {
         $injuries = !empty($profile['injuries']) ? $profile['injuries'] : 'general discomfort';
         $pain_level = $answers['pain_level'] ?? 5;
         $pain_type = $answers['pain_type'] ?? 'sore';

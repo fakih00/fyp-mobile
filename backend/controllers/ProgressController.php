@@ -188,7 +188,7 @@ class ProgressController extends BaseController {
         if ($readinessScore < 50) $rec = "Focus on active recovery.";
         elseif ($readinessScore < 75) $rec = "Moderate intensity recommended.";
 
-        // Fallback for Target Weight if missing
+        // Default target weight if missing
         if ($target <= 0) {
             $target = (float)$profile['suggested_goal_weight'];
             if ($target <= 0) {
@@ -912,7 +912,7 @@ class ProgressController extends BaseController {
             }
             // Calculation based on user-specific meal frequency
             $expectedM = $mealsPerDay * 7;
-            if ($expectedM <= 0) $expectedM = 28; // Fallback to 4/day
+            if ($expectedM <= 0) $expectedM = 28; // Default to 4/day
             $nAdherence = ($doneM / $expectedM) * 100;
         }
 

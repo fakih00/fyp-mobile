@@ -1,5 +1,6 @@
 import json
 import math
+import random
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -31,9 +32,38 @@ PRIOR_WEIGHTS = {
     "expert": 0.10,
 }
 
+GOALS = ["weight_loss", "maintain", "muscle_gain", "weight_gain", "endurance", "performance"]
+MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack"]
+NEURAL_FEATURE_NAMES = [
+    "calories",
+    "protein",
+    "goal",
+    "ingredients",
+    "preferences",
+    "expert",
+    "is_breakfast",
+    "is_lunch",
+    "is_dinner",
+    "is_snack",
+    "goal_weight_loss",
+    "goal_maintain",
+    "goal_muscle_gain",
+    "goal_weight_gain",
+    "goal_endurance",
+    "goal_performance",
+]
+
 
 def clamp(value, low=0.0, high=1.0):
     return max(low, min(high, value))
+
+
+def sigmoid(value):
+    if value < -60:
+        return 0.0
+    if value > 60:
+        return 1.0
+    return 1 / (1 + math.exp(-value))
 
 
 def nutrition_targets(profile):
@@ -96,6 +126,120 @@ def feature_vector(meal, case):
         "expert": meal.get("expert_score", 0.8),
         "blocked": False,
     }
+
+
+def neural_features(meal, case):
+    features = feature_vector(meal, case)
+    if features["blocked"]:
+        base = [0.0 for _ in range(6)]
+    else:
+        base = [float(features[name]) for name in ["calories", "protein", "goal", "ingredients", "preferences", "expert"]]
+    meal_type = meal.get("type", "Lunch")
+    goal = nutrition_targets(case["profile"])["goal"]
+    return (
+        base
+        + [1.0 if meal_type == meal_type_name else 0.0 for meal_type_name in MEAL_TYPES]
+        + [1.0 if goal == goal_name else 0.0 for goal_name in GOALS]
+    )
+
+
+def forward_neural(model, features):
+    hidden = []
+    for row, bias in zip(model["hidden_weights"], model["hidden_bias"]):
+        hidden.append(math.tanh(sum(weight * value for weight, value in zip(row, features)) + bias))
+    output_raw = sum(weight * value for weight, value in zip(model["output_weights"], hidden)) + model["output_bias"]
+    return sigmoid(output_raw)
+
+
+def train_neural_network(meals, cases):
+    samples = []
+    for case in cases:
+        approved = set(case["approved_meals"])
+        for meal in meals:
+            features = neural_features(meal, case)
+            blocked = feature_vector(meal, case)["blocked"]
+            label = 1.0 if meal["id"] in approved and not blocked else 0.0
+            samples.append((features, label))
+
+    rng = random.Random(42)
+    rng.shuffle(samples)
+    split = max(1, int(len(samples) * 0.75))
+    train_samples = samples[:split]
+    validation_samples = samples[split:]
+    feature_count = len(samples[0][0])
+    hidden_count = 10
+    hidden_weights = [[rng.uniform(-0.22, 0.22) for _ in range(feature_count)] for _ in range(hidden_count)]
+    hidden_bias = [0.0 for _ in range(hidden_count)]
+    output_weights = [rng.uniform(-0.22, 0.22) for _ in range(hidden_count)]
+    output_bias = 0.0
+    learning_rate = 0.08
+    epochs = 180
+
+    for _ in range(epochs):
+        for features, label in train_samples:
+            hidden = [
+                math.tanh(sum(weight * value for weight, value in zip(row, features)) + bias)
+                for row, bias in zip(hidden_weights, hidden_bias)
+            ]
+            prediction = sigmoid(sum(weight * value for weight, value in zip(output_weights, hidden)) + output_bias)
+            output_delta = (prediction - label) * prediction * (1 - prediction)
+            previous_output_weights = output_weights[:]
+
+            for idx in range(hidden_count):
+                output_weights[idx] -= learning_rate * output_delta * hidden[idx]
+            output_bias -= learning_rate * output_delta
+
+            for hidden_idx in range(hidden_count):
+                hidden_delta = output_delta * previous_output_weights[hidden_idx] * (1 - hidden[hidden_idx] ** 2)
+                for feature_idx in range(feature_count):
+                    hidden_weights[hidden_idx][feature_idx] -= learning_rate * hidden_delta * features[feature_idx]
+                hidden_bias[hidden_idx] -= learning_rate * hidden_delta
+
+    model = {
+        "type": "feed_forward_mlp_classifier",
+        "framework": "pure_python",
+        "input": "meal nutrition features + user preference/goal features",
+        "output": "approved meal suitability probability",
+        "feature_names": NEURAL_FEATURE_NAMES,
+        "feature_count": feature_count,
+        "hidden_layers": [hidden_count],
+        "activation": "tanh_hidden_sigmoid_output",
+        "training_samples": len(train_samples),
+        "validation_samples": len(validation_samples),
+        "epochs": epochs,
+        "label_source": "approved meals from USDA-backed training cases and expert-rule validation labels",
+        "hidden_weights": hidden_weights,
+        "hidden_bias": hidden_bias,
+        "output_weights": output_weights,
+        "output_bias": output_bias,
+    }
+
+    def accuracy(sample_set):
+        if not sample_set:
+            return 0
+        correct = 0
+        absolute_error = 0
+        for features, label in sample_set:
+            prediction = forward_neural(model, features)
+            correct += int((prediction >= 0.5) == bool(label))
+            absolute_error += abs(prediction - label)
+        return {
+            "accuracy": round((correct / len(sample_set)) * 100),
+            "meanAbsoluteError": round(absolute_error / len(sample_set), 4),
+        }
+
+    model["trainingMetrics"] = accuracy(train_samples)
+    model["validationMetrics"] = accuracy(validation_samples)
+    return model
+
+
+def rank_meals_neural(meals, case, neural_model):
+    ranked = []
+    for meal in meals:
+        features = feature_vector(meal, case)
+        score = 0 if features["blocked"] else forward_neural(neural_model, neural_features(meal, case))
+        ranked.append((score, meal["id"], meal["name"], features))
+    return sorted(ranked, reverse=True)
 
 
 def rank_meals(meals, case, weights):
@@ -189,6 +333,32 @@ def evaluate(meals, cases, weights):
         "cases": results,
     }
 
+
+def evaluate_neural(meals, cases, neural_model):
+    results = []
+    for case in cases:
+        ranked = rank_meals_neural(meals, case, neural_model)
+        approved = set(case["approved_meals"])
+        top_score, top_id, top_name, top_features = ranked[0]
+        top3 = [meal_id for _, meal_id, _, _ in ranked[:3]]
+        results.append({
+            "topMeal": top_name,
+            "topMealApproved": top_id in approved,
+            "top3Hit": any(meal_id in approved for meal_id in top3),
+            "allergySafe": not top_features["blocked"],
+            "ingredientScore": round(top_features["ingredients"], 3),
+            "matchPercent": round(top_score * 100),
+        })
+
+    return {
+        "goalRecommendationAccuracy": round(sum(item["top3Hit"] for item in results) / len(results) * 100),
+        "topMealApprovalAccuracy": round(sum(item["topMealApproved"] for item in results) / len(results) * 100),
+        "allergyFilteringAccuracy": round(sum(item["allergySafe"] for item in results) / len(results) * 100),
+        "averageIngredientMatch": round(sum(item["ingredientScore"] for item in results) / len(results) * 100),
+        "averageTopMatch": round(sum(item["matchPercent"] for item in results) / len(results)),
+        "cases": results,
+    }
+
 def load_expert_review():
     if not EXPERT_REVIEW_PATH.exists():
         return {"reviewer": None, "reviews": []}
@@ -237,18 +407,21 @@ def main():
     expert_review = load_expert_review()
     expert_summary = apply_expert_review(meals, expert_review)
     training = train_weights(meals, cases)
-    evaluation = evaluate(meals, cases, training["weights"])
+    neural_network = train_neural_network(meals, cases)
+    evaluation = evaluate_neural(meals, cases, neural_network)
     artifact = {
-        "modelName": "Custom Adaptive Nutrition Recommendation Model",
-        "version": "1.1.0",
-        "trainedWith": "Python grid-search ranking optimizer",
-        "trainingSamples": len(meals) + len(cases),
+        "modelName": "NutriCore AI",
+        "version": "1.4.0",
+        "trainedWith": "Python local feed-forward neural network",
+        "trainingSamples": neural_network["training_samples"],
+        "validationSamples": neural_network["validation_samples"],
         "expertValidation": expert_summary,
         "weights": training["weights"],
+        "neural_network": neural_network,
         "trainingMetrics": {
-            "objective": round(training["objective"], 4),
-            "top3Accuracy": round(training["top3_accuracy"] * 100),
-            "meanReciprocalRank": round(training["mean_reciprocal_rank"], 3),
+            "neuralAccuracy": neural_network["trainingMetrics"]["accuracy"],
+            "neuralMeanAbsoluteError": neural_network["trainingMetrics"]["meanAbsoluteError"],
+            "top3Accuracy": evaluation["goalRecommendationAccuracy"],
         },
         "validationMetrics": evaluation,
     }

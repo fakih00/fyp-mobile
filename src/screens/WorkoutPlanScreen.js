@@ -351,21 +351,20 @@ const WorkoutPlanScreen = ({ navigation }) => {
             >
                 <GlassCard style={[styles.workoutCardElite, item.completed && styles.workoutCompletedElite]}>
                     <View style={styles.workoutImageWrapper}>
-                        <Image source={{ uri: item.image }} style={styles.workoutImgElite} />
+                        <Image
+                            source={{ uri: item.image || 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=900&q=80' }}
+                            style={styles.workoutImgElite}
+                        />
                         <LinearGradient
                             colors={['transparent', 'rgba(0,0,0,0.7)']}
                             style={styles.workoutImgOverlay}
                         />
                         <View style={styles.categoryTagElite}>
-                            <Text style={styles.categoryTagTextElite}>{item.category.toUpperCase()}</Text>
+                            <Text style={styles.categoryTagTextElite}>{(item.category || 'AI FORM').toUpperCase()}</Text>
                         </View>
                         <TouchableOpacity
                             style={styles.playOverlayBtn}
                             onPress={() => {
-                                if (item.completed) {
-                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                                    return; // Prevent redoing
-                                }
                                 if (isToday) {
                                     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                                     startWorkout(item, item.completed);
@@ -401,7 +400,7 @@ const WorkoutPlanScreen = ({ navigation }) => {
 
                         <View style={styles.workoutStatsGridElite}>
                             <View style={styles.miniStatElite}>
-                                <Text style={styles.miniStatValElite}>{item.duration.split(' ')[0]}</Text>
+                                <Text style={styles.miniStatValElite}>{String(item.duration || '0 min').split(' ')[0]}</Text>
                                 <Text style={styles.miniStatLabElite}>MINS</Text>
                             </View>
                             <View style={styles.miniStatDivider} />
@@ -411,7 +410,7 @@ const WorkoutPlanScreen = ({ navigation }) => {
                             </View>
                             <View style={styles.miniStatDivider} />
                             <View style={styles.miniStatElite}>
-                                <Text style={styles.miniStatValElite}>{item.difficulty}</Text>
+                                <Text style={styles.miniStatValElite}>{item.difficulty || 'Test'}</Text>
                                 <Text style={styles.miniStatLabElite}>LEVEL</Text>
                             </View>
                         </View>
@@ -433,7 +432,10 @@ const WorkoutPlanScreen = ({ navigation }) => {
                     {previewWorkout && (
                         <>
                             <View style={styles.modalHero}>
-                                <Image source={{ uri: previewWorkout.image }} style={styles.modalImage} />
+                                <Image
+                                    source={{ uri: previewWorkout.image || 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=900&q=80' }}
+                                    style={styles.modalImage}
+                                />
                                 <TouchableOpacity
                                     style={styles.closeBtn}
                                     onPress={() => setPreviewWorkout(null)}
@@ -454,11 +456,11 @@ const WorkoutPlanScreen = ({ navigation }) => {
                                     <Text style={styles.modalTitle}>{previewWorkout.title}</Text>
                                     <View style={styles.modalBadgeRow}>
                                         <View style={[styles.modalCategoryBadge, { backgroundColor: themeColors.accent }]}>
-                                            <Text style={styles.modalCategoryText}>{previewWorkout.category}</Text>
+                                            <Text style={styles.modalCategoryText}>{previewWorkout.category || 'AI Form'}</Text>
                                         </View>
                                         <View style={[styles.modalDifficultyBadge, { backgroundColor: themeColors.accent + '15' }]}>
                                             <Ionicons name="stats-chart" size={12} color={themeColors.accent} />
-                                            <Text style={[styles.modalDifficultyText, { color: themeColors.accent }]}>{previewWorkout.difficulty}</Text>
+                                            <Text style={[styles.modalDifficultyText, { color: themeColors.accent }]}>{previewWorkout.difficulty || 'Test'}</Text>
                                         </View>
                                     </View>
                                 </View>
@@ -484,7 +486,7 @@ const WorkoutPlanScreen = ({ navigation }) => {
                                 <Text style={styles.modalSectionTitle}>AI Rationale</Text>
                                 <View style={styles.rationaleCard}>
                                     <Ionicons name="bulb" size={20} color={themeColors.accent} style={{ marginRight: 15 }} />
-                                    <Text style={styles.rationaleText}>{previewWorkout.rationale}</Text>
+                                    <Text style={styles.rationaleText}>{previewWorkout.rationale || 'This test workout is built to verify PoseForm camera detection, joint tracking, form feedback, and rep counting.'}</Text>
                                 </View>
 
                                 <Text style={styles.modalSectionTitle}>Targeted Muscles</Text>
@@ -505,7 +507,7 @@ const WorkoutPlanScreen = ({ navigation }) => {
                                             </View>
                                             <View style={styles.circuitInfo}>
                                                 <Text style={styles.circuitName}>{ex.name}</Text>
-                                                <Text style={styles.circuitDetails}>{ex.sets} sets • {ex.reps} reps</Text>
+                                                <Text style={styles.circuitDetails}>{ex.sets} sets • {String(ex.reps || '12').replace(/\s*reps?$/i, '')} reps</Text>
                                             </View>
                                             <View style={styles.restChip}>
                                                 <Ionicons name="refresh" size={10} color="#64748B" />
@@ -521,8 +523,7 @@ const WorkoutPlanScreen = ({ navigation }) => {
                             <BlurView intensity={80} tint="light" style={styles.modalFooterElite}>
                                 {isToday ? (
                                     <TouchableOpacity
-                                        style={[styles.startWorkoutBtnElite, previewWorkout.completed && { opacity: 0.8 }]}
-                                        disabled={previewWorkout.completed}
+                                        style={styles.startWorkoutBtnElite}
                                         onPress={() => {
                                             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                                             startWorkout(previewWorkout, previewWorkout.completed);
@@ -531,16 +532,16 @@ const WorkoutPlanScreen = ({ navigation }) => {
                                         }}
                                     >
                                         <LinearGradient
-                                            colors={previewWorkout.completed ? ['#64748B', '#475569'] : themeColors.gradient}
+                                            colors={themeColors.gradient}
                                             style={styles.btnGradientElite}
                                             start={{ x: 0, y: 0 }}
                                             end={{ x: 1, y: 0 }}
                                         >
                                             <Text style={styles.btnTextElite}>
-                                                {previewWorkout.completed ? 'SESSION COMPLETED' : 'BEGIN SESSION'}
+                                                {previewWorkout.completed ? 'RESTART SESSION' : 'BEGIN SESSION'}
                                             </Text>
                                             <Ionicons
-                                                name={previewWorkout.completed ? "checkmark-circle" : "play-circle"}
+                                                name={previewWorkout.completed ? "refresh-circle" : "play-circle"}
                                                 size={24}
                                                 color={COLORS.white}
                                             />

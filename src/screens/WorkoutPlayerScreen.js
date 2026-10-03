@@ -8,6 +8,7 @@ import {
     Alert,
     Modal,
     Dimensions,
+    Linking,
     Platform,
     Animated,
     Easing
@@ -16,63 +17,67 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import * as Haptics from 'expo-haptics';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { Accelerometer } from 'expo-sensors';
-import Svg, { Circle, Line, Path, Rect, Defs, Stop, LinearGradient as SvgLinearGradient } from 'react-native-svg';
-import * as tf from '@tensorflow/tfjs';
-import { decodeJpeg } from '@tensorflow/tfjs-react-native';
-import * as poseDetection from '@tensorflow-models/pose-detection';
+import * as ImagePicker from 'expo-image-picker';
+import Svg, { Circle } from 'react-native-svg';
 import { AppContext } from '../context/AppContext';
-import { COLORS, FONTS, SIZES } from '../constants/Theme';
+import { api } from '../services/api';
+import { COLORS } from '../constants/Theme';
 import { AnimatedCard, GlassCard } from '../components';
-import { analyzeExercisePose, createExerciseTracker, getExerciseModelType, parseTargetReps } from '../ai/exerciseFormModel';
+import { parseTargetReps } from '../ai/exerciseFormModel';
+import { getExerciseTutorial } from '../ai/exerciseTutorials';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 const MOTIVATIONAL_QUOTES = [
     "Push yourself, because no one else is going to do it for you.",
     "Your body can stand almost anything. It's your mind that you have to convince.",
     "Success starts with self-discipline.",
     "Form is temporary, class is permanent. Keep it tight!",
-    "Great effort! The AI coach is tracking elite form potential."
+    "Great effort! PoseForm is tracking elite form potential."
 ];
 
-const AI_COACH_COMMENTS = [
-    { text: "Core engaged perfectly! Keep this pace.", style: "correct" },
-    { text: "Slow down on the negative portion.", style: "neutral" },
-    { text: "Hips too high! Align your back.", style: "incorrect" },
-    { text: "Outstanding range of motion!", style: "correct" },
-    { text: "Focus on stable breathing.", style: "neutral" }
-];
-
-const SKELETON_COORDS = {
-    head: { x: width / 2, y: height * 0.22 },
-    neck: { x: width / 2, y: height * 0.28 },
-    lShoulder: { x: width / 2 - 40, y: height * 0.30 },
-    rShoulder: { x: width / 2 + 40, y: height * 0.30 },
-    lElbow: { x: width / 2 - 55, y: height * 0.38 },
-    rElbow: { x: width / 2 + 55, y: height * 0.38 },
-    lWrist: { x: width / 2 - 45, y: height * 0.46 },
-    rWrist: { x: width / 2 + 45, y: height * 0.46 },
-    hipCenter: { x: width / 2, y: height * 0.48 },
-    lHip: { x: width / 2 - 25, y: height * 0.48 },
-    rHip: { x: width / 2 + 25, y: height * 0.48 },
-    lKnee: { x: width / 2 - 30, y: height * 0.60 },
-    rKnee: { x: width / 2 + 30, y: height * 0.60 },
-    lAnkle: { x: width / 2 - 35, y: height * 0.72 },
-    rAnkle: { x: width / 2 + 35, y: height * 0.72 },
+const poseFormQualityLabel = (value) => {
+    const score = Number(value || 0);
+    if (score >= 82) return 'High';
+    if (score >= 64) return 'Medium';
+    if (score > 0) return 'Low';
+    return '--';
 };
 
-const SKELETON_CONNECTIONS = [
-    ['neck', 'lShoulder'], ['neck', 'rShoulder'],
-    ['lShoulder', 'lElbow'], ['rShoulder', 'rElbow'],
-    ['lElbow', 'lWrist'], ['rElbow', 'rWrist'],
-    ['neck', 'hipCenter'],
-    ['hipCenter', 'lHip'], ['hipCenter', 'rHip'],
-    ['lHip', 'lKnee'], ['rHip', 'rKnee'],
-    ['lKnee', 'lAnkle'], ['rKnee', 'rAnkle'],
-];
+const getPoseFormSetup = (exerciseName = '') => {
+    const normalized = String(exerciseName).toLowerCase().replace(/[^a-z]/g, '');
+
+    if (/(pushup|plank|deadlift|glutebridge|mountainclimber|tricepdip|legcurl|legextension|legpress)/.test(normalized)) {
+        return {
+            angle: 'Side view',
+            frame: 'Shoulder to ankle',
+            tip: 'Phone at hip height',
+        };
+    }
+
+    if (/(bicepcurl|lateralraise|shoulderpress|row|latpulldown|pullup|benchpress)/.test(normalized)) {
+        return {
+            angle: 'Front or 3/4',
+            frame: 'Shoulders to wrists',
+            tip: 'Keep elbows visible',
+        };
+    }
+
+    if (/(squat|lunge|jumpingjack|burpee|calfraise)/.test(normalized)) {
+        return {
+            angle: 'Front or side',
+            frame: 'Full body',
+            tip: 'Keep feet in frame',
+        };
+    }
+
+    return {
+        angle: 'Clear angle',
+        frame: 'Working joints',
+        tip: 'Move slowly once first',
+    };
+};
 
 const WorkoutPlayerScreen = ({ navigation }) => {
     const { activeWorkout, completeWorkout, toggleExercise } = useContext(AppContext);
@@ -87,311 +92,62 @@ const WorkoutPlayerScreen = ({ navigation }) => {
     const [activeMotivationalQuote, setActiveMotivationalQuote] = useState(MOTIVATIONAL_QUOTES[0]);
     
     // AI posture states
-    const [aiFeedbackText, setAiFeedbackText] = useState("AI Coach standing by...");
+    const [aiFeedbackText, setAiFeedbackText] = useState("PoseForm standing by...");
     const [postureState, setPostureState] = useState("CORRECT"); // CORRECT, INCORRECT, SCANNING
     const [aiRepCount, setAiRepCount] = useState(0);
     const [aiFormScore, setAiFormScore] = useState(0);
-    const [aiExerciseType, setAiExerciseType] = useState('general');
-    const [aiFaultyJoints, setAiFaultyJoints] = useState([]);
-    const [aiPhase, setAiPhase] = useState('up');
+    const [cameraFacing, setCameraFacing] = useState('front');
+    const [aiVideoRecording, setAiVideoRecording] = useState(false);
+    const [aiVideoUploading, setAiVideoUploading] = useState(false);
+    const [aiVideoStatus, setAiVideoStatus] = useState('Ready for accurate video analysis.');
+    const [aiVideoResult, setAiVideoResult] = useState(null);
+    const [aiRecordingSeconds, setAiRecordingSeconds] = useState(0);
+    const [isCameraReady, setIsCameraReady] = useState(false);
+    const [exerciseTutorialReviews, setExerciseTutorialReviews] = useState({});
     
     // Camera Permission
     const [permission, requestPermission] = useCameraPermissions();
 
     // Animated values for premium visual enhancements
     const countdownScale = useRef(new Animated.Value(1)).current;
-    const alertPulseAnim = useRef(new Animated.Value(1)).current;
-    const glowOpacityAnim = useRef(new Animated.Value(0.4)).current;
-    const slideFeedbackAnim = useRef(new Animated.Value(0)).current;
-
     // Background interval timers
     const timerRef = useRef(null);
     const restTimerRef = useRef(null);
 
-    // Dynamic simulated skeleton tracker state
-    const [dynamicSkeleton, setDynamicSkeleton] = useState(SKELETON_COORDS);
-    
-    // TFJS and Model State
-    const [tfReady, setTfReady] = useState(false);
-    const [detector, setDetector] = useState(null);
     const cameraRef = useRef(null);
-    const targetSkeletonRef = useRef(SKELETON_COORDS);
-    const exerciseTrackerRef = useRef(createExerciseTracker());
+    const lastCoachStatusRef = useRef({ message: '', at: 0 });
+    const aiVideoStartTimerRef = useRef(null);
+    const recordingClockRef = useRef(null);
+    const screenStateRef = useRef(screenState);
+    const isPausedRef = useRef(isPaused);
+    const workoutScrollRef = useRef(null);
     const currentEx = activeWorkout?.exercises?.find(ex => !(activeWorkout.completedExercises || []).includes(ex.id)) || activeWorkout?.exercises?.[0];
 
-    // Initialize TensorFlow and MoveNet
-    useEffect(() => {
-        async function initTF() {
-            console.log("Initializing TensorFlow.js and loading MoveNet pose-detector model...");
-            try {
-                await tf.ready();
-                const model = poseDetection.SupportedModels.MoveNet;
-                const poseDetector = await poseDetection.createDetector(model, {
-                    modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
-                });
-                setDetector(poseDetector);
-                setTfReady(true);
-            } catch (error) {
-                console.log("TF init error:", error);
-            }
-        }
-        initTF();
-    }, []);
-
-    const skeletonRef = useRef(SKELETON_COORDS);
-
-    const decodeBase64 = (base64) => {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-        const lookup = new Uint8Array(256);
-        for (let i = 0; i < chars.length; i++) {
-            lookup[chars.charCodeAt(i)] = i;
-        }
-        
-        let bufferLength = base64.length * 0.75;
-        if (base64[base64.length - 1] === '=') bufferLength--;
-        if (base64[base64.length - 2] === '=') bufferLength--;
-
-        const bytes = new Uint8Array(bufferLength);
-        let p = 0;
-        for (let i = 0; i < base64.length; i += 4) {
-            let encoded1 = lookup[base64.charCodeAt(i)];
-            let encoded2 = lookup[base64.charCodeAt(i + 1)];
-            let encoded3 = lookup[base64.charCodeAt(i + 2)];
-            let encoded4 = lookup[base64.charCodeAt(i + 3)];
-
-            bytes[p++] = (encoded1 << 2) | (encoded2 >> 4);
-            bytes[p++] = ((encoded2 & 15) << 4) | (encoded3 >> 2);
-            bytes[p++] = ((encoded3 & 3) << 6) | (encoded4 & 63);
-        }
-        return bytes;
+    const publishCoachStatus = (message, force = false) => {
+        const now = Date.now();
+        const previous = lastCoachStatusRef.current;
+        if (!force && previous.message === message && now - previous.at < 1800) return;
+        lastCoachStatusRef.current = { message, at: now };
+        setAiFeedbackText(message);
     };
 
-    // Snapshot-based Pose Inference Loop
-    useEffect(() => {
-        let intervalId;
-        const processFrame = async () => {
-            if (!isAiCoachActive || screenState !== 'ACTIVE' || isPaused || !detector || !tfReady || !cameraRef.current) return;
-
-            try {
-                // 1. Take a lightweight snapshot from the camera
-                const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.1, scale: 0.3 });
-                if (!photo || !photo.base64) return;
-
-                // 2. Decode base64 to tensor
-                const rawImageData = decodeBase64(photo.base64);
-                const imageTensor = decodeJpeg(rawImageData);
-
-                // 3. Run Inference
-                const poses = await detector.estimatePoses(imageTensor);
-                
-                if (poses && poses.length > 0) {
-                    const keypoints = poses[0].keypoints;
-                    
-                    // Simple confidence check
-                    const avgScore = keypoints.reduce((sum, kp) => sum + (kp.score || 0), 0) / keypoints.length;
-                    
-                    if (avgScore > 0.15) {
-                        // 4. Map MoveNet coordinates to our screen space
-                        const imgWidth = photo.width;
-                        const imgHeight = photo.height;
-                        
-                        // We are displaying the camera inside a view covering the full width and height.
-                        // Wait, camera view has aspect ratio constraints. We assume it covers the screen.
-                        const mapX = (x) => (x / imgWidth) * width;
-                        const mapY = (y) => (y / imgHeight) * height;
-
-                        const mappedCoords = {
-                            head: { x: mapX(keypoints[0].x), y: mapY(keypoints[0].y) }, // nose
-                            neck: { x: mapX((keypoints[5].x + keypoints[6].x) / 2), y: mapY((keypoints[5].y + keypoints[6].y) / 2) },
-                            lShoulder: { x: mapX(keypoints[5].x), y: mapY(keypoints[5].y) },
-                            rShoulder: { x: mapX(keypoints[6].x), y: mapY(keypoints[6].y) },
-                            lElbow: { x: mapX(keypoints[7].x), y: mapY(keypoints[7].y) },
-                            rElbow: { x: mapX(keypoints[8].x), y: mapY(keypoints[8].y) },
-                            lWrist: { x: mapX(keypoints[9].x), y: mapY(keypoints[9].y) },
-                            rWrist: { x: mapX(keypoints[10].x), y: mapY(keypoints[10].y) },
-                            hipCenter: { x: mapX((keypoints[11].x + keypoints[12].x) / 2), y: mapY((keypoints[11].y + keypoints[12].y) / 2) },
-                            lHip: { x: mapX(keypoints[11].x), y: mapY(keypoints[11].y) },
-                            rHip: { x: mapX(keypoints[12].x), y: mapY(keypoints[12].y) },
-                            lKnee: { x: mapX(keypoints[13].x), y: mapY(keypoints[13].y) },
-                            rKnee: { x: mapX(keypoints[14].x), y: mapY(keypoints[14].y) },
-                            lAnkle: { x: mapX(keypoints[15].x), y: mapY(keypoints[15].y) },
-                            rAnkle: { x: mapX(keypoints[16].x), y: mapY(keypoints[16].y) },
-                        };
-                        
-                        targetSkeletonRef.current = mappedCoords;
-                        const analysis = analyzeExercisePose({
-                            exerciseName: currentEx?.name,
-                            skeleton: mappedCoords,
-                            previous: exerciseTrackerRef.current,
-                            targetReps: parseTargetReps(currentEx?.reps),
-                        });
-
-                        exerciseTrackerRef.current = analysis.tracker;
-                        setAiExerciseType(analysis.exerciseType);
-                        setPostureState(analysis.postureState);
-                        setAiFeedbackText(analysis.feedback);
-                        setAiFormScore(analysis.formScore);
-                        setAiRepCount(analysis.repCount);
-                        setAiFaultyJoints(analysis.faultyJoints);
-                        setAiPhase(analysis.phase);
-                    }
-                }
-                tf.dispose(imageTensor);
-            } catch (error) {
-                console.log("Inference error:", error);
-            }
-        };
-
-        if (isAiCoachActive && screenState === 'ACTIVE' && !isPaused && tfReady) {
-            intervalId = setInterval(processFrame, 400); // ~2.5 FPS Inference Rate
-        }
-
-        return () => clearInterval(intervalId);
-    }, [isAiCoachActive, screenState, isPaused, detector, tfReady, currentEx?.id]);
-
-    // Render loop for smooth LERP animation at 60fps
-    useEffect(() => {
-        let animFrameId;
-
-        const tick = () => {
-            if (!isAiCoachActive) return;
-
-            const smoothCoords = {};
-            const LERP_FACTOR = 0.15;
-
-            Object.keys(SKELETON_COORDS).forEach(key => {
-                const prev = skeletonRef.current[key] || SKELETON_COORDS[key];
-                const target = targetSkeletonRef.current[key] || SKELETON_COORDS[key];
-                
-                const smoothX = prev.x + (target.x - prev.x) * LERP_FACTOR;
-                const smoothY = prev.y + (target.y - prev.y) * LERP_FACTOR;
-                
-                skeletonRef.current[key] = { x: smoothX, y: smoothY };
-                smoothCoords[key] = { x: smoothX, y: smoothY };
-            });
-
-            setDynamicSkeleton(smoothCoords);
-            animFrameId = requestAnimationFrame(tick);
-        };
-
-        if (isAiCoachActive && screenState === 'ACTIVE' && !isPaused) {
-            animFrameId = requestAnimationFrame(tick);
-        } else {
-            setDynamicSkeleton(SKELETON_COORDS);
-            targetSkeletonRef.current = SKELETON_COORDS;
-        }
-
-        return () => cancelAnimationFrame(animFrameId);
-    }, [isAiCoachActive, screenState, isPaused]);
-
-    const isJointFaulty = (jointName) => {
-        return postureState === 'INCORRECT' && aiFaultyJoints.includes(jointName);
+    const resetPoseFormState = (feedback = null) => {
+        setAiRepCount(0);
+        setAiFormScore(0);
+        setAiVideoResult(null);
+        setAiRecordingSeconds(0);
+        setAiVideoStatus('Ready for accurate video analysis.');
+        setPostureState('SCANNING');
+        setAiFeedbackText(feedback || 'Camera changed. Record the full target set again.');
     };
 
-    const isConnectionFaulty = (start, end) => {
-        return postureState === 'INCORRECT' && (aiFaultyJoints.includes(start) || aiFaultyJoints.includes(end));
-    };
+    useEffect(() => {
+        screenStateRef.current = screenState;
+    }, [screenState]);
 
-    /* =========================================================================
-     * PRODUCTION POSE DETECTION & SKELETON TRACKING INTEGRATION REFERENCE
-     * =========================================================================
-     * Below is the verified architectural workflow researched from commercial 
-     * fitness apps (such as Nike Training Club & Freeletics) to switch from 
-     * sensor-based dynamic overlay simulation to live machine-learning inference.
-     * 
-     * OPTION A: TensorFlow.js MoveNet (SinglePose.Lightning) - Pure JS Adapter
-     * Ideal for rapid prototypes in managed Expo workflows without custom native plugins.
-     * 
-     * Steps to activate:
-     * 1. Install packages:
-     *    yarn add @tensorflow/tfjs @tensorflow/tfjs-react-native @tensorflow-models/pose-detection @tensorflow/tfjs-backend-webgl expo-gl
-     * 2. Integration Boilerplate:
-     * 
-     *    import * as tf from '@tensorflow/tfjs';
-     *    import * as poseDetection from '@tensorflow-models/pose-detection';
-     *    import { cameraWithTensors } from '@tensorflow/tfjs-react-native';
-     * 
-     *    // Wrap Expo Camera component
-     *    const TensorCamera = cameraWithTensors(CameraView);
-     * 
-     *    // Inside WorkoutPlayerScreen:
-     *    const [tfReady, setTfReady] = useState(false);
-     *    const [detector, setDetector] = useState(null);
-     * 
-     *    useEffect(() => {
-     *        async function initTF() {
-     *            await tf.ready();
-     *            const model = poseDetection.SupportedModels.MoveNet;
-     *            const poseDetector = await poseDetection.createDetector(model, {
-     *                modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
-     *            });
-     *            setDetector(poseDetector);
-     *            setTfReady(true);
-     *        }
-     *        initTF();
-     *    }, []);
-     * 
-     *    const handleCameraStream = async (images, updatePreview, gl) => {
-     *        const loop = async () => {
-     *            if (detector && tfReady) {
-     *                const nextImageTensor = images.next().value;
-     *                const poses = await detector.estimatePoses(nextImageTensor);
-     *                if (poses && poses.length > 0) {
-     *                    // Map MoveNet 17 keypoints coordinates directly to dynamicSkeleton:
-     *                    const keypoints = poses[0].keypoints;
-     *                    const mappedCoords = {
-     *                        head: { x: keypoints[0].x, y: keypoints[0].y }, // nose
-     *                        neck: { x: (keypoints[5].x + keypoints[6].x) / 2, y: (keypoints[5].y + keypoints[6].y) / 2 },
-     *                        lShoulder: { x: keypoints[5].x, y: keypoints[5].y },
-     *                        rShoulder: { x: keypoints[6].x, y: keypoints[6].y },
-     *                        lElbow: { x: keypoints[7].x, y: keypoints[7].y },
-     *                        rElbow: { x: keypoints[8].x, y: keypoints[8].y },
-     *                        lWrist: { x: keypoints[9].x, y: keypoints[9].y },
-     *                        rWrist: { x: keypoints[10].x, y: keypoints[10].y },
-     *                        hipCenter: { x: (keypoints[11].x + keypoints[12].x) / 2, y: (keypoints[11].y + keypoints[12].y) / 2 },
-     *                        lHip: { x: keypoints[11].x, y: keypoints[11].y },
-     *                        rHip: { x: keypoints[12].x, y: keypoints[12].y },
-     *                        lKnee: { x: keypoints[13].x, y: keypoints[13].y },
-     *                        rKnee: { x: keypoints[14].x, y: keypoints[14].y },
-     *                        lAnkle: { x: keypoints[15].x, y: keypoints[15].y },
-     *                        rAnkle: { x: keypoints[16].x, y: keypoints[16].y },
-     *                    };
-     *                    setDynamicSkeleton(mappedCoords);
-     *                }
-     *                tf.dispose(nextImageTensor);
-     *            }
-     *            requestAnimationFrame(loop);
-     *        };
-     *        loop();
-     *    };
-     * 
-     * -------------------------------------------------------------------------
-     * OPTION B: React Native Fast TFLite + Vision Camera Frame Processors
-     * Highly recommended for optimal real-time performance (solid 30-45 FPS) 
-     * executing direct C++ threads on physical mobile devices.
-     * 
-     * Steps to activate:
-     * 1. Install packages:
-     *    yarn add react-native-vision-camera react-native-fast-tflite
-     * 2. Integration Boilerplate:
-     * 
-     *    import { useCameraDevice, useFrameProcessor } from 'react-native-vision-camera';
-     *    import { useTensorflowModel } from 'react-native-fast-tflite';
-     * 
-     *    // Inside WorkoutPlayerScreen:
-     *    const model = useTensorflowModel(require('../../assets/movenet_lightning.tflite'));
-     *    const device = useCameraDevice('front');
-     * 
-     *    const frameProcessor = useFrameProcessor((frame) => {
-     *        'worklet';
-     *        if (model.state === 'loaded') {
-     *            const outputs = model.model.run(frame.toArrayBuffer());
-     *            // Parse float32 outputs of the 17 skeleton points & call runOnJS to update coordinates
-     *            const keypoints = parseTFLiteOutputs(outputs);
-     *            runOnJS(setDynamicSkeleton)(keypoints);
-     *        }
-     *    }, [model]);
-     * ========================================================================= */
+    useEffect(() => {
+        isPausedRef.current = isPaused;
+    }, [isPaused]);
 
     useEffect(() => {
         if (!activeWorkout) {
@@ -405,21 +161,32 @@ const WorkoutPlayerScreen = ({ navigation }) => {
         return () => {
             clearInterval(timerRef.current);
             clearInterval(restTimerRef.current);
+            if (aiVideoStartTimerRef.current) {
+                clearTimeout(aiVideoStartTimerRef.current);
+            }
+            clearInterval(recordingClockRef.current);
         };
     }, [activeWorkout]);
+
+    useEffect(() => {
+        clearInterval(recordingClockRef.current);
+        if (aiVideoRecording) {
+            recordingClockRef.current = setInterval(() => {
+                setAiRecordingSeconds(prev => prev + 1);
+            }, 1000);
+        }
+        return () => clearInterval(recordingClockRef.current);
+    }, [aiVideoRecording]);
 
     // Handle countdown flow before starting workout
     const startCountdownFlow = () => {
         setScreenState('COUNTDOWN');
         setCountdownSeconds(5);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
         const countdownInterval = setInterval(() => {
             setCountdownSeconds(prev => {
                 if (prev <= 1) {
                     clearInterval(countdownInterval);
-                    setScreenState('ACTIVE');
-                    startWorkoutTimer();
                     return 0;
                 }
                 // Animate count number
@@ -430,18 +197,23 @@ const WorkoutPlayerScreen = ({ navigation }) => {
                     easing: Easing.out(Easing.back()),
                     useNativeDriver: true
                 }).start();
-                
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 return prev - 1;
             });
         }, 1000);
     };
 
+    useEffect(() => {
+        if (screenState === 'COUNTDOWN' && countdownSeconds === 0) {
+            setScreenState('ACTIVE');
+            startWorkoutTimer();
+        }
+    }, [screenState, countdownSeconds]);
+
     // Active workout timer
     const startWorkoutTimer = () => {
         clearInterval(timerRef.current);
         timerRef.current = setInterval(() => {
-            if (!isPaused && screenState === 'ACTIVE') {
+            if (!isPausedRef.current && screenStateRef.current === 'ACTIVE') {
                 setWorkoutSeconds(prev => prev + 1);
             }
         }, 1000);
@@ -455,7 +227,6 @@ const WorkoutPlayerScreen = ({ navigation }) => {
         // Set a random motivational quote
         const randQuote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
         setActiveMotivationalQuote(randQuote);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
         clearInterval(restTimerRef.current);
         restTimerRef.current = setInterval(() => {
@@ -463,8 +234,6 @@ const WorkoutPlayerScreen = ({ navigation }) => {
                 setRestSeconds(prev => {
                     if (prev <= 1) {
                         clearInterval(restTimerRef.current);
-                        setScreenState('ACTIVE');
-                        startWorkoutTimer();
                         return 0;
                     }
                     return prev - 1;
@@ -473,54 +242,50 @@ const WorkoutPlayerScreen = ({ navigation }) => {
         }, 1000);
     };
 
-    // Pulse & Glowing loop animation
     useEffect(() => {
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(glowOpacityAnim, {
-                    toValue: 0.9,
-                    duration: 1200,
-                    easing: Easing.inOut(Easing.ease),
-                    useNativeDriver: true,
-                }),
-                Animated.timing(glowOpacityAnim, {
-                    toValue: 0.3,
-                    duration: 1200,
-                    easing: Easing.inOut(Easing.ease),
-                    useNativeDriver: true,
-                })
-            ])
-        ).start();
-    }, []);
+        if (screenState === 'REST' && restSeconds === 0) {
+            setScreenState('ACTIVE');
+            startWorkoutTimer();
+        }
+    }, [screenState, restSeconds]);
 
     useEffect(() => {
-        exerciseTrackerRef.current = createExerciseTracker();
-        setAiRepCount(0);
-        setAiFormScore(0);
-        setAiPhase('up');
-        setAiFaultyJoints([]);
-        setAiExerciseType(getExerciseModelType(currentEx?.name));
-        setAiFeedbackText(currentEx ? `PoseForm ready for ${currentEx.name}. Turn on the AI camera.` : 'AI Coach standing by...');
+        resetPoseFormState(currentEx ? `PoseForm ready for ${currentEx.name}. Open video analysis when you are ready.` : 'PoseForm standing by...');
     }, [currentEx?.id]);
 
-    // Model loading feedback loop
+    useEffect(() => {
+        let mounted = true;
+        api.getExerciseTutorialReviews()
+            .then((res) => {
+                if (mounted && res.status === 200) {
+                    setExerciseTutorialReviews(res.data?.reviews || {});
+                }
+            })
+            .catch(() => {});
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    // Camera readiness feedback for recorded analysis
     useEffect(() => {
         let postureInterval = null;
-        if (isAiCoachActive && screenState === 'ACTIVE' && !isPaused) {
+        if (isAiCoachActive && permission?.granted && screenState === 'ACTIVE' && !isPaused) {
             postureInterval = setInterval(() => {
-                if (tfReady && detector) return;
-                setPostureState('SCANNING');
-                setAiFeedbackText('Loading PoseForm model. Keep your full body in frame.');
-                slideFeedbackAnim.setValue(-20);
-                Animated.spring(slideFeedbackAnim, {
-                    toValue: 0,
-                    friction: 6,
-                    useNativeDriver: true
-                }).start();
+                if (!isCameraReady) {
+                    setPostureState('SCANNING');
+                    publishCoachStatus('Opening camera. When ready, record the full target set.');
+                }
             }, 2500);
         }
         return () => clearInterval(postureInterval);
-    }, [isAiCoachActive, screenState, isPaused, tfReady, detector]);
+    }, [isAiCoachActive, permission?.granted, screenState, isPaused, isCameraReady]);
+
+    useEffect(() => {
+        if (isAiCoachActive && screenState === 'ACTIVE' && isCameraReady) {
+            setAiFeedbackText('Camera ready. Tap start, complete all target reps, then stop for analysis.');
+        }
+    }, [isAiCoachActive, screenState, isCameraReady]);
 
     const formatTime = (totalSeconds) => {
         const mins = Math.floor(totalSeconds / 60);
@@ -528,8 +293,188 @@ const WorkoutPlayerScreen = ({ navigation }) => {
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
+    const uploadRecordedExerciseVideo = async (video) => {
+        setAiVideoUploading(true);
+        setAiVideoStatus('Analyzing video with backend AI...');
+        publishCoachStatus('Uploading recorded set for PoseForm analysis.', true);
+
+        const result = await api.uploadExerciseVideo(
+            video,
+            currentEx?.name || 'general',
+            parseTargetReps(currentEx?.reps)
+        );
+
+        setAiVideoUploading(false);
+        setAiRecordingSeconds(0);
+        if (result.status === 200 && result.data?.success) {
+            const data = result.data;
+            setAiVideoResult(data);
+            setAiRepCount(Number(data.reps || 0));
+            setAiFormScore(Number(data.form_score || 0));
+            setPostureState(Number(data.form_score || 0) >= 70 ? 'CORRECT' : 'INCORRECT');
+            const target = parseTargetReps(currentEx?.reps);
+            const reachedTarget = target && Number(data.reps || 0) >= target;
+            const targetStatus = reachedTarget ? 'Target reps completed. ' : '';
+            const repQuality = data.rep_count_quality ? `${data.rep_count_quality} rep quality` : `${data.confidence || 0}% lock`;
+            const reps = Number(data.reps || 0);
+            const summary = `${targetStatus}${reps} ${reps === 1 ? 'rep' : 'reps'}, ${data.form_score || 0}% form, ${repQuality}. ${data.feedback?.[0] || 'Video analysis complete.'}`;
+            setAiVideoStatus(summary);
+            setAiFeedbackText(summary);
+            return;
+        }
+
+        const message = result.data?.needs_setup
+            ? 'Python AI dependencies are missing. Install requirements, then retry video analysis.'
+            : (result.data?.message || 'Video analysis failed. Try a shorter, brighter recording.');
+        setAiVideoResult(result.data || null);
+        setAiVideoStatus(message);
+        setAiFeedbackText(message);
+        setPostureState('SCANNING');
+    };
+
+    const toggleAiVideoRecording = async () => {
+        if (aiVideoRecording) {
+            if (aiVideoStartTimerRef.current) {
+                clearTimeout(aiVideoStartTimerRef.current);
+                aiVideoStartTimerRef.current = null;
+            }
+            setAiVideoStatus('Finishing recording...');
+            cameraRef.current?.stopRecording?.();
+            setAiVideoRecording(false);
+            return;
+        }
+
+        if (!permission?.granted) {
+            const result = await requestPermission();
+            if (!result.granted) {
+                Alert.alert("Camera Required", "Camera permission is needed for video exercise analysis.");
+                return;
+            }
+        }
+
+        if (!isAiCoachActive) {
+            setIsAiCoachActive(true);
+        }
+
+        setAiVideoResult(null);
+        setAiRecordingSeconds(0);
+        setAiVideoRecording(true);
+        setAiVideoStatus(`Recording. Do ${parseTargetReps(currentEx?.reps) || 'all'} target reps slowly, then press stop.`);
+        setAiFeedbackText('Recording video analysis. Move slowly and keep the body framed.');
+
+        if (aiVideoStartTimerRef.current) {
+            clearTimeout(aiVideoStartTimerRef.current);
+        }
+
+        aiVideoStartTimerRef.current = setTimeout(async () => {
+            try {
+                if (!cameraRef.current?.recordAsync) {
+                    throw new Error('Camera is not ready for video recording.');
+                }
+                const video = await cameraRef.current.recordAsync({
+                    maxFileSize: 38 * 1024 * 1024,
+                    videoBitrate: 1000000,
+                    videoQuality: '480p',
+                    mute: true,
+                });
+                setAiVideoRecording(false);
+                if (video?.uri) {
+                    await uploadRecordedExerciseVideo(video.uri);
+                } else {
+                    setAiVideoStatus('No video was captured. Try again after the camera preview is ready.');
+                }
+            } catch (error) {
+                console.log('Video analysis recording error:', error);
+                setAiVideoStatus('Could not record video. Reopen AI camera and try again.');
+                setAiFeedbackText('Could not record video. Reopen AI camera and try again.');
+                setAiVideoRecording(false);
+            } finally {
+                setAiVideoRecording(false);
+            }
+        }, 650);
+    };
+
+    const clearPoseFormResult = () => {
+        setAiVideoResult(null);
+        setAiRepCount(0);
+        setAiFormScore(0);
+        setAiRecordingSeconds(0);
+        setPostureState('SCANNING');
+        setAiVideoStatus('Ready for a new PoseForm analysis.');
+        setAiFeedbackText('Record again or upload a clearer clip.');
+    };
+
+    const pickExerciseVideo = async () => {
+        if (aiVideoRecording || aiVideoUploading) return;
+
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permissionResult.granted) {
+            Alert.alert("Gallery Required", "Gallery permission is needed to upload an exercise video for AI analysis.");
+            return;
+        }
+
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['videos'],
+                allowsEditing: false,
+                quality: 1,
+                videoMaxDuration: 90,
+            });
+
+            if (result.canceled) {
+                return;
+            }
+
+            const asset = result.assets?.[0];
+            if (!asset?.uri) {
+                setAiVideoStatus('No video was selected. Pick a clear exercise clip and retry.');
+                return;
+            }
+
+            setAiVideoResult(null);
+            setAiRepCount(0);
+            setAiFormScore(0);
+            setPostureState('SCANNING');
+            setAiVideoStatus('Uploading selected video for AI analysis...');
+            setAiFeedbackText('Selected video received. PoseForm is analyzing reps and form.');
+            await uploadRecordedExerciseVideo(asset);
+        } catch (error) {
+            console.log('Video picker analysis error:', error);
+            setAiVideoStatus('Could not read the selected video. Try another clip under 38 MB.');
+            setAiFeedbackText('Could not read the selected video. Try another clip under 38 MB.');
+            setPostureState('SCANNING');
+        }
+    };
+
+    const openExerciseTutorial = async () => {
+        if (!poseFormTutorial?.url) {
+            Alert.alert('Tutorial Unavailable', 'No tutorial is mapped for this exercise yet.');
+            return;
+        }
+
+        try {
+            await Linking.openURL(poseFormTutorial.url);
+        } catch (error) {
+            console.log('Exercise tutorial open error:', error);
+            Alert.alert('Could Not Open Tutorial', 'Please check your connection and try again.');
+        }
+    };
+
+    const returnToExerciseList = () => {
+        if (aiVideoRecording || aiVideoUploading) {
+            Alert.alert('Analysis In Progress', 'Wait until recording or analysis finishes before returning to the exercise list.');
+            return;
+        }
+
+        setIsAiCoachActive(false);
+        setIsCameraReady(false);
+        setAiFeedbackText('Back on the exercise list. Open PoseForm whenever you are ready.');
+        setTimeout(() => {
+            workoutScrollRef.current?.scrollTo?.({ y: 520, animated: true });
+        }, 120);
+    };
+
     const handleToggleExercise = (id) => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         toggleExercise(id);
 
         // Check if there are other exercises remaining
@@ -547,7 +492,6 @@ const WorkoutPlayerScreen = ({ navigation }) => {
     };
 
     const handleSkipExercise = () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         // Find next incomplete exercise and proceed to rest or next
         const currentEx = activeWorkout.exercises.find(ex => !activeWorkout.completedExercises.includes(ex.id));
         if (currentEx) {
@@ -560,7 +504,6 @@ const WorkoutPlayerScreen = ({ navigation }) => {
     const handleFinish = () => {
         clearInterval(timerRef.current);
         clearInterval(restTimerRef.current);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setScreenState('SUMMARY');
     };
 
@@ -577,40 +520,82 @@ const WorkoutPlayerScreen = ({ navigation }) => {
         });
     };
 
-    const toggleAiCoach = async () => {
+    const toggleAiCoach = () => {
         if (!isAiCoachActive) {
-            if (!permission?.granted) {
-                const result = await requestPermission();
-                if (!result.granted) {
-                    Alert.alert("Camera Required", "Camera permission is needed for the AI Coach form tracking.");
-                    return;
-                }
-            }
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             setIsAiCoachActive(true);
+            setIsCameraReady(false);
             setPostureState("SCANNING");
-            setAiFeedbackText("CALIBRATING BODY ALIGNMENT... STAND 2 METERS BACK");
-            
-            // 3-second simulation of advanced body node locking
-            setTimeout(() => {
-                setPostureState("CORRECT");
-                setAiFeedbackText("BODY LOCK ESTABLISHED! 17 CORE SENSOR NODES ONLINE.");
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            }, 3000);
+            publishCoachStatus(permission?.granted
+                ? "Opening recording camera. Frame the exercise clearly."
+                : "Upload a video, or tap Start Recording to enable the camera.", true);
         } else {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setIsAiCoachActive(false);
+            setIsCameraReady(false);
         }
+    };
+
+    const flipCamera = () => {
+        const nextFacing = cameraFacing === 'front' ? 'back' : 'front';
+        setIsCameraReady(false);
+        setCameraFacing(nextFacing);
+        resetPoseFormState(nextFacing === 'back'
+            ? 'Back camera selected. Place the phone so your full body is visible.'
+            : 'Front camera selected. Face the phone and keep torso/legs visible.');
+    };
+
+    const handleCameraReady = async () => {
+        setIsCameraReady(true);
+        setAiFeedbackText(cameraFacing === 'back'
+            ? 'Back camera ready. Record the full target set.'
+            : 'Front camera ready. Face the phone and record the full target set.');
     };
 
     if (!activeWorkout) return null;
 
+    const completedExerciseIds = activeWorkout.completedExercises || [];
     const totalExercises = activeWorkout.exercises.length;
-    const completedCount = activeWorkout.completedExercises.length;
+    const completedCount = completedExerciseIds.length;
     const progressPercent = totalExercises > 0 ? (completedCount / totalExercises) * 100 : 0;
+    const targetReps = parseTargetReps(currentEx?.reps);
+    const videoFeedbackItems = Array.isArray(aiVideoResult?.feedback) ? aiVideoResult.feedback : [];
+    const videoMistakeItems = Array.isArray(aiVideoResult?.mistakes) ? aiVideoResult.mistakes : [];
+    const poseFormTargetReached = !!targetReps && aiVideoResult?.success && Number(aiVideoResult.reps || 0) >= targetReps;
+    const poseFormQuality = poseFormQualityLabel(aiVideoResult?.rep_reliability ?? aiVideoResult?.confidence);
+    const poseFormSetup = getPoseFormSetup(currentEx?.name);
+    const poseFormTutorial = getExerciseTutorial(currentEx?.name);
+    const poseFormTutorialReview = poseFormTutorial ? exerciseTutorialReviews[poseFormTutorial.id] : null;
+    const poseFormTutorialApproved = poseFormTutorialReview?.status === 'approved';
+    const shouldShowTutorialNudge = !!poseFormTutorial && aiVideoResult?.success && Number(aiVideoResult.form_score || 0) < 76;
+    const poseFormDurationLabel = aiVideoRecording
+        ? formatTime(aiRecordingSeconds)
+        : aiVideoResult?.analyzed_duration_sec
+            ? `${aiVideoResult.analyzed_duration_sec}s`
+            : '--';
+    let poseFormResultTitle = 'Ready To Analyze';
+    let poseFormResultSubtitle = 'Record or upload one clear full-set video.';
+    if (aiVideoUploading) {
+        poseFormResultTitle = 'Analyzing Video';
+        poseFormResultSubtitle = 'PoseForm is reading movement, reps, and form quality.';
+    } else if (aiVideoRecording) {
+        poseFormResultTitle = 'Recording Set';
+        poseFormResultSubtitle = 'Finish the planned reps, then press Stop & Analyze.';
+    } else if (aiVideoResult?.success) {
+        poseFormResultTitle = poseFormTargetReached ? 'Target Completed' : 'Analysis Complete';
+        poseFormResultSubtitle = poseFormTargetReached
+            ? 'Good set. You can mark this exercise complete.'
+            : 'Review the result, retake if needed, or accept it.';
+    }
+    const poseHeaderBadgeValue = aiVideoRecording
+        ? formatTime(aiRecordingSeconds)
+        : aiVideoUploading
+            ? '...'
+            : aiVideoResult?.success
+                ? (poseFormTargetReached ? 'HIT' : 'DONE')
+                : 'READY';
 
     // Color definitions based on posture state
     const getPostureColor = () => {
+        if (aiVideoUploading || aiVideoRecording) return '#38BDF8';
         if (postureState === 'CORRECT') return '#10B981';
         if (postureState === 'INCORRECT') return '#EF4444';
         return '#3B82F6'; // Scanning
@@ -619,67 +604,32 @@ const WorkoutPlayerScreen = ({ navigation }) => {
     return (
         <View style={styles.container}>
             {/* Immersive Camera view background when active */}
-            {isAiCoachActive && screenState === 'ACTIVE' && (
+            {isAiCoachActive && permission?.granted && screenState === 'ACTIVE' && (
                 <View style={StyleSheet.absoluteFill}>
-                    <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="front" />
+                    <CameraView
+                        ref={cameraRef}
+                        style={StyleSheet.absoluteFill}
+                        facing={cameraFacing}
+                        mode="video"
+                        animateShutter={false}
+                        mute
+                        onCameraReady={handleCameraReady}
+                    />
                     {/* Immersive Dark Vignette Tint */}
                     <LinearGradient
                         colors={['rgba(5, 8, 20, 0.4)', 'rgba(5, 8, 20, 0.75)']}
                         style={StyleSheet.absoluteFill}
                     />
 
-                    {/* SILHOUETTE GLOW OVERLAY */}
-                        <Svg height="100%" width="100%" style={StyleSheet.absoluteFill}>
-                            {/* Glow effect on posture lines */}
-                            {SKELETON_CONNECTIONS.map(([start, end], idx) => {
-                                const p1 = dynamicSkeleton[start] || SKELETON_COORDS[start];
-                                const p2 = dynamicSkeleton[end] || SKELETON_COORDS[end];
-                                const faulty = isConnectionFaulty(start, end);
-                                return (
-                                    <Line
-                                        key={`line-${idx}`}
-                                        x1={p1.x}
-                                        y1={p1.y}
-                                        x2={p2.x}
-                                        y2={p2.y}
-                                        stroke={faulty ? '#EF4444' : getPostureColor()}
-                                        strokeWidth={faulty ? 10 : 5.5}
-                                        strokeOpacity={0.8}
-                                    />
-                                );
-                            })}
-                            
-                            {/* Silhouette nodes */}
-                            {Object.keys(SKELETON_COORDS).map((key) => {
-                                const p = dynamicSkeleton[key] || SKELETON_COORDS[key];
-                                const faulty = isJointFaulty(key);
-                                return (
-                                    <Circle
-                                        key={`node-${key}`}
-                                        cx={p.x}
-                                        cy={p.y}
-                                        r={faulty ? 11 : (key === 'head' ? 24 : 7.5)}
-                                        fill={faulty ? '#EF4444' : getPostureColor()}
-                                        fillOpacity={key === 'head' ? 0.35 : 1}
-                                        stroke="#FFFFFF"
-                                        strokeWidth={faulty ? 3 : 2}
-                                    />
-                                );
-                            })}
-                        </Svg>
-
-                    {/* Viewfinder Target */}
-                    <View style={styles.viewfinder}>
-                        <View style={[styles.corner, styles.tl, { borderColor: getPostureColor() }]} />
-                        <View style={[styles.corner, styles.tr, { borderColor: getPostureColor() }]} />
-                        <View style={[styles.corner, styles.bl, { borderColor: getPostureColor() }]} />
-                        <View style={[styles.corner, styles.br, { borderColor: getPostureColor() }]} />
+                    <View style={styles.recordingFrameGuide}>
+                        <View style={styles.recordingCorner} />
+                        <Text style={styles.recordingFrameText}>Keep the working joints inside frame</Text>
                     </View>
                 </View>
             )}
 
             {/* Default Deep Slate Dark Premium Gradient when camera is inactive */}
-            {(!isAiCoachActive || screenState !== 'ACTIVE') && (
+            {(!isAiCoachActive || !permission?.granted || screenState !== 'ACTIVE') && (
                 <LinearGradient
                     colors={['#060913', '#0F1524', '#070A14']}
                     style={StyleSheet.absoluteFill}
@@ -692,7 +642,7 @@ const WorkoutPlayerScreen = ({ navigation }) => {
                     <Animated.View style={[styles.countdownBox, { transform: [{ scale: countdownScale }] }]}>
                         <Text style={styles.countdownTitle}>GET READY</Text>
                         <Text style={styles.countdownNumber}>{countdownSeconds}</Text>
-                        <Text style={styles.countdownSubtitle}>Coach is analyzing camera feed...</Text>
+                        <Text style={styles.countdownSubtitle}>Prepare to record your exercise set...</Text>
                     </Animated.View>
                 </View>
             )}
@@ -702,9 +652,9 @@ const WorkoutPlayerScreen = ({ navigation }) => {
                 <SafeAreaView style={{ flex: 1 }} edges={['top']}>
                     {/* Top Header Controls */}
                     <View style={styles.header}>
-                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
+                        <TouchableOpacity onPress={isAiCoachActive ? returnToExerciseList : () => navigation.goBack()} style={styles.headerBtn}>
                             <BlurView intensity={35} tint="dark" style={styles.headerBlur}>
-                                <Ionicons name="chevron-down" size={24} color={COLORS.white} />
+                                <Ionicons name={isAiCoachActive ? 'list-outline' : 'chevron-down'} size={24} color={COLORS.white} />
                             </BlurView>
                         </TouchableOpacity>
 
@@ -712,172 +662,432 @@ const WorkoutPlayerScreen = ({ navigation }) => {
                             <View style={styles.statusBadge}>
                                 <View style={[styles.statusDot, { backgroundColor: isAiCoachActive ? '#10B981' : '#64748B' }]} />
                                 <Text style={styles.statusBadgeText}>
-                                    {isAiCoachActive ? 'AI FORM ENGAGED' : 'STANDARD WORKOUT'}
+                                    {isAiCoachActive ? 'POSEFORM READY' : 'WORKOUT'}
                                 </Text>
                             </View>
                             <Text style={styles.headerWorkoutTitle} numberOfLines={1}>{activeWorkout.title}</Text>
                         </View>
 
-                        <TouchableOpacity onPress={toggleAiCoach} style={styles.headerBtn}>
-                            <BlurView intensity={35} tint="dark" style={styles.headerBlur}>
-                                <Ionicons name="scan-outline" size={22} color={isAiCoachActive ? '#10B981' : COLORS.white} />
-                            </BlurView>
-                        </TouchableOpacity>
+                        <View style={styles.headerActions}>
+                            {isAiCoachActive && (
+                                <TouchableOpacity onPress={flipCamera} style={styles.headerBtn}>
+                                    <BlurView intensity={35} tint="dark" style={styles.headerBlur}>
+                                        <Ionicons name="camera-reverse-outline" size={22} color={COLORS.white} />
+                                    </BlurView>
+                                </TouchableOpacity>
+                            )}
+                            {isAiCoachActive && (
+                                <TouchableOpacity onPress={returnToExerciseList} style={styles.headerBtn}>
+                                    <BlurView intensity={35} tint="dark" style={styles.headerBlur}>
+                                        <Ionicons name="close-outline" size={24} color={COLORS.white} />
+                                    </BlurView>
+                                </TouchableOpacity>
+                            )}
+                        </View>
                     </View>
 
-                    {/* AI FEEDBACK POPUP AT TOP */}
-                    {isAiCoachActive && (
-                        <Animated.View style={[styles.aiCoachToast, { transform: [{ translateY: slideFeedbackAnim }] }]}>
-                            <BlurView intensity={45} tint="dark" style={[styles.toastBlur, { borderColor: getPostureColor() }]}>
-                                <Ionicons name={postureState === 'CORRECT' ? "checkmark-circle" : postureState === 'INCORRECT' ? "alert-circle" : "sync"} size={22} color={getPostureColor()} />
-                                <Text style={[styles.toastText, { color: getPostureColor() }]}>{aiFeedbackText}</Text>
+                    {isAiCoachActive ? (
+                        <View style={styles.cameraModePanel}>
+                            <BlurView intensity={70} tint="dark" style={[styles.cameraModeCard, { borderColor: getPostureColor() }]}>
+                                <View style={styles.cameraModeTopRow}>
+                                    <View style={styles.cameraModeTitleBlock}>
+                                        <Text style={styles.poseFormEyebrow}>POSEFORM VIDEO ANALYSIS</Text>
+                                        <Text style={styles.cameraExerciseName} numberOfLines={1}>{currentEx.name}</Text>
+                                        <Text style={styles.cameraModeSub}>
+                                            Record {targetReps ? `${targetReps} target reps` : 'the full set'} in one video
+                                        </Text>
+                                    </View>
+                                    <View style={[styles.cameraScoreRing, { borderColor: getPostureColor() }]}>
+                                        <Text
+                                            style={[
+                                                styles.cameraScoreValue,
+                                                aiVideoRecording && styles.cameraScoreValueSmall,
+                                                { color: getPostureColor() },
+                                            ]}
+                                            numberOfLines={1}
+                                        >
+                                            {poseHeaderBadgeValue}
+                                        </Text>
+                                        <Text style={styles.cameraScoreLabel}>SET</Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.cameraFeedbackRow}>
+                                    <Ionicons
+                                        name={postureState === 'CORRECT' ? 'checkmark-circle' : postureState === 'INCORRECT' ? 'alert-circle' : 'scan-outline'}
+                                        size={20}
+                                        color={getPostureColor()}
+                                    />
+                                    <Text style={[styles.cameraFeedbackText, { color: getPostureColor() }]} numberOfLines={2}>{aiFeedbackText}</Text>
+                                </View>
+
+                                <TouchableOpacity
+                                    style={[styles.backToExerciseListBtn, (aiVideoRecording || aiVideoUploading) && styles.videoAnalysisBtnDisabled]}
+                                    onPress={returnToExerciseList}
+                                    disabled={aiVideoRecording || aiVideoUploading}
+                                >
+                                    <Ionicons name="list-outline" size={16} color="#BAE6FD" />
+                                    <Text style={styles.backToExerciseListText}>Back To Exercise List</Text>
+                                </TouchableOpacity>
+
+                                {!!poseFormTutorial && (
+                                    <TouchableOpacity
+                                        style={styles.tutorialStrip}
+                                        onPress={openExerciseTutorial}
+                                        disabled={aiVideoUploading}
+                                    >
+                                        <View style={styles.tutorialIconBox}>
+                                            <Ionicons name="logo-youtube" size={18} color="#F87171" />
+                                        </View>
+                                        <View style={styles.tutorialTextBlock}>
+                                            <Text style={styles.tutorialTitle} numberOfLines={1}>Watch Technique First</Text>
+                                            <Text style={styles.tutorialMeta} numberOfLines={1}>
+                                                {poseFormTutorialApproved ? 'Expert Approved' : 'Pending Expert Review'} • {poseFormTutorial.bestAngle}
+                                            </Text>
+                                        </View>
+                                        <Ionicons name="open-outline" size={17} color="#E2E8F0" />
+                                    </TouchableOpacity>
+                                )}
+
+                                <View style={styles.videoAnalysisPanel}>
+                                    <View style={styles.videoActionRow}>
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.videoAnalysisBtn,
+                                                aiVideoRecording && styles.videoAnalysisBtnRecording,
+                                                aiVideoUploading && styles.videoAnalysisBtnDisabled,
+                                            ]}
+                                            onPress={toggleAiVideoRecording}
+                                            disabled={aiVideoUploading}
+                                        >
+                                            <Ionicons
+                                                name={aiVideoRecording ? 'stop-circle' : 'radio-button-on'}
+                                                size={16}
+                                                color={COLORS.white}
+                                            />
+                                            <Text style={styles.videoAnalysisBtnText}>
+                                                {aiVideoRecording ? 'Stop & Analyze' : aiVideoUploading ? 'Analyzing...' : 'Start Recording'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.videoAnalysisBtn,
+                                                styles.videoAttachBtn,
+                                                (aiVideoRecording || aiVideoUploading) && styles.videoAnalysisBtnDisabled,
+                                            ]}
+                                            onPress={pickExerciseVideo}
+                                            disabled={aiVideoRecording || aiVideoUploading}
+                                        >
+                                            <Ionicons name="cloud-upload-outline" size={16} color={COLORS.white} />
+                                            <Text style={styles.videoAnalysisBtnText}>Upload Video</Text>
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    <View style={styles.poseStatusCard}>
+                                        <View style={styles.poseStatusHeader}>
+                                            <View style={styles.poseStatusTitleBlock}>
+                                                <Text style={styles.poseStatusTitle}>{poseFormResultTitle}</Text>
+                                                <Text style={styles.poseStatusSub}>{poseFormResultSubtitle}</Text>
+                                            </View>
+                                            <View style={[styles.poseStatusIcon, { backgroundColor: getPostureColor() + '22' }]}>
+                                                <Ionicons
+                                                    name={aiVideoResult?.success ? 'checkmark-circle' : aiVideoUploading ? 'sync-outline' : aiVideoRecording ? 'radio-button-on' : 'videocam-outline'}
+                                                    size={18}
+                                                    color={getPostureColor()}
+                                                />
+                                            </View>
+                                        </View>
+
+                                        <Text style={styles.videoAnalysisStatus} numberOfLines={3}>{aiVideoStatus}</Text>
+
+                                        {aiVideoResult?.success ? (
+                                            <View style={styles.poseResultGrid}>
+                                                <View style={styles.poseResultBox}>
+                                                    <Text style={styles.poseResultValue}>{aiVideoResult.reps || 0}{targetReps ? ` / ${targetReps}` : ''}</Text>
+                                                    <Text style={styles.poseResultLabel}>Reps</Text>
+                                                </View>
+                                                <View style={styles.poseResultBox}>
+                                                    <Text style={styles.poseResultValue}>{aiVideoResult.form_score || 0}%</Text>
+                                                    <Text style={styles.poseResultLabel}>Form</Text>
+                                                </View>
+                                                <View style={styles.poseResultBox}>
+                                                    <Text style={styles.poseResultValue}>{poseFormQuality}</Text>
+                                                    <Text style={styles.poseResultLabel}>Quality</Text>
+                                                </View>
+                                            </View>
+                                        ) : (
+                                            <Text style={styles.videoAnalysisHint}>
+                                                Keep the working joints visible and stop only after the full set.
+                                            </Text>
+                                        )}
+
+                                        {aiVideoResult?.success && (
+                                            <View style={styles.poseAnalysisDetails}>
+                                                <Text style={styles.poseAnalysisDetailText}>Duration {poseFormDurationLabel}</Text>
+                                                <Text style={styles.poseAnalysisDetailDot}>|</Text>
+                                                <Text style={styles.poseAnalysisDetailText}>{aiVideoResult?.valid_frames ?? 0} usable frames</Text>
+                                                <Text style={styles.poseAnalysisDetailDot}>|</Text>
+                                                <Text style={styles.poseAnalysisDetailText}>{aiVideoResult.rep_reliability ?? aiVideoResult.confidence ?? 0}% confidence</Text>
+                                            </View>
+                                        )}
+
+                                        {aiVideoResult?.success && (!!videoFeedbackItems.length || !!videoMistakeItems.length) && (
+                                            <View style={styles.poseNotesBox}>
+                                                <Text style={styles.poseNotesTitle}>Coaching Notes</Text>
+                                                {videoFeedbackItems.slice(0, 2).map((item, index) => (
+                                                    <View key={`feedback-${index}`} style={styles.poseNoteRow}>
+                                                        <Ionicons name="checkmark-circle-outline" size={14} color="#10B981" />
+                                                        <Text style={styles.poseNoteText}>{item}</Text>
+                                                    </View>
+                                                ))}
+                                                {videoMistakeItems.slice(0, 2).map((item, index) => (
+                                                    <View key={`mistake-${index}`} style={styles.poseNoteRow}>
+                                                        <Ionicons name="alert-circle-outline" size={14} color="#F59E0B" />
+                                                        <Text style={styles.poseNoteText}>Needs work: {item}</Text>
+                                                    </View>
+                                                ))}
+                                            </View>
+                                        )}
+
+                                        {shouldShowTutorialNudge && (
+                                            <TouchableOpacity style={styles.poseTutorialNudge} onPress={openExerciseTutorial}>
+                                                <Ionicons name="school-outline" size={15} color="#FBBF24" />
+                                                <View style={styles.poseTutorialNudgeTextBlock}>
+                                                    <Text style={styles.poseTutorialNudgeTitle}>Improve This Set</Text>
+                                                    <Text style={styles.poseTutorialNudgeText} numberOfLines={2}>
+                                                        Review {poseFormTutorial.title} for {poseFormTutorial.focus.toLowerCase()}.
+                                                    </Text>
+                                                </View>
+                                                <Ionicons name="chevron-forward" size={16} color="#FDE68A" />
+                                            </TouchableOpacity>
+                                        )}
+
+                                        {aiVideoResult?.needs_setup && (
+                                            <View style={styles.poseNotesBox}>
+                                                <Text style={styles.poseNotesTitle}>Backend Setup</Text>
+                                                <View style={styles.poseNoteRow}>
+                                                    <Ionicons name="alert-circle-outline" size={14} color="#F59E0B" />
+                                                    <Text style={styles.poseNoteText}>Run npm run setup:exercise-video-ai, then retry.</Text>
+                                                </View>
+                                            </View>
+                                        )}
+                                    </View>
+
+                                    {aiVideoResult && (
+                                        <View style={styles.poseResultActions}>
+                                            <TouchableOpacity
+                                                style={styles.poseSecondaryBtn}
+                                                onPress={clearPoseFormResult}
+                                                disabled={aiVideoRecording || aiVideoUploading}
+                                            >
+                                                <Ionicons name="refresh-outline" size={15} color="#BAE6FD" />
+                                                <Text style={styles.poseSecondaryText}>Retake</Text>
+                                            </TouchableOpacity>
+                                            {aiVideoResult.success && (
+                                                <TouchableOpacity
+                                                    style={[styles.posePrimaryBtn, !poseFormTargetReached && styles.posePrimaryBtnSoft]}
+                                                    onPress={() => handleToggleExercise(currentEx.id)}
+                                                    disabled={aiVideoRecording || aiVideoUploading}
+                                                >
+                                                    <Ionicons name="checkmark-done-outline" size={15} color={COLORS.white} />
+                                                    <Text style={styles.posePrimaryText}>
+                                                        {poseFormTargetReached ? 'Mark Complete' : 'Accept Result'}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            )}
+                                        </View>
+                                    )}
+                                </View>
                             </BlurView>
-                        </Animated.View>
+                        </View>
+                    ) : (
+                        <ScrollView ref={workoutScrollRef} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollHUD}>
+                            <GlassCard style={styles.currentExerciseCard}>
+                                <View style={styles.focusHeader}>
+                                    <View style={styles.exerciseIndexPill}>
+                                        <Text style={styles.exerciseIndexText}>EXERCISE {completedCount + 1} OF {totalExercises}</Text>
+                                    </View>
+                                    <View style={styles.kcalBadge}>
+                                        <Ionicons name="flame" size={14} color="#EF4444" style={{ marginRight: 4 }} />
+                                        <Text style={styles.kcalText}>{currentEx.kcal || Math.round(activeWorkout.kcal / totalExercises)} kcal</Text>
+                                    </View>
+                                </View>
+
+                                <Text style={styles.exerciseNameText}>{currentEx.name}</Text>
+                                {!!currentEx.guide && (
+                                    <Text style={styles.exerciseGuideText} numberOfLines={3}>{currentEx.guide}</Text>
+                                )}
+
+                                <View style={styles.metricsSplitGrid}>
+                                    <View style={styles.splitMetricBox}>
+                                        <Text style={styles.splitMetricValue}>{currentEx.sets || '3'}</Text>
+                                        <Text style={styles.splitMetricLabel}>SETS TARGET</Text>
+                                    </View>
+                                    <View style={styles.splitMetricDivider} />
+                                    <View style={styles.splitMetricBox}>
+                                        <Text style={styles.splitMetricValue}>{currentEx.reps || '12'}</Text>
+                                        <Text style={styles.splitMetricLabel}>REPS TARGET</Text>
+                                    </View>
+                                    <View style={styles.splitMetricDivider} />
+                                    <View style={styles.splitMetricBox}>
+                                        <Text style={styles.splitMetricValue}>{currentEx.rest || '30s'}</Text>
+                                        <Text style={styles.splitMetricLabel}>EST. REST</Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.posePrepPanel}>
+                                    <View style={styles.posePrepItem}>
+                                        <Ionicons name="phone-portrait-outline" size={15} color="#38BDF8" />
+                                        <View style={styles.posePrepTextBlock}>
+                                            <Text style={styles.posePrepLabel}>BEST ANGLE</Text>
+                                            <Text style={styles.posePrepValue}>{poseFormSetup.angle}</Text>
+                                        </View>
+                                    </View>
+                                    <View style={styles.posePrepItem}>
+                                        <Ionicons name="scan-outline" size={15} color="#38BDF8" />
+                                        <View style={styles.posePrepTextBlock}>
+                                            <Text style={styles.posePrepLabel}>FRAME</Text>
+                                            <Text style={styles.posePrepValue}>{poseFormSetup.frame}</Text>
+                                        </View>
+                                    </View>
+                                    <View style={styles.posePrepItem}>
+                                        <Ionicons name="fitness-outline" size={15} color="#38BDF8" />
+                                        <View style={styles.posePrepTextBlock}>
+                                            <Text style={styles.posePrepLabel}>TIP</Text>
+                                            <Text style={styles.posePrepValue}>{poseFormSetup.tip}</Text>
+                                        </View>
+                                    </View>
+                                </View>
+
+                                {!!poseFormTutorial && (
+                                    <TouchableOpacity style={styles.prePoseTutorialCard} onPress={openExerciseTutorial}>
+                                        <View style={styles.prePoseTutorialLeft}>
+                                            <View style={styles.prePoseTutorialIcon}>
+                                                <Ionicons name="logo-youtube" size={18} color="#F87171" />
+                                            </View>
+                                            <View style={styles.prePoseTutorialText}>
+                                                <Text style={styles.prePoseTutorialTitle}>Technique Tutorial</Text>
+                                                <Text style={styles.prePoseTutorialMeta} numberOfLines={1}>
+                                                    {poseFormTutorialApproved ? 'Expert Approved' : 'Pending Expert Review'} • {poseFormTutorial.channel}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                        <Ionicons name="open-outline" size={18} color="#E2E8F0" />
+                                    </TouchableOpacity>
+                                )}
+
+                                <TouchableOpacity
+                                    style={styles.openVideoAiBtn}
+                                    onPress={toggleAiCoach}
+                                >
+                                    <LinearGradient
+                                        colors={['#10B981', '#059669']}
+                                        style={styles.openVideoAiGrad}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                    >
+                                        <Ionicons name="videocam" size={20} color={COLORS.white} />
+                                        <View style={styles.openVideoAiTextBlock}>
+                                            <Text style={styles.openVideoAiText}>OPEN POSEFORM</Text>
+                                            <Text style={styles.openVideoAiSub}>Record or upload a full-set video</Text>
+                                        </View>
+                                        <Ionicons name="chevron-forward" size={20} color={COLORS.white} />
+                                    </LinearGradient>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={styles.manualCompleteBtn}
+                                    onPress={() => handleToggleExercise(currentEx.id)}
+                                >
+                                    <Ionicons name="checkmark-done-outline" size={18} color="#94A3B8" />
+                                    <Text style={styles.manualCompleteText}>MARK DONE MANUALLY</Text>
+                                </TouchableOpacity>
+                            </GlassCard>
+
+                            <View style={styles.workoutProgressSection}>
+                                <View style={styles.progressHeaderRow}>
+                                    <Text style={styles.progressTitleText}>SESSION PROGRESS</Text>
+                                    <Text style={styles.progressPercentText}>{Math.round(progressPercent)}%</Text>
+                                </View>
+                                <View style={styles.progressBarWrapper}>
+                                    <View style={[styles.progressBarFilled, { width: `${progressPercent}%` }]} />
+                                </View>
+                                <View style={styles.sessionStatsRow}>
+                                    <View style={styles.sessionStatPill}>
+                                        <Ionicons name="time-outline" size={13} color="#94A3B8" />
+                                        <View style={styles.sessionStatTextBlock}>
+                                            <Text style={styles.sessionStatText}>{formatTime(workoutSeconds)}</Text>
+                                            <Text style={styles.sessionStatLabel}>SESSION TIME</Text>
+                                        </View>
+                                    </View>
+                                    <View style={styles.sessionStatPill}>
+                                        <Ionicons name="flame-outline" size={13} color="#EF4444" />
+                                        <View style={styles.sessionStatTextBlock}>
+                                            <Text style={styles.sessionStatText}>{activeWorkout.kcal} kcal</Text>
+                                            <Text style={styles.sessionStatLabel}>TARGET BURN</Text>
+                                        </View>
+                                    </View>
+                                    <View style={styles.sessionStatPill}>
+                                        <Ionicons name="ribbon-outline" size={13} color="#F59E0B" />
+                                        <View style={styles.sessionStatTextBlock}>
+                                            <Text style={styles.sessionStatText}>+250 XP</Text>
+                                            <Text style={styles.sessionStatLabel}>REWARD</Text>
+                                        </View>
+                                    </View>
+                                </View>
+                            </View>
+
+                            <View style={styles.exerciseQueueSection}>
+                                <View style={styles.exerciseQueueHeader}>
+                                    <Text style={styles.exerciseQueueTitle}>EXERCISE LIST</Text>
+                                    <Text style={styles.exerciseQueueCount}>{completedCount}/{totalExercises}</Text>
+                                </View>
+                                {activeWorkout.exercises.map((exercise, index) => {
+                                    const isCompleted = completedExerciseIds.includes(exercise.id);
+                                    const isCurrent = currentEx?.id === exercise.id && !isCompleted;
+                                    const tutorial = getExerciseTutorial(exercise.name);
+                                    const tutorialReview = tutorial ? exerciseTutorialReviews[tutorial.id] : null;
+                                    const tutorialApproved = tutorialReview?.status === 'approved';
+
+                                    return (
+                                        <View
+                                            key={exercise.id || `${exercise.name}-${index}`}
+                                            style={[
+                                                styles.exerciseQueueItem,
+                                                isCurrent && styles.exerciseQueueItemCurrent,
+                                                isCompleted && styles.exerciseQueueItemDone,
+                                            ]}
+                                        >
+                                            <View style={[styles.exerciseQueueIndex, isCurrent && styles.exerciseQueueIndexCurrent, isCompleted && styles.exerciseQueueIndexDone]}>
+                                                {isCompleted ? (
+                                                    <Ionicons name="checkmark" size={14} color={COLORS.white} />
+                                                ) : (
+                                                    <Text style={[styles.exerciseQueueIndexText, isCurrent && styles.exerciseQueueIndexTextActive]}>
+                                                        {index + 1}
+                                                    </Text>
+                                                )}
+                                            </View>
+                                            <View style={styles.exerciseQueueInfo}>
+                                                <Text style={styles.exerciseQueueName} numberOfLines={1}>{exercise.name}</Text>
+                                                <Text style={styles.exerciseQueueMeta} numberOfLines={1}>
+                                                    {exercise.sets || '3'} sets - {String(exercise.reps || '12').replace(/\s*reps?$/i, '')} reps - {tutorialApproved ? 'Expert Approved' : 'Tutorial Pending'}
+                                                </Text>
+                                            </View>
+                                            {isCurrent && (
+                                                <TouchableOpacity style={styles.exerciseQueuePoseBtn} onPress={toggleAiCoach}>
+                                                    <Ionicons name="videocam-outline" size={15} color={COLORS.white} />
+                                                </TouchableOpacity>
+                                            )}
+                                        </View>
+                                    );
+                                })}
+                            </View>
+                        </ScrollView>
                     )}
 
-                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollHUD}>
-                        
-                        {/* Large Current Exercise Glass Card */}
-                        <GlassCard style={styles.currentExerciseCard}>
-                            <View style={styles.focusHeader}>
-                                <View style={styles.exerciseIndexPill}>
-                                    <Text style={styles.exerciseIndexText}>EXERCISE {completedCount + 1} OF {totalExercises}</Text>
-                                </View>
-                                <View style={styles.kcalBadge}>
-                                    <Ionicons name="flame" size={14} color="#EF4444" style={{ marginRight: 4 }} />
-                                    <Text style={styles.kcalText}>{currentEx.kcal || Math.round(activeWorkout.kcal / totalExercises)} kcal</Text>
-                                </View>
-                            </View>
-
-                            <Text style={styles.exerciseNameText}>{currentEx.name}</Text>
-
-                            {/* PREMIUM ILLUSTRATION ANIMATION VIEW */}
-                            <View style={styles.exerciseIllustrationFrame}>
-                                <Svg height="130" width="220" viewBox="0 0 220 130">
-                                    <Defs>
-                                        <SvgLinearGradient id="illGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <Stop offset="0%" stopColor="#10B981" stopOpacity="0.8"/>
-                                            <Stop offset="100%" stopColor="#3B82F6" stopOpacity="0.8"/>
-                                        </SvgLinearGradient>
-                                    </Defs>
-                                    {/* Simulated exercise action nodes */}
-                                    <Path
-                                        d="M10,110 C40,90 80,40 110,60 C140,80 180,10 210,30"
-                                        stroke="url(#illGrad)"
-                                        strokeWidth="4"
-                                        fill="none"
-                                    />
-                                    <Circle cx="110" cy="60" r="8" fill="#10B981" />
-                                    <Circle cx="210" cy="30" r="6" fill="#3B82F6" />
-                                    <Rect x="40" y="90" width="10" height="20" rx="3" fill="#64748B" opacity="0.5"/>
-                                </Svg>
-                                <Animated.View style={[styles.pulseLight, { opacity: glowOpacityAnim, borderColor: getPostureColor() }]} />
-                            </View>
-
-                            {/* Exercises Metric Rows */}
-                            <View style={styles.metricsSplitGrid}>
-                                <View style={styles.splitMetricBox}>
-                                    <Text style={styles.splitMetricValue}>{currentEx.sets || '3'}</Text>
-                                    <Text style={styles.splitMetricLabel}>SETS TARGET</Text>
-                                </View>
-                                <View style={styles.splitMetricDivider} />
-                                <View style={styles.splitMetricBox}>
-                                    <Text style={styles.splitMetricValue}>{currentEx.reps || '12'}</Text>
-                                    <Text style={styles.splitMetricLabel}>REPS TARGET</Text>
-                                </View>
-                                <View style={styles.splitMetricDivider} />
-                                <View style={styles.splitMetricBox}>
-                                    <Text style={styles.splitMetricValue}>{currentEx.rest || '30s'}</Text>
-                                    <Text style={styles.splitMetricLabel}>EST. REST</Text>
-                                </View>
-                            </View>
-
-                            {isAiCoachActive && (
-                                <View style={styles.poseFormPanel}>
-                                    <View style={styles.poseFormHeader}>
-                                        <View>
-                                            <Text style={styles.poseFormEyebrow}>POSEFORM AI</Text>
-                                            <Text style={styles.poseFormMode}>{aiExerciseType.replace(/([A-Z])/g, ' $1').toUpperCase()} ANALYSIS</Text>
-                                        </View>
-                                        <View style={[styles.poseFormScorePill, { borderColor: getPostureColor() }]}>
-                                            <Text style={[styles.poseFormScore, { color: getPostureColor() }]}>{aiFormScore || '--'}</Text>
-                                            <Text style={styles.poseFormScoreLabel}>FORM</Text>
-                                        </View>
-                                    </View>
-                                    <View style={styles.poseMetricRow}>
-                                        <View style={styles.poseMetricBox}>
-                                            <Text style={styles.poseMetricValue}>{aiRepCount}</Text>
-                                            <Text style={styles.poseMetricLabel}>AI REPS</Text>
-                                        </View>
-                                        <View style={styles.poseMetricBox}>
-                                            <Text style={styles.poseMetricValue}>{aiPhase.toUpperCase()}</Text>
-                                            <Text style={styles.poseMetricLabel}>PHASE</Text>
-                                        </View>
-                                        <View style={styles.poseMetricBox}>
-                                            <Text style={styles.poseMetricValue}>{tfReady ? 'LIVE' : 'LOAD'}</Text>
-                                            <Text style={styles.poseMetricLabel}>MODEL</Text>
-                                        </View>
-                                    </View>
-                                </View>
-                            )}
-
-                            {/* Completed Checklist button */}
-                            <TouchableOpacity
-                                style={styles.completeCheckBtn}
-                                onPress={() => handleToggleExercise(currentEx.id)}
-                            >
-                                <LinearGradient
-                                    colors={['#10B981', '#059669']}
-                                    style={styles.completeCheckGrad}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 0 }}
-                                >
-                                    <Ionicons name="checkmark-done-circle" size={24} color={COLORS.white} />
-                                    <Text style={styles.completeCheckText}>COMPLETE & GO TO REST</Text>
-                                </LinearGradient>
-                            </TouchableOpacity>
-                        </GlassCard>
-
-                        {/* WORKOUT METRICS SUMMARY AT THE BOTTOM */}
-                        <View style={styles.workoutPerformancePanel}>
-                            <View style={styles.performanceMetric}>
-                                <Ionicons name="time-outline" size={16} color="#64748B" />
-                                <Text style={styles.performanceValue}>{formatTime(workoutSeconds)}</Text>
-                                <Text style={styles.performanceLabel}>ELAPSED</Text>
-                            </View>
-                            <View style={styles.performanceMetric}>
-                                <Ionicons name="flame-outline" size={16} color="#EF4444" />
-                                <Text style={styles.performanceValue}>{activeWorkout.kcal} kcal</Text>
-                                <Text style={styles.performanceLabel}>CALORIES</Text>
-                            </View>
-                            <View style={styles.performanceMetric}>
-                                <Ionicons name="ribbon-outline" size={16} color="#F59E0B" />
-                                <Text style={styles.performanceValue}>+250 XP</Text>
-                                <Text style={styles.performanceLabel}>XP REWARD</Text>
-                            </View>
-                        </View>
-
-                        {/* PROGRESS BAR */}
-                        <View style={styles.workoutProgressSection}>
-                            <View style={styles.progressHeaderRow}>
-                                <Text style={styles.progressTitleText}>SESSION COMPLETED</Text>
-                                <Text style={styles.progressPercentText}>{Math.round(progressPercent)}%</Text>
-                            </View>
-                            <View style={styles.progressBarWrapper}>
-                                <View style={[styles.progressBarFilled, { width: `${progressPercent}%` }]} />
-                            </View>
-                        </View>
-                    </ScrollView>
-
-                    {/* FLOATING ACTION CONTROL BAR (Pause, Skip, Toggle AI, End) */}
+                    {/* FLOATING ACTION CONTROL BAR */}
                     <View style={styles.floatingControlsPanel}>
                         <BlurView intensity={70} tint="dark" style={styles.controlsBlurWrapper}>
-                            
-                            {/* Toggle Camera/AI Coach Button */}
-                            <TouchableOpacity onPress={toggleAiCoach} style={styles.controlActionCircle}>
-                                <Ionicons name={isAiCoachActive ? "videocam" : "videocam-outline"} size={22} color={isAiCoachActive ? '#10B981' : COLORS.white} />
-                            </TouchableOpacity>
-
                             {/* Pause / Resume Button */}
                             <TouchableOpacity onPress={() => setIsPaused(!isPaused)} style={styles.controlActionCircleMain}>
                                 <LinearGradient
@@ -930,7 +1140,7 @@ const WorkoutPlayerScreen = ({ navigation }) => {
                         <View style={styles.nextPreviewBox}>
                             <Text style={styles.nextPreviewLabel}>UP NEXT</Text>
                             <Text style={styles.nextPreviewName}>{currentEx.name}</Text>
-                            <Text style={styles.nextPreviewStats}>{currentEx.sets} Sets • {currentEx.reps} Reps</Text>
+                            <Text style={styles.nextPreviewStats}>{currentEx.sets} Sets • {String(currentEx.reps || '12').replace(/\s*reps?$/i, '')} Reps</Text>
                         </View>
 
                         {/* Skip rest Button */}
@@ -963,12 +1173,12 @@ const WorkoutPlayerScreen = ({ navigation }) => {
                             </LinearGradient>
 
                             <Text style={styles.summaryHeading}>SESSION COMPLETED!</Text>
-                            <Text style={styles.summarySubtitle}>Fantastic job! Here is your AI Coach performance breakdown.</Text>
+                            <Text style={styles.summarySubtitle}>Fantastic job. Here is your PoseForm performance breakdown.</Text>
 
                             {/* Form Score Ring */}
                             <View style={styles.scoreContainer}>
                                 <Text style={styles.scoreNumber}>{aiFormScore || 0}%</Text>
-                                <Text style={styles.scoreLabel}>AI POSTURE SCORE</Text>
+                                <Text style={styles.scoreLabel}>POSEFORM SCORE</Text>
                                 <View style={styles.scoreTierBadge}>
                                     <Ionicons name="ribbon" size={12} color="#FFFFFF" style={{ marginRight: 4 }} />
                                     <Text style={styles.scoreTierText}>{aiFormScore >= 86 ? 'ELITE FORM' : aiFormScore >= 70 ? 'GOOD FORM' : 'NEEDS WORK'}</Text>
@@ -989,7 +1199,7 @@ const WorkoutPlayerScreen = ({ navigation }) => {
                                 <View style={styles.summaryDividerLine} />
                                 <View style={styles.summaryMetricItem}>
                                     <Text style={styles.summaryMetricVal}>{aiRepCount}</Text>
-                                    <Text style={styles.summaryMetricLab}>AI REPS</Text>
+                                    <Text style={styles.summaryMetricLab}>POSEFORM REPS</Text>
                                 </View>
                             </View>
 
@@ -1090,6 +1300,13 @@ const styles = StyleSheet.create({
         borderRadius: 15,
         overflow: 'hidden',
     },
+    headerActions: {
+        minWidth: 44,
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        gap: 8,
+    },
     headerBlur: {
         flex: 1,
         justifyContent: 'center',
@@ -1099,7 +1316,7 @@ const styles = StyleSheet.create({
     headerTitleBox: {
         alignItems: 'center',
         flex: 1,
-        marginHorizontal: 15
+        marginHorizontal: 10
     },
     statusBadge: {
         flexDirection: 'row',
@@ -1127,43 +1344,431 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         color: COLORS.white,
     },
-    aiCoachToast: {
+    recordingFrameGuide: {
         position: 'absolute',
-        top: Platform.OS === 'ios' ? 120 : 100,
+        left: 26,
+        right: 26,
+        top: Platform.OS === 'ios' ? 112 : 96,
+        bottom: 330,
+        borderWidth: 1.5,
+        borderColor: 'rgba(56,189,248,0.72)',
+        borderRadius: 18,
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        padding: 12,
+    },
+    recordingCorner: {
+        position: 'absolute',
+        top: -1.5,
+        left: -1.5,
+        width: 48,
+        height: 48,
+        borderTopWidth: 4,
+        borderLeftWidth: 4,
+        borderColor: '#38BDF8',
+        borderTopLeftRadius: 18,
+    },
+    recordingFrameText: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#E0F2FE',
+        backgroundColor: 'rgba(15,23,42,0.68)',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 8,
+    },
+    cameraModePanel: {
+        position: 'absolute',
         left: 20,
         right: 20,
-        zIndex: 1000,
+        bottom: Platform.OS === 'ios' ? 136 : 122,
+        zIndex: 60,
     },
-    toastBlur: {
+    cameraModeCard: {
+        borderWidth: 1.5,
+        borderRadius: 22,
+        padding: 14,
+        backgroundColor: 'rgba(15, 23, 42, 0.78)',
+        overflow: 'hidden',
+    },
+    cameraModeTopRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 18,
-        paddingVertical: 14,
-        borderRadius: 22,
-        borderWidth: 1.5,
-        backgroundColor: 'rgba(15, 22, 42, 0.85)',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.25,
-        shadowRadius: 10,
-        elevation: 6
+        justifyContent: 'space-between',
+        gap: 12,
     },
-    toastText: {
-        fontSize: 14,
-        fontWeight: '800',
-        marginLeft: 10,
+    cameraModeTitleBlock: {
         flex: 1,
     },
+    cameraExerciseName: {
+        fontSize: 18,
+        fontWeight: '900',
+        color: COLORS.white,
+        marginTop: 3,
+    },
+    cameraModeSub: {
+        fontSize: 9,
+        fontWeight: '900',
+        color: '#94A3B8',
+        marginTop: 3,
+    },
+    cameraScoreRing: {
+        width: 58,
+        height: 58,
+        borderRadius: 29,
+        borderWidth: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(255,255,255,0.05)',
+    },
+    cameraScoreValue: {
+        fontSize: 17,
+        fontWeight: '900',
+    },
+    cameraScoreValueSmall: {
+        fontSize: 12,
+    },
+    cameraScoreLabel: {
+        fontSize: 7,
+        fontWeight: '900',
+        color: '#94A3B8',
+    },
+    cameraFeedbackRow: {
+        minHeight: 44,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 9,
+        marginTop: 12,
+        paddingHorizontal: 10,
+        paddingVertical: 9,
+        borderRadius: 14,
+        backgroundColor: 'rgba(255,255,255,0.055)',
+    },
+    cameraFeedbackText: {
+        flex: 1,
+        fontSize: 12,
+        lineHeight: 16,
+        fontWeight: '800',
+    },
+    backToExerciseListBtn: {
+        marginTop: 10,
+        minHeight: 38,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(186,230,253,0.24)',
+        backgroundColor: 'rgba(15,23,42,0.42)',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 7,
+    },
+    backToExerciseListText: {
+        color: '#BAE6FD',
+        fontSize: 10,
+        fontWeight: '900',
+    },
+    tutorialStrip: {
+        marginTop: 10,
+        minHeight: 48,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: 'rgba(248,113,113,0.25)',
+        backgroundColor: 'rgba(127,29,29,0.18)',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 10,
+        gap: 10,
+    },
+    tutorialIconBox: {
+        width: 32,
+        height: 32,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(255,255,255,0.08)',
+    },
+    tutorialTextBlock: {
+        flex: 1,
+    },
+    tutorialTitle: {
+        color: COLORS.white,
+        fontSize: 11,
+        fontWeight: '900',
+    },
+    tutorialMeta: {
+        color: '#FECACA',
+        fontSize: 9,
+        fontWeight: '700',
+        marginTop: 3,
+    },
+    videoAnalysisPanel: {
+        marginTop: 10,
+        paddingTop: 10,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(255,255,255,0.10)',
+    },
+    videoActionRow: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    videoAnalysisBtn: {
+        flex: 1,
+        minHeight: 36,
+        borderRadius: 11,
+        backgroundColor: 'rgba(16,185,129,0.20)',
+        borderWidth: 1,
+        borderColor: 'rgba(16,185,129,0.42)',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 7,
+    },
+    videoAnalysisBtnRecording: {
+        backgroundColor: 'rgba(239,68,68,0.22)',
+        borderColor: 'rgba(239,68,68,0.50)',
+    },
+    videoAttachBtn: {
+        backgroundColor: 'rgba(56,189,248,0.16)',
+        borderColor: 'rgba(56,189,248,0.36)',
+    },
+    videoAnalysisBtnDisabled: {
+        opacity: 0.72,
+    },
+    videoAnalysisBtnText: {
+        color: COLORS.white,
+        fontSize: 10,
+        fontWeight: '900',
+    },
+    poseStatusCard: {
+        marginTop: 10,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.10)',
+        backgroundColor: 'rgba(255,255,255,0.045)',
+        padding: 11,
+    },
+    poseStatusHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 8,
+    },
+    poseStatusTitleBlock: {
+        flex: 1,
+    },
+    poseStatusTitle: {
+        color: COLORS.white,
+        fontSize: 13,
+        fontWeight: '900',
+    },
+    poseStatusSub: {
+        color: '#94A3B8',
+        fontSize: 10,
+        fontWeight: '700',
+        lineHeight: 14,
+        marginTop: 2,
+    },
+    poseStatusIcon: {
+        width: 34,
+        height: 34,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    videoAnalysisStatus: {
+        color: '#CBD5E1',
+        fontSize: 10,
+        lineHeight: 14,
+        fontWeight: '800',
+    },
+    videoAnalysisHint: {
+        marginTop: 2,
+        color: '#94A3B8',
+        fontSize: 9,
+        lineHeight: 13,
+        fontWeight: '700',
+    },
+    poseResultGrid: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 10,
+    },
+    poseResultBox: {
+        flex: 1,
+        minHeight: 54,
+        borderRadius: 13,
+        backgroundColor: 'rgba(15,23,42,0.45)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 4,
+    },
+    poseResultValue: {
+        color: '#E0F2FE',
+        fontSize: 15,
+        fontWeight: '900',
+    },
+    poseResultLabel: {
+        color: '#94A3B8',
+        fontSize: 7,
+        fontWeight: '900',
+        marginTop: 3,
+        textAlign: 'center',
+    },
+    poseAnalysisDetails: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 5,
+        marginTop: 9,
+        paddingTop: 8,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(255,255,255,0.08)',
+    },
+    poseAnalysisDetailText: {
+        color: '#94A3B8',
+        fontSize: 8,
+        fontWeight: '800',
+    },
+    poseAnalysisDetailDot: {
+        color: '#475569',
+        fontSize: 8,
+        fontWeight: '900',
+    },
+    poseNotesBox: {
+        marginTop: 10,
+        padding: 11,
+        borderRadius: 14,
+        backgroundColor: 'rgba(15,23,42,0.5)',
+        borderWidth: 1,
+        borderColor: 'rgba(148,163,184,0.18)',
+        gap: 8,
+    },
+    poseNotesTitle: {
+        fontSize: 9,
+        fontWeight: '900',
+        color: '#E2E8F0',
+        letterSpacing: 1,
+    },
+    poseNoteRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 7,
+    },
+    poseNoteText: {
+        flex: 1,
+        fontSize: 10,
+        fontWeight: '700',
+        color: '#CBD5E1',
+        lineHeight: 15,
+    },
+    poseTutorialNudge: {
+        marginTop: 10,
+        minHeight: 52,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: 'rgba(251,191,36,0.28)',
+        backgroundColor: 'rgba(120,53,15,0.22)',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 10,
+        gap: 9,
+    },
+    poseTutorialNudgeTextBlock: {
+        flex: 1,
+    },
+    poseTutorialNudgeTitle: {
+        color: '#FEF3C7',
+        fontSize: 10,
+        fontWeight: '900',
+    },
+    poseTutorialNudgeText: {
+        color: '#FDE68A',
+        fontSize: 9,
+        lineHeight: 13,
+        fontWeight: '700',
+        marginTop: 2,
+    },
+    poseResultActions: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 9,
+    },
+    poseSecondaryBtn: {
+        flex: 1,
+        minHeight: 36,
+        borderRadius: 11,
+        borderWidth: 1,
+        borderColor: 'rgba(186,230,253,0.28)',
+        backgroundColor: 'rgba(255,255,255,0.045)',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+    },
+    poseSecondaryText: {
+        color: '#BAE6FD',
+        fontSize: 10,
+        fontWeight: '900',
+    },
+    posePrimaryBtn: {
+        flex: 1.25,
+        minHeight: 36,
+        borderRadius: 11,
+        backgroundColor: '#10B981',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+    },
+    posePrimaryBtnSoft: {
+        backgroundColor: 'rgba(16,185,129,0.55)',
+    },
+    posePrimaryText: {
+        color: COLORS.white,
+        fontSize: 10,
+        fontWeight: '900',
+    },
+    videoDetailsBox: {
+        marginTop: 8,
+        padding: 9,
+        borderRadius: 10,
+        backgroundColor: 'rgba(56,189,248,0.10)',
+        borderWidth: 1,
+        borderColor: 'rgba(56,189,248,0.22)',
+    },
+    videoDetailText: {
+        color: '#DFF6FF',
+        fontSize: 10,
+        lineHeight: 14,
+        fontWeight: '700',
+    },
+    videoMistakeBox: {
+        marginTop: 7,
+        padding: 9,
+        borderRadius: 10,
+        backgroundColor: 'rgba(239,68,68,0.12)',
+        borderWidth: 1,
+        borderColor: 'rgba(239,68,68,0.25)',
+    },
+    videoMistakeText: {
+        color: '#FCA5A5',
+        fontSize: 10,
+        lineHeight: 14,
+        fontWeight: '800',
+    },
     scrollHUD: {
-        paddingBottom: 150,
+        paddingBottom: 140,
         paddingHorizontal: 20,
     },
     currentExerciseCard: {
         backgroundColor: 'rgba(255, 255, 255, 0.05)',
         borderColor: 'rgba(255, 255, 255, 0.1)',
-        borderRadius: 30,
-        padding: 24,
-        marginTop: 20,
+        borderRadius: 24,
+        padding: 18,
+        marginTop: 12,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.3,
@@ -1174,7 +1779,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 16
+        marginBottom: 12
     },
     exerciseIndexPill: {
         backgroundColor: 'rgba(16, 185, 129, 0.15)',
@@ -1202,41 +1807,34 @@ const styles = StyleSheet.create({
         fontWeight: '800',
     },
     exerciseNameText: {
-        fontSize: 26,
+        fontSize: 22,
         fontWeight: '900',
         color: COLORS.white,
-        marginBottom: 20
+        marginBottom: 8
     },
-    exerciseIllustrationFrame: {
-        height: 140,
-        backgroundColor: 'rgba(0, 0, 0, 0.25)',
-        borderRadius: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 24,
-        overflow: 'hidden',
-        position: 'relative'
-    },
-    pulseLight: {
-        position: 'absolute',
-        width: '100%',
-        height: '100%',
-        borderRadius: 20,
-        borderWidth: 2,
+    exerciseGuideText: {
+        fontSize: 12,
+        lineHeight: 17,
+        color: '#94A3B8',
+        fontWeight: '700',
+        marginBottom: 14
     },
     metricsSplitGrid: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 28,
-        paddingHorizontal: 10
+        marginBottom: 14,
+        paddingHorizontal: 4,
+        paddingVertical: 12,
+        borderRadius: 16,
+        backgroundColor: 'rgba(255,255,255,0.035)'
     },
     splitMetricBox: {
         alignItems: 'center',
         flex: 1
     },
     splitMetricValue: {
-        fontSize: 22,
+        fontSize: 18,
         fontWeight: '900',
         color: COLORS.white,
     },
@@ -1252,19 +1850,108 @@ const styles = StyleSheet.create({
         height: 30,
         backgroundColor: 'rgba(255,255,255,0.08)'
     },
-    poseFormPanel: {
-        backgroundColor: 'rgba(15, 23, 42, 0.72)',
-        borderWidth: 1,
-        borderColor: 'rgba(16, 185, 129, 0.28)',
-        borderRadius: 20,
-        padding: 14,
-        marginBottom: 20
+    posePrepPanel: {
+        flexDirection: 'row',
+        gap: 8,
+        marginBottom: 12,
     },
-    poseFormHeader: {
+    posePrepItem: {
+        flex: 1,
+        minHeight: 54,
+        borderRadius: 14,
+        backgroundColor: 'rgba(56,189,248,0.09)',
+        borderWidth: 1,
+        borderColor: 'rgba(56,189,248,0.18)',
+        paddingHorizontal: 8,
+        paddingVertical: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    posePrepTextBlock: {
+        alignItems: 'center',
+        marginTop: 4,
+    },
+    posePrepLabel: {
+        color: '#7DD3FC',
+        fontSize: 7,
+        fontWeight: '900',
+    },
+    posePrepValue: {
+        color: COLORS.white,
+        fontSize: 9,
+        fontWeight: '900',
+        textAlign: 'center',
+        marginTop: 2,
+    },
+    prePoseTutorialCard: {
+        minHeight: 54,
+        borderRadius: 15,
+        borderWidth: 1,
+        borderColor: 'rgba(248,113,113,0.24)',
+        backgroundColor: 'rgba(127,29,29,0.16)',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 12
+        paddingHorizontal: 12,
+        marginBottom: 10,
+    },
+    prePoseTutorialLeft: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        paddingRight: 8,
+    },
+    prePoseTutorialIcon: {
+        width: 34,
+        height: 34,
+        borderRadius: 11,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(255,255,255,0.08)',
+    },
+    prePoseTutorialText: {
+        flex: 1,
+    },
+    prePoseTutorialTitle: {
+        color: COLORS.white,
+        fontSize: 11,
+        fontWeight: '900',
+    },
+    prePoseTutorialMeta: {
+        color: '#FECACA',
+        fontSize: 9,
+        fontWeight: '700',
+        marginTop: 3,
+    },
+    openVideoAiBtn: {
+        minHeight: 58,
+        borderRadius: 16,
+        overflow: 'hidden',
+        marginBottom: 10,
+    },
+    openVideoAiGrad: {
+        minHeight: 58,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 14,
+        gap: 12,
+    },
+    openVideoAiTextBlock: {
+        flex: 1,
+    },
+    openVideoAiText: {
+        color: COLORS.white,
+        fontSize: 12,
+        fontWeight: '900',
+        letterSpacing: 0.8,
+    },
+    openVideoAiSub: {
+        color: '#BAE6FD',
+        fontSize: 10,
+        fontWeight: '700',
+        marginTop: 3,
     },
     poseFormEyebrow: {
         fontSize: 9,
@@ -1272,97 +1959,26 @@ const styles = StyleSheet.create({
         color: '#10B981',
         letterSpacing: 1.2
     },
-    poseFormMode: {
-        fontSize: 12,
-        fontWeight: '900',
-        color: COLORS.white,
-        marginTop: 3
-    },
-    poseFormScorePill: {
-        minWidth: 58,
-        borderWidth: 1.5,
+    manualCompleteBtn: {
+        minHeight: 44,
         borderRadius: 14,
-        paddingVertical: 6,
-        alignItems: 'center'
-    },
-    poseFormScore: {
-        fontSize: 18,
-        fontWeight: '900'
-    },
-    poseFormScoreLabel: {
-        fontSize: 7,
-        fontWeight: '900',
-        color: '#94A3B8'
-    },
-    poseMetricRow: {
-        flexDirection: 'row',
-        gap: 8
-    },
-    poseMetricBox: {
-        flex: 1,
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: 13,
-        paddingVertical: 10,
-        alignItems: 'center'
-    },
-    poseMetricValue: {
-        fontSize: 14,
-        fontWeight: '900',
-        color: COLORS.white
-    },
-    poseMetricLabel: {
-        fontSize: 8,
-        fontWeight: '900',
-        color: '#64748B',
-        marginTop: 3
-    },
-    completeCheckBtn: {
-        height: 60,
-        borderRadius: 18,
-        overflow: 'hidden',
-    },
-    completeCheckGrad: {
-        flex: 1,
+        borderWidth: 1,
+        borderColor: 'rgba(148,163,184,0.20)',
+        backgroundColor: 'rgba(255,255,255,0.035)',
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
         gap: 10,
     },
-    completeCheckText: {
-        fontSize: 14,
+    manualCompleteText: {
+        fontSize: 11,
         fontWeight: '900',
-        color: COLORS.white,
-        letterSpacing: 1
-    },
-    workoutPerformancePanel: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        backgroundColor: 'rgba(255,255,255,0.02)',
-        borderColor: 'rgba(255,255,255,0.05)',
-        borderWidth: 1,
-        borderRadius: 20,
-        paddingVertical: 18,
-        marginTop: 20,
-    },
-    performanceMetric: {
-        alignItems: 'center'
-    },
-    performanceValue: {
-        fontSize: 16,
-        fontWeight: '900',
-        color: COLORS.white,
-        marginTop: 6
-    },
-    performanceLabel: {
-        fontSize: 9,
-        color: '#64748B',
-        fontWeight: '800',
-        marginTop: 2,
-        letterSpacing: 0.8
+        color: '#CBD5E1',
     },
     workoutProgressSection: {
-        marginTop: 25,
-        paddingHorizontal: 5
+        marginTop: 14,
+        paddingHorizontal: 5,
+        paddingBottom: 8
     },
     progressHeaderRow: {
         flexDirection: 'row',
@@ -1391,6 +2007,120 @@ const styles = StyleSheet.create({
         height: '100%',
         backgroundColor: '#10B981',
         borderRadius: 3
+    },
+    sessionStatsRow: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 12
+    },
+    sessionStatPill: {
+        flex: 1,
+        minHeight: 42,
+        borderRadius: 13,
+        backgroundColor: 'rgba(255,255,255,0.045)',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 5
+    },
+    sessionStatTextBlock: {
+        alignItems: 'center',
+    },
+    sessionStatText: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: COLORS.white
+    },
+    sessionStatLabel: {
+        marginTop: 2,
+        fontSize: 6,
+        fontWeight: '900',
+        color: '#64748B',
+    },
+    exerciseQueueSection: {
+        marginTop: 16,
+        paddingBottom: 12,
+    },
+    exerciseQueueHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 10,
+        paddingHorizontal: 4,
+    },
+    exerciseQueueTitle: {
+        color: '#94A3B8',
+        fontSize: 10,
+        fontWeight: '900',
+        letterSpacing: 1,
+    },
+    exerciseQueueCount: {
+        color: '#10B981',
+        fontSize: 11,
+        fontWeight: '900',
+    },
+    exerciseQueueItem: {
+        minHeight: 58,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(148,163,184,0.14)',
+        backgroundColor: 'rgba(255,255,255,0.04)',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        marginBottom: 8,
+        gap: 10,
+    },
+    exerciseQueueItemCurrent: {
+        borderColor: 'rgba(16,185,129,0.44)',
+        backgroundColor: 'rgba(16,185,129,0.10)',
+    },
+    exerciseQueueItemDone: {
+        opacity: 0.74,
+    },
+    exerciseQueueIndex: {
+        width: 30,
+        height: 30,
+        borderRadius: 10,
+        backgroundColor: 'rgba(148,163,184,0.14)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    exerciseQueueIndexCurrent: {
+        backgroundColor: '#10B981',
+    },
+    exerciseQueueIndexDone: {
+        backgroundColor: '#334155',
+    },
+    exerciseQueueIndexText: {
+        color: '#CBD5E1',
+        fontSize: 11,
+        fontWeight: '900',
+    },
+    exerciseQueueIndexTextActive: {
+        color: COLORS.white,
+    },
+    exerciseQueueInfo: {
+        flex: 1,
+    },
+    exerciseQueueName: {
+        color: COLORS.white,
+        fontSize: 13,
+        fontWeight: '900',
+    },
+    exerciseQueueMeta: {
+        color: '#94A3B8',
+        fontSize: 9,
+        fontWeight: '700',
+        marginTop: 4,
+    },
+    exerciseQueuePoseBtn: {
+        width: 34,
+        height: 34,
+        borderRadius: 12,
+        backgroundColor: '#10B981',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     floatingControlsPanel: {
         position: 'absolute',
@@ -1441,24 +2171,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    viewfinder: {
-        width: width * 0.85,
-        height: height * 0.58,
-        position: 'absolute',
-        top: height * 0.18,
-        alignSelf: 'center',
-        zIndex: 5
-    },
-    corner: {
-        position: 'absolute',
-        width: 30,
-        height: 30,
-        borderWidth: 3.5,
-    },
-    tl: { top: 0, left: 0, borderRightWidth: 0, borderBottomWidth: 0, borderTopLeftRadius: 12 },
-    tr: { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0, borderTopRightRadius: 12 },
-    bl: { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0, borderBottomLeftRadius: 12 },
-    br: { bottom: 0, right: 0, borderLeftWidth: 0, borderTopWidth: 0, borderBottomRightRadius: 12 },
     restCardContainer: {
         width: width * 0.88,
         backgroundColor: 'rgba(255, 255, 255, 0.04)',

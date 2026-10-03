@@ -16,12 +16,10 @@
     - Open `config/database.php`.
     - Update `$username` and `$password` if your local MySQL credentials differ from `root` / `` (empty).
 3. **Running the Server**:
-    - You can use PHP's built-in server for testing:
-      ```bash
-      cd backend
-      php -S localhost:8000
-      ```
-    - Your API URL will be `http://localhost:8000/api/`.
+    - On Windows, run `powershell -ExecutionPolicy Bypass -File backend/start-server.ps1` from the project root. It configures a writable upload temp folder and the API router.
+    - On other systems, run `php -S 0.0.0.0:8000 router.php` from `backend`, with `upload_tmp_dir` set to a writable directory for video uploads.
+    - Your API URL will be `http://localhost:8000/api/` locally or `http://<computer-LAN-IP>:8000/api/` on a phone.
+    - Run `php backend/migration_recovery.php` and `php backend/migration_competition.php` once after importing the base schema to enable recovery and competition plans.
 
 ## API Documentation
 
@@ -40,7 +38,7 @@
 
 ### Progress Prediction
 - `GET /api/predictProgress.php?user_id=1`
-  - Returns linear regression prediction based on `progress` table history.
+  - Returns local neural-network prediction based on `progress` table history.
 
 ### Challenges
 - `GET /api/getChallenges.php`
@@ -66,6 +64,9 @@
   - Body: `{ "user_id": 1, "type": "weight", "value": 75.5 }`
 
 ## AI Logic Explanation
-- **WorkoutAI**: Generates weekly split based on goal (lose weight vs muscle) and activity level.
-- **NutritionAI**: Calculates BMR using Mifflin-St Jeor equation and distributes macros.
-- **PredictionAI**: Uses Linear Regression on historical weight data to predict 30-day trend.
+- **TrainCore AI / WorkoutAI**: Python local feed-forward neural-network workout recommendation model. The Python model ranks a 220-record public-source exercise dataset using the user's goal, training frequency, location, intensity, and injury filters; PHP only wraps it for the API. Training/validation runs with `npm run train:workout-ai` and saves `ml/workout_ai/traincore_trained_model.json`. External generation APIs are not used for workout generation.
+- **NutriCore AI / NutritionAI**: Python-owned feed-forward neural-network meal recommendation and swap model. PHP calculates the user's calorie target, then calls `ml/nutrition_ai/nutricore_model.py` to rank the trained USDA-backed meal dataset using calories, macros, goal, fridge ingredients, allergies, dislikes, likes, ratings, and expert/model score. Weekly meal generation, Fridge Sync swap ranking, and applied meal replacements are Python-owned. Training runs with `npm run train:nutrition-ai` and saves `src/ai/trainedNutritionModel.json`; PHP does not generate meal plans.
+- **PoseForm Exercise AI**: Python-owned recorded-video exercise analysis module using MediaPipe's neural pose landmark model for body-keypoint extraction, followed by local exercise/form logic. The backend accepts a recorded or uploaded exercise video, calls `ml/exercise_ai/video_pose_analyzer.py`, and returns reps, form score, confidence, feedback, and mistakes. Tutorial resources are local curated data and can be approved by the reviewer in `Expert Review`.
+- **Expert Review**: One reviewer account approves NutriCore meals and PoseForm tutorial resources. Normal users can read approval status but cannot save approval decisions.
+- **AI Coach Chat**: Optional Gemini conversational assistant. It is used only for open-ended chat if `GEMINI_API_KEY` is configured; it does not generate workout plans, meal plans, fridge swaps, or exercise-video analysis.
+- **PredictionAI**: Uses a local PHP feed-forward neural-network regressor on historical weight data to predict the 30-day trend.

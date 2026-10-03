@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="900" viewBox="0 0 1500 900">
+  <rect width="1500" height="900" fill="#ffffff"/>
+  <text x="750" y="45" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700" fill="#111827">Easy System Flow</text>
+  <text x="750" y="76" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#4b5563">Main user journey inside the AI-powered fitness mobile application</text>
+
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#374151"/>
+    </marker>
+    <style>
+      .box { stroke-width: 2; rx: 20; }
+      .title { font-family: Arial, Helvetica, sans-serif; font-size: 19px; font-weight: 700; fill: #111827; }
+      .text { font-family: Arial, Helvetica, sans-serif; font-size: 14px; fill: #374151; }
+      .small { font-family: Arial, Helvetica, sans-serif; font-size: 12px; fill: #6b7280; }
+      .line { stroke: #374151; stroke-width: 2.4; fill: none; marker-end: url(#arrow); }
+      .softline { stroke: #6b7280; stroke-width: 2; fill: none; stroke-dasharray: 7 6; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect x="80" y="145" width="230" height="110" rx="20" fill="#eff6ff" stroke="#93c5fd" class="box"/>
+  <text x="195" y="184" text-anchor="middle" class="title">1. User Starts</text>
+  <text x="195" y="212" text-anchor="middle" class="text">Register or log in</text>
+  <text x="195" y="234" text-anchor="middle" class="small">Authenticated mobile access</text>
+
+  <rect x="410" y="145" width="250" height="110" rx="20" fill="#f0fdf4" stroke="#86efac" class="box"/>
+  <text x="535" y="184" text-anchor="middle" class="title">2. Profile Setup</text>
+  <text x="535" y="212" text-anchor="middle" class="text">Goal, body data, lifestyle</text>
+  <text x="535" y="234" text-anchor="middle" class="small">Injuries, allergies, preferences</text>
+
+  <rect x="780" y="145" width="260" height="110" rx="20" fill="#fef3c7" stroke="#fbbf24" class="box"/>
+  <text x="910" y="184" text-anchor="middle" class="title">3. Backend Processing</text>
+  <text x="910" y="212" text-anchor="middle" class="text">PHP API receives request</text>
+  <text x="910" y="234" text-anchor="middle" class="small">Stores and reads MySQL data</text>
+
+  <rect x="1160" y="145" width="260" height="110" rx="20" fill="#f5f3ff" stroke="#c4b5fd" class="box"/>
+  <text x="1290" y="184" text-anchor="middle" class="title">4. Local AI Modules</text>
+  <text x="1290" y="212" text-anchor="middle" class="text">TrainCore, NutriCore</text>
+  <text x="1290" y="234" text-anchor="middle" class="small">PoseForm and PredictionAI</text>
+
+  <path d="M310 200 L410 200" class="line"/>
+  <path d="M660 200 L780 200" class="line"/>
+  <path d="M1040 200 L1160 200" class="line"/>
+
+  <rect x="135" y="365" width="250" height="118" rx="20" fill="#ffffff" stroke="#d1d5db" class="box"/>
+  <text x="260" y="404" text-anchor="middle" class="title">Workout Plan</text>
+  <text x="260" y="433" text-anchor="middle" class="text">Personalized exercises</text>
+  <text x="260" y="456" text-anchor="middle" class="small">Goal, location, injury-aware</text>
+
+  <rect x="460" y="365" width="250" height="118" rx="20" fill="#ffffff" stroke="#d1d5db" class="box"/>
+  <text x="585" y="404" text-anchor="middle" class="title">Nutrition Plan</text>
+  <text x="585" y="433" text-anchor="middle" class="text">Meals and smart swaps</text>
+  <text x="585" y="456" text-anchor="middle" class="small">Fridge, allergy, expert approval</text>
+
+  <rect x="785" y="365" width="250" height="118" rx="20" fill="#ffffff" stroke="#d1d5db" class="box"/>
+  <text x="910" y="404" text-anchor="middle" class="title">PoseForm Analysis</text>
+  <text x="910" y="433" text-anchor="middle" class="text">Recorded video feedback</text>
+  <text x="910" y="456" text-anchor="middle" class="small">Reps, score, mistakes</text>
+
+  <rect x="1110" y="365" width="250" height="118" rx="20" fill="#ffffff" stroke="#d1d5db" class="box"/>
+  <text x="1235" y="404" text-anchor="middle" class="title">Progress Prediction</text>
+  <text x="1235" y="433" text-anchor="middle" class="text">Weight and progress trend</text>
+  <text x="1235" y="456" text-anchor="middle" class="small">Based on historical logs</text>
+
+  <path d="M1290 255 C1290 310 260 300 260 365" class="softline"/>
+  <path d="M1290 255 C1290 318 585 310 585 365" class="softline"/>
+  <path d="M1290 255 C1290 326 910 320 910 365" class="softline"/>
+  <path d="M1290 255 C1290 334 1235 325 1235 365" class="softline"/>
+
+  <rect x="170" y="610" width="250" height="116" rx="20" fill="#ecfeff" stroke="#67e8f9" class="box"/>
+  <text x="295" y="648" text-anchor="middle" class="title">Tracking</text>
+  <text x="295" y="677" text-anchor="middle" class="text">Workouts, meals, water</text>
+  <text x="295" y="700" text-anchor="middle" class="small">Weight, sleep, stress, activity</text>
+
+  <rect x="500" y="610" width="250" height="116" rx="20" fill="#fff7ed" stroke="#fdba74" class="box"/>
+  <text x="625" y="648" text-anchor="middle" class="title">Engagement</text>
+  <text x="625" y="677" text-anchor="middle" class="text">Challenges and badges</text>
+  <text x="625" y="700" text-anchor="middle" class="small">Points, rewards, leaderboard</text>
+
+  <rect x="830" y="610" width="250" height="116" rx="20" fill="#fdf2f8" stroke="#f9a8d4" class="box"/>
+  <text x="955" y="648" text-anchor="middle" class="title">Community</text>
+  <text x="955" y="677" text-anchor="middle" class="text">Friends, clubs, posts</text>
+  <text x="955" y="700" text-anchor="middle" class="small">Messages and duel invites</text>
+
+  <rect x="1160" y="610" width="250" height="116" rx="20" fill="#f1f5f9" stroke="#94a3b8" class="box"/>
+  <text x="1285" y="648" text-anchor="middle" class="title">Final User Result</text>
+  <text x="1285" y="677" text-anchor="middle" class="text">Personalized fitness journey</text>
+  <text x="1285" y="700" text-anchor="middle" class="small">Safer, smarter, more motivating</text>
+
+  <path d="M260 483 C260 540 295 555 295 610" class="line"/>
+  <path d="M585 483 C585 540 625 555 625 610" class="line"/>
+  <path d="M910 483 C910 540 955 555 955 610" class="line"/>
+  <path d="M1235 483 C1235 540 1285 555 1285 610" class="line"/>
+  <path d="M420 668 L500 668" class="line"/>
+  <path d="M750 668 L830 668" class="line"/>
+  <path d="M1080 668 L1160 668" class="line"/>
+
+  <rect x="515" y="790" width="470" height="48" rx="16" fill="#f9fafb" stroke="#d1d5db"/>
+  <text x="750" y="820" text-anchor="middle" class="text">User activity and feedback update the database and improve future recommendations.</text>
+  <path d="M750 790 C730 745 640 735 625 726" class="softline"/>
+  <path d="M750 790 C930 760 910 520 910 483" class="softline"/>
+
+  <text x="750" y="875" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" fill="#111827">Figure IV.2: Simplified Functional Flow of the Proposed System</text>
+</svg>

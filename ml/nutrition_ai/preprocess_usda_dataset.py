@@ -147,6 +147,20 @@ IMAGE_BY_TYPE = {
     "Snack": "https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=900&q=80",
 }
 
+IMAGE_BY_THEME = {
+    "chicken_bowl": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=900&q=80",
+    "beef_plate": "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=900&q=80",
+    "salad": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=900&q=80",
+    "eggs": "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=900&q=80",
+    "yogurt_oats": "https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=900&q=80",
+    "fish_plate": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
+    "wrap": "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?auto=format&fit=crop&w=900&q=80",
+    "pasta": "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=900&q=80",
+    "sandwich": "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=900&q=80",
+    "smoothie": "https://images.unsplash.com/photo-1553530666-ba11a7da3888?auto=format&fit=crop&w=900&q=80",
+    "beans_rice": "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=900&q=80",
+}
+
 SERVING_FACTORS = {
     "chicken": 1.35,
     "turkey": 1.25,
@@ -219,6 +233,39 @@ def infer_allergens(ingredients):
         "hummus": "sesame",
     }
     return sorted({allergen_map[item] for item in ingredients if item in allergen_map})
+
+
+def image_for_template(template):
+    ingredients = template.get("ingredients", [])
+    terms = " ".join([
+        template.get("id", ""),
+        template.get("name", ""),
+        template.get("type", ""),
+        " ".join(ingredients),
+    ]).lower()
+    ingredient_set = set(ingredients)
+
+    if {"milk", "banana", "peanut_butter"} <= ingredient_set or "smoothie" in terms:
+        return IMAGE_BY_THEME["smoothie"]
+    if "wrap" in terms or "sandwich" in terms or {"bread", "lettuce", "tomato"} <= ingredient_set:
+        return IMAGE_BY_THEME["wrap"]
+    if "pasta" in terms:
+        return IMAGE_BY_THEME["pasta"]
+    if "omelette" in terms or "egg" in terms or "eggs" in ingredient_set:
+        return IMAGE_BY_THEME["eggs"]
+    if "yogurt" in terms or "oat" in terms or {"greek_yogurt", "berries"} & ingredient_set:
+        return IMAGE_BY_THEME["yogurt_oats"]
+    if {"salmon", "tuna", "pollock"} & ingredient_set:
+        return IMAGE_BY_THEME["fish_plate"]
+    if "beef" in ingredient_set:
+        return IMAGE_BY_THEME["beef_plate"]
+    if "beans" in ingredient_set:
+        return IMAGE_BY_THEME["beans_rice"]
+    if {"lettuce", "spinach"} & ingredient_set and not ({"rice", "potato"} & ingredient_set):
+        return IMAGE_BY_THEME["salad"]
+    if "chicken" in ingredient_set or "turkey" in ingredient_set or "rice" in ingredient_set:
+        return IMAGE_BY_THEME["chicken_bowl"]
+    return IMAGE_BY_TYPE.get(template.get("type"), IMAGE_BY_TYPE["Lunch"])
 
 
 def infer_goals(ingredients, meal_type):
@@ -434,7 +481,7 @@ def build_meals(ingredient_foods):
             "expert_score": 0.9 if "weight_loss" in template["goals"] or "muscle_gain" in template["goals"] else 0.86,
             "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
             "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
-            "image": IMAGE_BY_TYPE.get(template["type"], IMAGE_BY_TYPE["Lunch"]),
+            "image": image_for_template(template),
             "ingredientSources": ingredient_sources,
         }
         meals.append(meal)

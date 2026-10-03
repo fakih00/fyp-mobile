@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/BaseController.php';
-require_once __DIR__ . '/../services/GeminiService.php';
 
 /**
  * CompetitionController.php
@@ -38,94 +37,13 @@ class CompetitionController extends BaseController {
         $specific_goal    = $data->specific_goal ?? 'Finish successfully';
         $fitness_level    = $data->fitness_level ?? 'Intermediate';
 
-        // 3. Connect to Google Gemini
-        $gemini = new GeminiService();
-
-        // 4. Construct Prompt
-        $name      = $profile['name'] ?? 'Athlete';
-        $age       = $profile['age'] ?? 25;
-        $gender    = $profile['gender'] ?? 'unknown';
-        $weight    = $profile['weight'] ?? 70;
-        $height    = $profile['height'] ?? 175;
-        $intensity = $profile['training_intensity'] ?? 'moderate';
-        $days_week = $profile['training_days_per_week'] ?? 3;
-
-        $prompt = <<<PROMPT
-You are an elite Sports Scientist, Olympic Strength & Conditioning Coach, and Athletic Preparation Expert.
-Provide a highly detailed, professional, and science-backed competition preparation roadmap for our athlete, {$name}.
-
-### Athlete Biometric Context:
-- Age: {$age}, Gender: {$gender}, Weight: {$weight}kg, Height: {$height}cm
-- General fitness intensity level: {$intensity}, Preferred training frequency: {$days_week} days/week
-
-### Target Competition Profile:
-- Competition Name: "{$competition_name}"
-- Competition Type: "{$competition_type}"
-- Preparation Duration: {$weeks_duration} weeks
-- Specific Target/Goal: "{$specific_goal}"
-- Current Prep/Fitness Level: "{$fitness_level}"
-
-### Requirements for the Plan:
-1. "overview": Provide a comprehensive sports science assessment of their goal, and summarize the general preparation strategy based on the {$weeks_duration} weeks timeframe.
-2. "weekly_schedule": Divide the {$weeks_duration} weeks into logical training phases (e.g. Weeks 1-2: Adaptation, Weeks 3-5: Progressive Overload, Week 6: Peak/Taper, etc.). Each phase in the array should include:
-   - `phase_name`: Clear phase title with week range (e.g., "Weeks 1-2: Aerobic Base Building")
-   - `focus`: What the physical goal of this phase is.
-   - `training_volume`: Average weekly volume/intensity description.
-   - `weekly_workouts`: An array of key workouts for the week. Each workout should have `day` (e.g., "Day 1", "Day 3") and `workout` description with reps, sets, tempo, or distance details.
-3. "nutrition_guidance": Tailored macro breakdown (carb loading details if applicable), hydration needs, and recovery supplements recommendation for this specific competition type.
-4. "milestones": A checklist of specific preparation checkpoints or benchmarks (at least 3-5 milestones) spread across the prep timeline (e.g., "Week 4: 10km test run", "Week 7: 90% peak squat load test", "Taper Week: Equipment/Nutrition Dry Run"). Each milestone must have:
-   - `id`: unique string (e.g., "m1", "m2")
-   - `title`: summary of milestone
-   - `description`: instructions to verify/complete
-   - `target_week`: numeric week (e.g., 4)
-5. "avoid_mistakes": Common training errors or recovery blunders athletes make in {$competition_type} prep.
-6. "estimated_readiness": A realistic assessment of what they can expect on competition day based on their current level and timeline.
-
-### Rules:
-- Return valid raw JSON ONLY. No markdown, no HTML, no explanation, no backticks (```json).
-- Maintain a futuristic, motivating, yet highly scientific sports-tech tone.
-
-### Output JSON Format:
-{
-  "overview": "sports-science strategy overview...",
-  "avoid_mistakes": "pitfalls to avoid...",
-  "nutrition_guidance": "macro/hydration specifics...",
-  "weekly_schedule": [
-    {
-      "phase_name": "Weeks 1-2: Phase Title",
-      "focus": "focus description...",
-      "training_volume": "weekly volume description...",
-      "weekly_workouts": [
-        { "day": "Day 1", "workout": "detailed exercise routine..." }
-      ]
-    }
-  ],
-  "milestones": [
-    { "id": "m1", "title": "Milestone Title", "description": "details...", "target_week": 2 }
-  ],
-  "estimated_readiness": "readiness statement..."
-}
-PROMPT;
-
-        $systemInstruction = "You are a Professional Olympic Conditioning Coach and Sports Scientist. Output raw structured JSON complying exactly with the provided schema.";
-        
-        $plan = null;
-        if ($gemini->isAvailable()) {
-            $plan = $gemini->askForJson($prompt, $systemInstruction);
-        }
-
-        if ($plan === null) {
-            // Fallback plan generator if Gemini API key is missing or calls fail
-            $plan = $this->generateLocalFallback($profile, [
-                'competition_name' => $competition_name,
-                'competition_type' => $competition_type,
-                'weeks_duration'   => $weeks_duration,
-                'specific_goal'    => $specific_goal,
-                'fitness_level'    => $fitness_level
-            ]);
-        } else {
-            $plan['ai_powered'] = true;
-        }
+        $plan = $this->generateLocalPlan($profile, [
+            'competition_name' => $competition_name,
+            'competition_type' => $competition_type,
+            'weeks_duration'   => $weeks_duration,
+            'specific_goal'    => $specific_goal,
+            'fitness_level'    => $fitness_level
+        ]);
 
         // Save generated plan to database
         $stmtSave = $this->db->prepare("
@@ -154,14 +72,14 @@ PROMPT;
         $this->jsonResponse($plan);
     }
 
-    private function generateLocalFallback($profile, $params) {
+    private function generateLocalPlan($profile, $params) {
         $compName = $params['competition_name'];
         $compType = $params['competition_type'];
         $weeks    = $params['weeks_duration'];
         $goal     = $params['specific_goal'];
         $level    = $params['fitness_level'];
 
-        $overview = "Initiating localized fallback training preparation for {$compName} ({$compType}) over a {$weeks}-week timeframe. ";
+        $overview = "Initiating localized training preparation for {$compName} ({$compType}) over a {$weeks}-week timeframe. ";
         $overview .= "This protocol focuses on gradual neuromuscular adaptations, muscular stabilization, and specific pacing routines designed to secure the goal of: '{$goal}'.";
 
         $weekly_schedule = [];

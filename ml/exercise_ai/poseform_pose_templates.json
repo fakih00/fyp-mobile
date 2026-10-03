@@ -1,0 +1,260 @@
+{
+  "version": "1.7.0",
+  "source": "PoseForm custom curated movement templates for mobile camera form tracking",
+  "notes": [
+    "This is not an external generative model.",
+    "The app uses these template ranges together with live per-user calibration.",
+    "The ranges are intentionally tolerant because recorded mobile videos, phone distance, camera angle, and body proportions change the raw angles.",
+    "Real labeled videos can be added later to tune these templates statistically."
+  ],
+  "cameraViewProfiles": {
+    "front": {
+      "bestFor": ["squat", "lunge", "jumpingJack", "lateralRaise", "shoulderPress", "bicepCurl", "burpee", "locomotion"],
+      "visibilityPriority": ["shoulders", "hips", "knees", "ankles"],
+      "tolerance": "standard",
+      "notes": "Best for left/right symmetry, knee collapse, arm height, and full-body framing."
+    },
+    "side": {
+      "bestFor": ["squat", "pushup", "plank", "deadlift", "gluteBridge", "crunch", "burpee", "locomotion"],
+      "visibilityPriority": ["neck", "shoulders", "hips", "knees", "ankles"],
+      "tolerance": "allow wider knee and hip ranges",
+      "notes": "Best for depth, torso lean, hip sag, hinge pattern, and body-line checks."
+    },
+    "threeQuarter": {
+      "bestFor": ["squat", "lunge", "row", "benchPress", "latPulldown", "pullup", "burpee", "locomotion"],
+      "visibilityPriority": ["both shoulders", "both hips", "dominant elbow", "dominant knee"],
+      "tolerance": "allow mild asymmetry",
+      "notes": "Useful when the user cannot fit a perfect front or side view."
+    },
+    "lowPhone": {
+      "bestFor": ["squat", "lunge", "legPress", "calfRaise"],
+      "visibilityPriority": ["hips", "knees", "ankles"],
+      "tolerance": "favor movement range over absolute angle",
+      "notes": "Common phone-on-floor setup; absolute angles can distort, so calibration matters more."
+    },
+    "closePhone": {
+      "bestFor": ["bicepCurl", "shoulderPress", "lateralRaise", "benchPress", "row"],
+      "visibilityPriority": ["shoulders", "elbows", "wrists"],
+      "tolerance": "upper-body only accepted for upper-body exercises",
+      "notes": "Useful for gym machines or dumbbell work when full body is not visible."
+    }
+  },
+  "templates": {
+    "squat": {
+      "primaryMetric": "squatRise",
+      "minimumMovementRange": 0.07,
+      "ready": { "squatRise": [0.5, 0.82], "knee": [155, 180], "torsoLean": [-18, 18] },
+      "bottom": { "squatRise": [0.2, 0.48], "knee": [55, 135], "torsoLean": [-28, 28] },
+      "views": ["front", "side", "threeQuarter", "lowPhone"],
+      "faults": ["shallowDepth", "backLean", "kneeCollapse"],
+      "feedback": "Squat deeper, then stand tall so PoseForm can learn the full up-down range."
+    },
+    "pushup": {
+      "primaryMetric": "elbow",
+      "minimumMovementRange": 24,
+      "ready": { "elbow": [150, 180], "bodyLine": [-14, 14] },
+      "bottom": { "elbow": [65, 115], "bodyLine": [-18, 18] },
+      "views": ["side", "threeQuarter"],
+      "faults": ["shallowDepth", "hipSag", "elbowFlare"],
+      "feedback": "Lower your chest more, then press back up with control."
+    },
+    "lunge": {
+      "primaryMetric": "frontKnee",
+      "minimumMovementRange": 22,
+      "ready": { "frontKnee": [150, 180], "torsoLean": [-18, 18] },
+      "bottom": { "frontKnee": [75, 125], "torsoLean": [-24, 24] },
+      "views": ["front", "side", "threeQuarter", "lowPhone"],
+      "faults": ["shallowDepth", "kneeDrift", "torsoLean"],
+      "feedback": "Drop into the lunge deeper, then return to a tall stance."
+    },
+    "plank": {
+      "primaryMetric": "bodyLine",
+      "minimumMovementRange": 0,
+      "ready": { "bodyLine": [-14, 14], "shoulderHipOffset": [0, 90] },
+      "bottom": { "bodyLine": [-14, 14], "shoulderHipOffset": [0, 90] },
+      "views": ["side"],
+      "faults": ["hipSag", "hipsHigh", "shoulderStack"],
+      "feedback": "Hold shoulders, hips, knees, and ankles in one line."
+    },
+    "shoulderPress": {
+      "primaryMetric": "elbow",
+      "minimumMovementRange": 22,
+      "ready": { "elbow": [70, 115], "torsoLean": [-18, 18] },
+      "bottom": { "elbow": [150, 180], "torsoLean": [-22, 22] },
+      "views": ["front", "threeQuarter", "closePhone"],
+      "faults": ["incompleteLockout", "wristDrift", "backArch"],
+      "feedback": "Press overhead fully, then lower back to shoulder level."
+    },
+    "bicepCurl": {
+      "primaryMetric": "elbow",
+      "minimumMovementRange": 30,
+      "ready": { "elbow": [135, 180], "torsoLean": [-14, 14] },
+      "bottom": { "elbow": [40, 95], "torsoLean": [-16, 16] },
+      "views": ["front", "threeQuarter", "closePhone"],
+      "faults": ["shoulderSwing", "incompleteCurl", "wristDrift"],
+      "feedback": "Curl higher, then extend the arm lower so the rep is clear."
+    },
+    "tricepDip": {
+      "primaryMetric": "elbow",
+      "minimumMovementRange": 22,
+      "ready": { "elbow": [150, 180], "shoulder": [35, 95] },
+      "bottom": { "elbow": [70, 115], "shoulder": [28, 90] },
+      "views": ["side", "threeQuarter"],
+      "faults": ["shallowDepth", "shoulderShrug", "hipDrift"],
+      "feedback": "Lower until your elbows clearly bend, then press back to the top."
+    },
+    "deadlift": {
+      "primaryMetric": "hip",
+      "minimumMovementRange": 18,
+      "ready": { "hip": [155, 180], "knee": [145, 180], "bodyLine": [-20, 20] },
+      "bottom": { "hip": [80, 125], "knee": [125, 170], "bodyLine": [-24, 24] },
+      "views": ["side", "threeQuarter"],
+      "faults": ["roundedBack", "kneeDominant", "barDrift"],
+      "feedback": "Hinge the hips back farther, then stand tall to finish the rep."
+    },
+    "row": {
+      "primaryMetric": "elbow",
+      "minimumMovementRange": 28,
+      "ready": { "elbow": [135, 175], "torsoLean": [-28, 28] },
+      "bottom": { "elbow": [50, 105], "torsoLean": [-28, 28] },
+      "views": ["side", "threeQuarter", "closePhone"],
+      "faults": ["torsoRock", "shortPull", "shoulderShrug"],
+      "feedback": "Pull elbows farther back, then extend the arms with control."
+    },
+    "jumpingJack": {
+      "primaryMetric": "armRaise",
+      "minimumMovementRange": 34,
+      "ready": { "armRaise": [10, 55], "footHipRatio": [0.7, 1.25] },
+      "bottom": { "armRaise": [95, 155], "footHipRatio": [1.35, 2.4] },
+      "views": ["front"],
+      "faults": ["lowArms", "narrowFeet", "stiffLanding"],
+      "feedback": "Reach arms higher overhead and open the feet wider."
+    },
+    "mountainClimber": {
+      "primaryMetric": "frontKnee",
+      "minimumMovementRange": 24,
+      "ready": { "frontKnee": [130, 175], "bodyLine": [-18, 18] },
+      "bottom": { "frontKnee": [45, 95], "bodyLine": [-20, 20] },
+      "views": ["side", "threeQuarter"],
+      "faults": ["hipHigh", "slowDrive", "shoulderStack"],
+      "feedback": "Drive the knee farther toward the chest, then switch legs."
+    },
+    "gluteBridge": {
+      "primaryMetric": "hip",
+      "minimumMovementRange": 18,
+      "ready": { "hip": [115, 150], "bodyLine": [-24, 24] },
+      "bottom": { "hip": [155, 180], "bodyLine": [-18, 18] },
+      "views": ["side", "lowPhone"],
+      "faults": ["lowHips", "overArch", "kneeDrift"],
+      "feedback": "Lift hips higher and pause briefly at the top."
+    },
+    "calfRaise": {
+      "primaryMetric": "ankleLift",
+      "minimumMovementRange": 8,
+      "ready": { "ankleLift": [0, 10], "knee": [165, 180] },
+      "bottom": { "ankleLift": [18, 36], "knee": [160, 180] },
+      "views": ["front", "side", "lowPhone"],
+      "faults": ["lowLift", "kneeBend", "rushing"],
+      "feedback": "Rise higher onto the balls of your feet, then lower slowly."
+    },
+    "benchPress": {
+      "primaryMetric": "elbow",
+      "minimumMovementRange": 24,
+      "ready": { "elbow": [145, 180], "elbowFlare": [1.2, 1.95] },
+      "bottom": { "elbow": [65, 110], "elbowFlare": [1.2, 1.95] },
+      "views": ["threeQuarter", "closePhone"],
+      "faults": ["shallowDepth", "elbowFlare", "wristStack"],
+      "feedback": "Lower closer to chest level, then press to a strong top position."
+    },
+    "latPulldown": {
+      "primaryMetric": "elbow",
+      "minimumMovementRange": 28,
+      "ready": { "elbow": [140, 180], "torsoLean": [-18, 18] },
+      "bottom": { "elbow": [50, 100], "torsoLean": [-22, 22] },
+      "views": ["front", "threeQuarter", "closePhone"],
+      "faults": ["shortPull", "torsoLean", "shoulderShrug"],
+      "feedback": "Pull lower toward the upper chest, then control the return."
+    },
+    "pullup": {
+      "primaryMetric": "elbow",
+      "minimumMovementRange": 28,
+      "ready": { "elbow": [145, 180], "bodyLine": [-18, 18] },
+      "bottom": { "elbow": [45, 95], "bodyLine": [-22, 22] },
+      "views": ["front", "threeQuarter"],
+      "faults": ["shortPull", "shoulderShrug", "bodySwing"],
+      "feedback": "Pull higher, then lower under control until the arms extend."
+    },
+    "legPress": {
+      "primaryMetric": "knee",
+      "minimumMovementRange": 22,
+      "ready": { "knee": [145, 175], "kneeGapRatio": [0.55, 1.5] },
+      "bottom": { "knee": [70, 115], "kneeGapRatio": [0.55, 1.5] },
+      "views": ["side", "threeQuarter", "lowPhone"],
+      "faults": ["shallowDepth", "kneeLockout", "kneeCollapse"],
+      "feedback": "Lower the platform deeper, then press without locking the knees hard."
+    },
+    "legExtension": {
+      "primaryMetric": "knee",
+      "minimumMovementRange": 24,
+      "ready": { "knee": [85, 125], "hip": [85, 130] },
+      "bottom": { "knee": [150, 180], "hip": [85, 130] },
+      "views": ["side", "threeQuarter", "lowPhone"],
+      "faults": ["incompleteExtension", "hipLift", "rushing"],
+      "feedback": "Extend the knees higher, then lower the weight with control."
+    },
+    "legCurl": {
+      "primaryMetric": "knee",
+      "minimumMovementRange": 24,
+      "ready": { "knee": [145, 180], "hip": [90, 150] },
+      "bottom": { "knee": [55, 105], "hip": [90, 150] },
+      "views": ["side", "threeQuarter", "lowPhone"],
+      "faults": ["incompleteCurl", "hipLift", "rushing"],
+      "feedback": "Curl heels closer, then return slowly."
+    },
+    "lateralRaise": {
+      "primaryMetric": "shoulder",
+      "minimumMovementRange": 18,
+      "ready": { "shoulder": [10, 45], "torsoLean": [-14, 14] },
+      "bottom": { "shoulder": [70, 105], "torsoLean": [-16, 16] },
+      "views": ["front", "threeQuarter", "closePhone"],
+      "faults": ["lowRaise", "shoulderShrug", "torsoSwing"],
+      "feedback": "Raise closer to shoulder height, then lower with control."
+    },
+    "chestFly": {
+      "primaryMetric": "elbowFlare",
+      "minimumMovementRange": 0.18,
+      "ready": { "elbowFlare": [1.6, 2.2], "elbow": [120, 170] },
+      "bottom": { "elbowFlare": [0.85, 1.28], "elbow": [120, 170] },
+      "views": ["front", "threeQuarter", "closePhone"],
+      "faults": ["shortRange", "elbowBend", "shoulderShrug"],
+      "feedback": "Open wider, then squeeze the arms together with control."
+    },
+    "crunch": {
+      "primaryMetric": "torsoLean",
+      "minimumMovementRange": 10,
+      "ready": { "torsoLean": [0, 12], "bodyLine": [-20, 20] },
+      "bottom": { "torsoLean": [22, 42], "bodyLine": [-30, 30] },
+      "views": ["side", "threeQuarter"],
+      "faults": ["neckPull", "lowCurl", "fastTempo"],
+      "feedback": "Curl shoulders higher from the ribs, then lower slowly."
+    },
+    "burpee": {
+      "primaryMetric": "fullBodyCycle",
+      "minimumMovementRange": 22,
+      "ready": { "knee": [145, 180], "elbow": [140, 180], "wristHeight": [-0.2, 0.2] },
+      "bottom": { "knee": [55, 125], "elbow": [65, 120], "wristHeight": [0.25, 0.8] },
+      "views": ["front", "side", "threeQuarter"],
+      "faults": ["lowRange", "missingPushup", "noJumpReach"],
+      "feedback": "Show a clear squat, floor phase, and jump/reach so the burpee cycle is readable."
+    },
+    "locomotion": {
+      "primaryMetric": "dynamicRhythm",
+      "minimumMovementRange": 14,
+      "ready": { "frontKnee": [120, 180], "shoulder": [0, 80] },
+      "bottom": { "frontKnee": [45, 125], "shoulder": [40, 140] },
+      "views": ["front", "side", "threeQuarter"],
+      "faults": ["lowVisibleMovement", "partialBodyFrame", "unstableCamera"],
+      "feedback": "Keep the whole body in frame; dynamic cardio and carries use approximate movement scoring."
+    }
+  }
+}
