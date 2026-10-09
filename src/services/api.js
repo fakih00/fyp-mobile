@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 // Replace with your computer's local IP if testing on a physical device.
 // For Android Emulator, use 'http://10.0.2.2:8000/api'
 // For iOS Simulator, use 'http://localhost:8000/api'
-const BASE_URL = 'http://172.16.189.14:8000/api';
+const BASE_URL = 'http://192.168.10.200:8000/api';
 const REQUEST_TIMEOUT_MS = 10000;
 const UPLOAD_TIMEOUT_MS = 300000;
 
@@ -44,9 +44,9 @@ function authHeaders(extraHeaders = {}) {
     return headers;
 }
 
-async function fetchWithTimeout(url, options = {}) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
         return await fetch(url, {
@@ -271,6 +271,9 @@ export const api = {
             const form = new FormData();
             const videoUri = typeof video === 'string' ? video : video?.uri;
             if (!videoUri) throw new Error('No exercise video was selected.');
+            if (video?.fileSize > 38 * 1024 * 1024) {
+                return { status: 413, data: { message: 'Video is too large. Select a clip under 38 MB.' } };
+            }
             const extension = String(video?.fileName || videoUri).split('.').pop()?.split('?')[0]?.toLowerCase() || 'mp4';
             const fileName = `poseform-analysis.${extension}`;
             const fileType = video?.mimeType || (extension === 'mov' ? 'video/quicktime' : 'video/mp4');
@@ -278,7 +281,8 @@ export const api = {
                 const file = video?.file || new File([await (await fetch(videoUri)).blob()], fileName, { type: fileType });
                 form.append('video', file, file.name || fileName);
             } else {
-                form.append('video', { uri: videoUri, name: fileName, type: fileType });
+                const { File: NativeFile } = require('expo-file-system');
+                form.append('video', new NativeFile(videoUri));
             }
             form.append('exercise_name', exerciseName || 'general');
             if (targetReps) {
@@ -297,6 +301,14 @@ export const api = {
             });
             const raw = await response.text();
             const data = parseApiJson(raw);
+            if (data.message === 'Invalid server response') {
+                data.message = response.status === 413
+                    ? 'Video exceeds the server upload limit. Select a smaller clip.'
+                    : `Video analysis returned an unreadable response (HTTP ${response.status}). Please retry.`;
+            }
+            if (response.status === 401 && _onUnauthorized) {
+                _onUnauthorized(data.message || 'Session expired');
+            }
             return { status: response.status, data };
         } catch (error) {
             console.error("API Exercise Video Upload Error:", error);
@@ -382,9 +394,19 @@ export const api = {
         return this.post('likePost', { post_id: postId });
     },
 
+    async addComment(postId, content) {
+        return this.post('addComment', { post_id: postId, content });
+    },
+
     // ─── Clubs ────────────────────────────────────────────────────
     async getClubs() {
         return this.get('getClubs');
+    },
+    async getClubMessages(clubId) {
+        return this.get('getClubMessages', { club_id: clubId });
+    },
+    async sendClubMessage(clubId, content) {
+        return this.post('sendClubMessage', { club_id: clubId, content });
     },
 
     async joinClub(clubId) {
@@ -527,12 +549,23 @@ export const api = {
 
     // ─── AI Chat ──────────────────────────────────────────────────
     /**
-     * Send a message to the local AI Coach.
+     * Send a message to the Gemini AI Coach.
      * @param {string} message - The user's latest message.
      * @param {Array} history - Previous messages [{ role: 'user'|'model', text: '...' }]
      */
     async aiChat(message, history = []) {
-        return this.post('aiChat', { message, history });
+        try {
+            const response = await fetchWithTimeout(`${BASE_URL}/aiChat`, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({ message, history }),
+            }, 35000);
+            return await handleResponse(response);
+        } catch (error) {
+            return { status: 500, data: { message: error?.name === 'AbortError'
+                ? 'Gemini took too long to respond. Please try again.'
+                : 'Could not reach AI Coach. Check your connection and retry.' } };
+        }
     },
 
     /** Fetch persisted AI chat history from the database */
@@ -543,33 +576,6 @@ export const api = {
     /** Clear all persisted AI chat history for the current user */
     async clearAIChatHistory() {
         return this.post('clearAIChatHistory', {});
-    },
-
-    // ─── AI Injury & Recovery ─────────────────────────────────────
-    /**
-     * Generate an AI-powered soft-tissue recovery plan.
-     * @param {Object} injuryAnswers - Questionnaire answers
-     */
-    async generateRecoveryPlan(injuryAnswers) {
-        return this.post('generateRecoveryPlan', injuryAnswers);
-    },
-
-    /**
-     * Retrieve latest recovery plan.
-     */
-    async getRecoveryPlan() {
-        return this.get('getRecoveryPlan');
-    },
-
-    /**
-     * Update checkboxes and body parts visual status progress.
-     */
-    async updateRecoveryProgress(planId, completedItems, bodyPartsStatus) {
-        return this.post('updateRecoveryProgress', {
-            plan_id: planId,
-            completed_items: completedItems,
-            body_parts_status: bodyPartsStatus
-        });
     },
 
     // ─── AI Competition Prep ──────────────────────────────────────

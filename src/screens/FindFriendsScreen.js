@@ -20,17 +20,17 @@ import { COLORS, FONTS, SIZES, THEMES } from '../constants/Theme';
 import { api } from '../services/api';
 import { AppContext } from '../context/AppContext';
 import { AnimatedCard, GlassCard, AuraBackground } from '../components';
+import { useFocusEffect } from '@react-navigation/native';
 
-const FindFriendsScreen = ({ navigation }) => {
+const FindFriendsScreen = ({ navigation, route }) => {
     const { user, token, colors: themeColors } = useContext(AppContext);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState(route?.params?.initialQuery || '');
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [addingIds, setAddingIds] = useState([]);
     const floatingAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        fetchUsers();
         Animated.loop(
             Animated.sequence([
                 Animated.timing(floatingAnim, { toValue: 1, duration: 4000, useNativeDriver: true }),
@@ -38,6 +38,7 @@ const FindFriendsScreen = ({ navigation }) => {
             ])
         ).start();
     }, []);
+    useFocusEffect(React.useCallback(() => { fetchUsers(); }, [user?.user_id]));
 
     const fetchUsers = async () => {
         try {
@@ -52,16 +53,14 @@ const FindFriendsScreen = ({ navigation }) => {
         }
     };
 
-    const handleAddFriend = async (friendId) => {
-        setAddingIds([...addingIds, friendId]);
+    const handleAddFriend = async (friendId, incoming = false) => {
+        setAddingIds(current => [...current, friendId]);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
         try {
-            const res = await api.addFriend(friendId);
+            const res = incoming ? await api.respondToFriendRequest(friendId, 'accept') : await api.addFriend(friendId);
             if (res.status === 200) {
-                setUsers(users.map(u =>
-                    u.id === friendId ? { ...u, friendship_status: 'pending' } : u
-                ));
+                await fetchUsers();
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             } else {
                 Alert.alert("Error", res.data.message || "Could not send request");
@@ -69,7 +68,7 @@ const FindFriendsScreen = ({ navigation }) => {
         } catch (error) {
             Alert.alert("Error", "Network error");
         } finally {
-            setAddingIds(addingIds.filter(id => id !== friendId));
+            setAddingIds(current => current.filter(id => id !== friendId));
         }
     };
 
@@ -80,6 +79,7 @@ const FindFriendsScreen = ({ navigation }) => {
     const renderUserItem = ({ item, index }) => {
         const isPending = item.friendship_status === 'pending';
         const isAccepted = item.friendship_status === 'accepted';
+        const incoming = isPending && item.request_direction === 'incoming';
 
         return (
             <AnimatedCard delay={index * 50 + 400} style={styles.userCardElite}>
@@ -91,7 +91,7 @@ const FindFriendsScreen = ({ navigation }) => {
                             <View style={[styles.badgeElite, { backgroundColor: themeColors.accent + '15' }]}>
                                 <Text style={[styles.badgeTextElite, { color: themeColors.accent }]}>LVL {item.level}</Text>
                             </View>
-                            <Text style={styles.pointsTextElite}>{item.points} XP</Text>
+                            <Text style={styles.pointsTextElite}>{item.xp || 0} XP</Text>
                         </View>
                     </View>
 
@@ -103,14 +103,17 @@ const FindFriendsScreen = ({ navigation }) => {
                         <TouchableOpacity
                             style={[
                                 styles.addBtnElite,
-                                (addingIds.includes(item.id) || isPending) && styles.disabledBtnElite,
-                                !isPending && !addingIds.includes(item.id) && { backgroundColor: themeColors.accent }
+                                (addingIds.includes(item.id) || (isPending && !incoming)) && styles.disabledBtnElite,
+                                (!isPending || incoming) && !addingIds.includes(item.id) && { backgroundColor: themeColors.accent }
                             ]}
-                            onPress={() => !isPending && handleAddFriend(item.id)}
-                            disabled={addingIds.includes(item.id) || isPending}
+                            accessibilityLabel={incoming ? 'Accept friend request' : isPending ? 'Request sent' : 'Send friend request'}
+                            onPress={() => handleAddFriend(item.id, incoming)}
+                            disabled={addingIds.includes(item.id) || (isPending && !incoming)}
                         >
                             {addingIds.includes(item.id) ? (
                                 <ActivityIndicator size="small" color="#FFF" />
+                            ) : incoming ? (
+                                <Ionicons name="checkmark" size={20} color="#FFF" />
                             ) : isPending ? (
                                 <Ionicons name="time" size={20} color="#94A3B8" />
                             ) : (

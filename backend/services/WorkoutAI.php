@@ -2,13 +2,13 @@
 
 class WorkoutAI {
     public const MODEL_NAME = 'TrainCore AI';
-    public const MODEL_VERSION = '1.1.0';
+    public const MODEL_VERSION = '2.0.0';
 
     public function getModelCard(): array {
         return [
             "name" => self::MODEL_NAME,
             "version" => self::MODEL_VERSION,
-            "type" => "Python local neural-network workout recommendation model",
+            "type" => "Python local Random Forest workout recommendation model",
             "primary_inputs" => [
                 "goal",
                 "training_days_per_week",
@@ -30,7 +30,7 @@ class WorkoutAI {
                 "expert_score" => 10,
                 "variety" => 4,
             ],
-            "training_method" => "Feed-forward neural network trained locally from expert-rule labels over profile/exercise pairs, with hard injury and location filters kept outside the model for safety",
+            "training_method" => "Random Forest regressor trained from expert-rule suitability labels with held-out profile validation; injury and location filters remain outside the model",
             "external_generation_api" => false,
             "php_generation" => false,
         ];

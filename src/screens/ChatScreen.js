@@ -76,17 +76,23 @@ const ChatScreen = ({ route, navigation }) => {
             timestamp: new Date().toISOString(),
             is_mine: true
         };
-        setMessages([...messages, tempMsg]);
+        setMessages(current => [...current, tempMsg]);
 
         try {
             const res = await api.sendMessage(friend.id, content);
             if (res.status !== 200) {
                 console.error("Send Message Failed:", res.data.message);
+                setMessages(current => current.filter(message => message.id !== tempMsg.id));
+                setInputText(content);
+                Alert.alert('Message not sent', res.data?.message || 'Please retry.');
             } else {
                 fetchMessages();
             }
         } catch (error) {
             console.error("Send Message Error:", error);
+            setMessages(current => current.filter(message => message.id !== tempMsg.id));
+            setInputText(content);
+            Alert.alert('Message not sent', 'Please retry.');
         }
     };
 
@@ -213,14 +219,6 @@ const ChatScreen = ({ route, navigation }) => {
                         </View>
                     </View>
 
-                    <TouchableOpacity 
-                        style={styles.headerActionBtn}
-                        onPress={startCall}
-                    >
-                        <BlurView intensity={20} tint="light" style={styles.iconBlur}>
-                            <Ionicons name="call" size={20} color={COLORS.white} />
-                        </BlurView>
-                    </TouchableOpacity>
                 </View>
             </SafeAreaView>
         </View>

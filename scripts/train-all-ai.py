@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Run the local AI training/validation pipeline in the same spirit as the
-course ANN/CNN notebooks: train or validate each model, then report metrics.
+model lifecycle: preprocess, train, validate, and report metrics.
 """
 
 from __future__ import annotations
@@ -37,9 +37,9 @@ def run_step(name: str, command: list[str]) -> dict:
 def main() -> int:
     python = sys.executable
     steps = [
-        ("NutriCore neural training", [python, "ml/nutrition_ai/nutricore_model.py", "--train"]),
-        ("TrainCore neural training", [python, "ml/workout_ai/traincore_model.py", "--train"]),
-        ("PredictionAI neural validation", ["php", "scripts/test-prediction-ai.php"]),
+        ("NutriCore Random Forest training", [python, "ml/nutrition_ai/nutricore_model.py", "--train"]),
+        ("TrainCore Random Forest training", [python, "ml/workout_ai/traincore_model.py", "--train"]),
+        ("PredictionAI linear regression validation", ["php", "scripts/test-prediction-ai.php"]),
         ("PoseForm template validation", ["node", "scripts/validate-exercise-ai.js"]),
         ("PoseForm JS validation", ["node", "scripts/test-exercise-ai.js"]),
         ("PoseForm Python analyzer validation", [python, "scripts/validate-video-pose-analyzer.py"]),
@@ -47,7 +47,7 @@ def main() -> int:
     results = [run_step(name, command) for name, command in steps]
     summary = {
         "success": all(item["success"] for item in results),
-        "pipeline": "local ANN/CNN-style AI training and validation",
+        "pipeline": "local Random Forest training and linear regression validation",
         "steps": results,
     }
     print(json.dumps(summary, indent=2, ensure_ascii=False))

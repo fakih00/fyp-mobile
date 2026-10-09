@@ -1,9 +1,18 @@
+import argparse
+from collections import Counter
+import hashlib
 import json
 import math
 import random
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "ml"))
+from random_forest import predict_forest, train_forest
+from nutrition_ai.nutricore_model import score_meal, forest_features_from_scores, macro_ratios, normalize_goal, MEAL_STRUCTURES, portion_meal, dataset_fingerprint, recipe_signature
+from nutrition_ai.review_labels import REVIEW_PATH, load_recommendation_reviews, export_review_queue
+from nutrition_ai.training_report import write_training_report
 DATASET_PATH = Path(__file__).with_name("processed_data") / "usda_meal_training_dataset.json"
 MODEL_OUTPUT_PATH = ROOT / "src" / "ai" / "trainedNutritionModel.json"
 EXPERT_REVIEW_PATH = Path(__file__).with_name("expert_validation") / "jason_mattar_review.json"
@@ -34,13 +43,15 @@ PRIOR_WEIGHTS = {
 
 GOALS = ["weight_loss", "maintain", "muscle_gain", "weight_gain", "endurance", "performance"]
 MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack"]
-NEURAL_FEATURE_NAMES = [
+FEATURE_NAMES = [
     "calories",
     "protein",
     "goal",
     "ingredients",
     "preferences",
     "expert",
+    "carbs",
+    "fats",
     "is_breakfast",
     "is_lunch",
     "is_dinner",
@@ -56,14 +67,6 @@ NEURAL_FEATURE_NAMES = [
 
 def clamp(value, low=0.0, high=1.0):
     return max(low, min(high, value))
-
-
-def sigmoid(value):
-    if value < -60:
-        return 0.0
-    if value > 60:
-        return 1.0
-    return 1 / (1 + math.exp(-value))
 
 
 def nutrition_targets(profile):
@@ -87,257 +90,199 @@ def nutrition_targets(profile):
     }
 
 
-def feature_vector(meal, case):
-    targets = nutrition_targets(case["profile"])
-    fridge = set(case["fridge"])
-    liked = set(case.get("liked", []))
-    disliked = set(case.get("disliked", []))
-    allergies = set(case.get("allergies", []))
-
-    if any(allergen in allergies for allergen in meal.get("allergens", [])):
-        return {
-            "calories": 0,
-            "protein": 0,
-            "goal": 0,
-            "ingredients": 0,
-            "preferences": 0,
-            "expert": 0,
-            "blocked": True,
-        }
-
-    meal_calorie_target = targets["targetCalories"] / 4
-    meal_protein_target = targets["protein"] / 4
-    calorie_score = clamp(1 - abs(meal["calories"] - meal_calorie_target) / 420)
-    protein_score = clamp(1 - abs(meal["protein"] - meal_protein_target) / 35)
-    goal_score = 1 if targets["goal"] in meal["goals"] else 0.72 if "maintain" in meal["goals"] else 0.38
-    ingredient_score = sum(1 for ingredient in meal["ingredients"] if ingredient in fridge) / len(meal["ingredients"])
-    preference_score = clamp(
-        0.5
-        + sum(0.08 for ingredient in meal["ingredients"] if ingredient in liked)
-        - sum(0.18 for ingredient in meal["ingredients"] if ingredient in disliked)
-    )
-
+def case_context(case):
     return {
-        "calories": calorie_score,
-        "protein": protein_score,
-        "goal": goal_score,
-        "ingredients": ingredient_score,
-        "preferences": preference_score,
-        "expert": meal.get("expert_score", 0.8),
-        "blocked": False,
+        "goal": normalize_goal(case["profile"]["goal"]),
+        "fridge": case.get("fridge", []), "likes": case.get("liked", []),
+        "dislikes": case.get("disliked", []), "allergies": case.get("allergies", []),
+        "weights": PRIOR_WEIGHTS,
     }
 
 
-def neural_features(meal, case):
+def slot_targets(case, meal_type):
+    daily = nutrition_targets(case["profile"])["targetCalories"]
+    structure = MEAL_STRUCTURES.get(case["profile"].get("meals_per_day", 4), MEAL_STRUCTURES[4])
+    ratios = [ratio for slot, ratio in structure if slot == meal_type]
+    ratio = (sum(ratios) / len(ratios)) if ratios else 0.25
+    if case.get("mode") == "swap":
+        ratio = 0.25
+    calories = daily * ratio
+    protein, carbs, fats, _ = macro_ratios(case["profile"])
+    return {"calories": calories, "protein": calories * protein / 4,
+            "carbs": calories * carbs / 4, "fats": calories * fats / 9}
+
+
+def feature_vector(meal, case):
+    result = score_meal(meal, case_context(case), meal["type"], slot_targets(case, meal["type"]), use_model=False)
+    if result is None:
+        return {**dict.fromkeys(list(PRIOR_WEIGHTS) + ["carbs", "fats"], 0.0), "blocked": True}
+    return {**result["features"], "blocked": False}
+
+
+def meal_features(meal, case):
     features = feature_vector(meal, case)
-    if features["blocked"]:
-        base = [0.0 for _ in range(6)]
-    else:
-        base = [float(features[name]) for name in ["calories", "protein", "goal", "ingredients", "preferences", "expert"]]
-    meal_type = meal.get("type", "Lunch")
-    goal = nutrition_targets(case["profile"])["goal"]
-    return (
-        base
-        + [1.0 if meal_type == meal_type_name else 0.0 for meal_type_name in MEAL_TYPES]
-        + [1.0 if goal == goal_name else 0.0 for goal_name in GOALS]
-    )
+    return forest_features_from_scores(features, normalize_goal(case["profile"]["goal"]), meal["type"])
 
 
-def forward_neural(model, features):
-    hidden = []
-    for row, bias in zip(model["hidden_weights"], model["hidden_bias"]):
-        hidden.append(math.tanh(sum(weight * value for weight, value in zip(row, features)) + bias))
-    output_raw = sum(weight * value for weight, value in zip(model["output_weights"], hidden)) + model["output_bias"]
-    return sigmoid(output_raw)
+LABEL_WEIGHTS = {"calories": 0.14, "protein": 0.18, "goal": 0.14, "ingredients": 0.28,
+                 "preferences": 0.10, "expert": 0.06, "carbs": 0.06, "fats": 0.04}
 
 
-def train_neural_network(meals, cases):
-    samples = []
-    for case in cases:
-        approved = set(case["approved_meals"])
-        for meal in meals:
-            features = neural_features(meal, case)
-            blocked = feature_vector(meal, case)["blocked"]
-            label = 1.0 if meal["id"] in approved and not blocked else 0.0
-            samples.append((features, label))
+def score_rubric(features):
+    return sum(features[key] * weight for key, weight in LABEL_WEIGHTS.items())
 
+
+def validate_dataset(meals):
+    ids = set()
+    for meal in meals:
+        if not meal.get("id") or meal["id"] in ids:
+            raise ValueError("Meal IDs must be present and unique")
+        ids.add(meal["id"])
+        if meal.get("type") not in MEAL_TYPES or not meal.get("ingredients"):
+            raise ValueError(f"Invalid meal schema: {meal['id']}")
+        for key in ["calories", "protein", "carbs", "fats"]:
+            value = float(meal[key])
+            if not math.isfinite(value) or value < 0 or (key == "calories" and value == 0):
+                raise ValueError(f"Invalid meal nutrition: {meal['id']}/{key}")
+    return {"meals": len(meals), "unique_ids": len(ids), "complete_nutrition": True,
+            "meal_type_counts": {slot: sum(meal["type"] == slot for meal in meals) for slot in MEAL_TYPES}}
+
+
+def scenario_group(case):
+    context = {key: value for key, value in case.items() if key not in {"approved_meals", "mode"}}
+    return hashlib.sha256(json.dumps(context, sort_keys=True).encode()).hexdigest()[:16]
+
+
+def build_training_cases(meals):
     rng = random.Random(42)
-    rng.shuffle(samples)
-    split = max(1, int(len(samples) * 0.75))
-    train_samples = samples[:split]
-    validation_samples = samples[split:]
-    feature_count = len(samples[0][0])
-    hidden_count = 10
-    hidden_weights = [[rng.uniform(-0.22, 0.22) for _ in range(feature_count)] for _ in range(hidden_count)]
-    hidden_bias = [0.0 for _ in range(hidden_count)]
-    output_weights = [rng.uniform(-0.22, 0.22) for _ in range(hidden_count)]
-    output_bias = 0.0
-    learning_rate = 0.08
-    epochs = 180
+    ingredients = sorted({ingredient for meal in meals for ingredient in meal["ingredients"]})
+    cases = []
+    for index in range(600):
+        anchor = meals[index % len(meals)]
+        fridge = list(anchor["ingredients"]) if index % 2 == 0 else rng.sample(ingredients, min(len(ingredients), rng.randint(0, 12)))
+        cases.append({
+            "profile": {"goal": GOALS[index % len(GOALS)], "gender": rng.choice(["male", "female"]),
+                        "weight": rng.randint(50, 105), "height": rng.randint(150, 195),
+                        "age": rng.randint(18, 65), "activity_level": rng.choice(list(ACTIVITY_FACTORS)),
+                        "meals_per_day": rng.choice([3, 4, 5, 6])},
+            "fridge": fridge, "mode": "swap" if index % 3 == 0 else "plan",
+            "liked": list(anchor["ingredients"][:2]) if index % 2 == 0 else rng.sample(ingredients, min(2, len(ingredients))),
+            "disliked": rng.sample(ingredients, min(1, len(ingredients))) if index % 4 == 0 else [],
+            "allergies": [rng.choice(["dairy", "nuts", "eggs", "gluten", "fish"])] if index % 3 == 0 else [],
+        })
+    return cases
 
-    for _ in range(epochs):
-        for features, label in train_samples:
-            hidden = [
-                math.tanh(sum(weight * value for weight, value in zip(row, features)) + bias)
-                for row, bias in zip(hidden_weights, hidden_bias)
-            ]
-            prediction = sigmoid(sum(weight * value for weight, value in zip(output_weights, hidden)) + output_bias)
-            output_delta = (prediction - label) * prediction * (1 - prediction)
-            previous_output_weights = output_weights[:]
 
-            for idx in range(hidden_count):
-                output_weights[idx] -= learning_rate * output_delta * hidden[idx]
-            output_bias -= learning_rate * output_delta
+def relevance_labels(scores):
+    if not scores:
+        return []
+    cutoff = max(0.55, sorted(scores, reverse=True)[max(1, math.ceil(len(scores) / 3)) - 1])
+    return [int(score >= cutoff - 1e-12) for score in scores]
 
-            for hidden_idx in range(hidden_count):
-                hidden_delta = output_delta * previous_output_weights[hidden_idx] * (1 - hidden[hidden_idx] ** 2)
-                for feature_idx in range(feature_count):
-                    hidden_weights[hidden_idx][feature_idx] -= learning_rate * hidden_delta * features[feature_idx]
-                hidden_bias[hidden_idx] -= learning_rate * hidden_delta
 
-    model = {
-        "type": "feed_forward_mlp_classifier",
-        "framework": "pure_python",
-        "input": "meal nutrition features + user preference/goal features",
-        "output": "approved meal suitability probability",
-        "feature_names": NEURAL_FEATURE_NAMES,
-        "feature_count": feature_count,
-        "hidden_layers": [hidden_count],
-        "activation": "tanh_hidden_sigmoid_output",
-        "training_samples": len(train_samples),
-        "validation_samples": len(validation_samples),
-        "epochs": epochs,
-        "label_source": "approved meals from USDA-backed training cases and expert-rule validation labels",
-        "hidden_weights": hidden_weights,
-        "hidden_bias": hidden_bias,
-        "output_weights": output_weights,
-        "output_bias": output_bias,
-    }
-
-    def accuracy(sample_set):
-        if not sample_set:
-            return 0
-        correct = 0
-        absolute_error = 0
-        for features, label in sample_set:
-            prediction = forward_neural(model, features)
-            correct += int((prediction >= 0.5) == bool(label))
-            absolute_error += abs(prediction - label)
-        return {
-            "accuracy": round((correct / len(sample_set)) * 100),
-            "meanAbsoluteError": round(absolute_error / len(sample_set), 4),
-        }
-
-    model["trainingMetrics"] = accuracy(train_samples)
-    model["validationMetrics"] = accuracy(validation_samples)
+def train_random_forest(meals, review_path=REVIEW_PATH):
+    features, labels, groups, weights = [], [], [], []
+    cases = build_training_cases(meals)
+    synthetic_pairs = 0
+    recipe_counts = Counter((meal["type"], recipe_signature(meal)) for meal in meals)
+    for case in cases:
+        for meal_type in MEAL_TYPES:
+            candidates = [(meal, feature_vector(meal, case)) for meal in meals if meal["type"] == meal_type]
+            candidates = [(meal, scores) for meal, scores in candidates if not scores["blocked"]]
+            candidates.sort(key=lambda item: (-score_rubric(item[1]), item[0]["id"]))
+            candidate_labels = relevance_labels([score_rubric(scores) for _, scores in candidates])
+            for (meal, scores), label in zip(candidates, candidate_labels):
+                features.append(forest_features_from_scores(scores, normalize_goal(case["profile"]["goal"]), meal_type))
+                labels.append(label)
+                groups.append(scenario_group(case))
+                weights.append(1.0 / recipe_counts[(meal["type"], recipe_signature(meal))])
+                synthetic_pairs += 1
+    reviews = load_recommendation_reviews(review_path, {meal["id"] for meal in meals})
+    lookup = {meal["id"]: meal for meal in meals}
+    reviewed_pairs = 0
+    for scenario in reviews:
+        case = scenario["context"]
+        for review in scenario["ratings"]:
+            if review["rating"] == 3:
+                continue
+            meal = lookup[review["meal_id"]]
+            scores = feature_vector(meal, case)
+            if scores["blocked"]:
+                if review["rating"] >= 4:
+                    raise ValueError("A positive reviewer label conflicts with allergy/dislike exclusions")
+                continue
+            features.append(forest_features_from_scores(scores, normalize_goal(case["profile"]["goal"]), meal["type"]))
+            labels.append(int(review["rating"] >= 4))
+            groups.append(scenario_group(case))
+            weights.append(4.0)
+            reviewed_pairs += 1
+    model = train_forest(features, labels, groups, FEATURE_NAMES, "classification",
+                         professional=True, sample_weights=weights)
+    model.update(
+        label_source="rule-derived relative meal-slot relevance plus explicit reviewer CSV ratings when available",
+        label_rule="top-third rubric cutoff per scenario/meal slot, including ties, with rubric >= 0.55; duplicate recipe aliases share training weight; human ratings 4-5 positive, 1-2 negative, 3 omitted",
+        label_weights=LABEL_WEIGHTS,
+        label_provenance={"synthetic_pairs": synthetic_pairs, "reviewer_entered_pairs": reviewed_pairs,
+                          "reviewer_scenarios": len(reviews), "review_file": str(review_path.relative_to(ROOT)) if review_path.is_relative_to(ROOT) else str(review_path),
+                          "human_labels_available": reviewed_pairs > 0,
+                          "independent_expert_validation_available": False},
+        input="portion-aware macro fit, user goal, fridge, preferences and meal type",
+        output="relative suitability score (uncalibrated; not clinical confidence)",
+        preprocessing="shared runtime feature extraction, complete USDA nutrients, bounded portions, one-hot encoding",
+        dataset_audit=validate_dataset(meals),
+        dataset_fingerprint=dataset_fingerprint(meals),
+    )
+    heldout_groups = set(model["model_selection"]["test_groups"])
+    heldout_cases = [case for case in cases if scenario_group(case) in heldout_groups]
+    model["heldOutRanking"] = evaluate_ranking(meals, heldout_cases, model)
     return model
 
 
-def rank_meals_neural(meals, case, neural_model):
-    ranked = []
-    for meal in meals:
-        features = feature_vector(meal, case)
-        score = 0 if features["blocked"] else forward_neural(neural_model, neural_features(meal, case))
-        ranked.append((score, meal["id"], meal["name"], features))
-    return sorted(ranked, reverse=True)
+def evaluate_ranking(meals, cases, model):
+    import numpy as np
+    from sklearn.metrics import ndcg_score
+    hits, precision, ndcg, reciprocal, slots = [], [], [], [], 0
+    for case in cases:
+        for meal_type in MEAL_TYPES:
+            candidates = [(meal, feature_vector(meal, case)) for meal in meals if meal["type"] == meal_type]
+            candidates = [(meal, scores) for meal, scores in candidates if not scores["blocked"]]
+            if len(candidates) < 2:
+                continue
+            relevance = [score_rubric(scores) for _, scores in candidates]
+            predictions = [predict_forest(model, forest_features_from_scores(scores, normalize_goal(case["profile"]["goal"]), meal_type)) for _, scores in candidates]
+            positives = {index for index, label in enumerate(relevance_labels(relevance)) if label}
+            if not positives:
+                continue
+            order = sorted(range(len(candidates)), key=lambda index: (-predictions[index], candidates[index][0]["id"]))
+            top = order[:3]
+            slots += 1
+            hits.append(bool(positives.intersection(top)))
+            precision.append(len(positives.intersection(top)) / len(top))
+            ndcg.append(float(ndcg_score(np.asarray([[int(index in positives) for index in range(len(candidates))]]), np.asarray([predictions]), k=3)))
+            reciprocal.append(next((1 / (rank + 1) for rank, index in enumerate(order) if index in positives), 0))
+    return {"scenario_count": len(cases), "eligible_slots": slots,
+            "hitRateAt3": round(sum(hits) / max(slots, 1) * 100, 2),
+            "precisionAt3": round(sum(precision) / max(slots, 1), 5),
+            "ndcgAt3": round(sum(ndcg) / max(slots, 1), 5),
+            "meanReciprocalRank": round(sum(reciprocal) / max(slots, 1), 5),
+            "label_scope": "rule-derived relevance; separate from human reviewer validation"}
 
 
-def rank_meals(meals, case, weights):
+def rank_meals_forest(meals, case, model):
     ranked = []
     for meal in meals:
         features = feature_vector(meal, case)
         if features["blocked"]:
-            score = 0
-        else:
-            score = sum(features[name] * weights[name] for name in weights)
+            continue
+        score = predict_forest(model, meal_features(meal, case))
         ranked.append((score, meal["id"], meal["name"], features))
     return sorted(ranked, reverse=True)
 
 
-def normalize_weights(raw_weights):
-    total = sum(raw_weights.values())
-    return {key: round(value / total, 4) for key, value in raw_weights.items()}
-
-
-def train_weights(meals, cases):
-    feature_names = ["calories", "protein", "goal", "ingredients", "preferences", "expert"]
-    best = None
-    candidate_weight_sets = [
-        PRIOR_WEIGHTS,
-        {"calories": 0.12, "protein": 0.12, "goal": 0.18, "ingredients": 0.32, "preferences": 0.16, "expert": 0.10},
-        {"calories": 0.10, "protein": 0.16, "goal": 0.20, "ingredients": 0.28, "preferences": 0.16, "expert": 0.10},
-        {"calories": 0.16, "protein": 0.12, "goal": 0.18, "ingredients": 0.26, "preferences": 0.18, "expert": 0.10},
-        {"calories": 0.10, "protein": 0.10, "goal": 0.22, "ingredients": 0.34, "preferences": 0.14, "expert": 0.10},
-        {"calories": 0.14, "protein": 0.18, "goal": 0.18, "ingredients": 0.24, "preferences": 0.14, "expert": 0.12},
-        {"calories": 0.10, "protein": 0.14, "goal": 0.16, "ingredients": 0.36, "preferences": 0.14, "expert": 0.10},
-        {"calories": 0.18, "protein": 0.14, "goal": 0.16, "ingredients": 0.24, "preferences": 0.16, "expert": 0.12},
-        {"calories": 0.08, "protein": 0.08, "goal": 0.16, "ingredients": 0.32, "preferences": 0.26, "expert": 0.10},
-        {"calories": 0.08, "protein": 0.06, "goal": 0.18, "ingredients": 0.30, "preferences": 0.28, "expert": 0.10},
-    ]
-
-    for raw_weights in candidate_weight_sets:
-        weights = normalize_weights(raw_weights)
-        hits = 0
-        reciprocal_rank_total = 0
-
-        for case in cases:
-            ranked = rank_meals(meals, case, weights)
-            approved = set(case["approved_meals"])
-            top_ids = [meal_id for _, meal_id, _, _ in ranked[:3]]
-            if any(meal_id in approved for meal_id in top_ids):
-                hits += 1
-            first_rank = next((index + 1 for index, meal_id in enumerate([item[1] for item in ranked]) if meal_id in approved), None)
-            reciprocal_rank_total += 1 / first_rank if first_rank else 0
-
-        top3_accuracy = hits / len(cases)
-        mean_reciprocal_rank = reciprocal_rank_total / len(cases)
-        objective = (top3_accuracy * 0.75) + (mean_reciprocal_rank * 0.25)
-        prior_distance = sum(abs(weights[name] - PRIOR_WEIGHTS[name]) for name in feature_names)
-
-        if best is None or objective > best["objective"] or (
-            math.isclose(objective, best["objective"]) and prior_distance < best["prior_distance"]
-        ):
-            best = {
-                "objective": objective,
-                "top3_accuracy": top3_accuracy,
-                "mean_reciprocal_rank": mean_reciprocal_rank,
-                "prior_distance": prior_distance,
-                "weights": weights,
-            }
-
-    return best
-
-
-def evaluate(meals, cases, weights):
+def evaluate_forest(meals, cases, forest_model):
     results = []
     for case in cases:
-        ranked = rank_meals(meals, case, weights)
-        approved = set(case["approved_meals"])
-        top_score, top_id, top_name, top_features = ranked[0]
-        top3 = [meal_id for _, meal_id, _, _ in ranked[:3]]
-        results.append({
-            "topMeal": top_name,
-            "topMealApproved": top_id in approved,
-            "top3Hit": any(meal_id in approved for meal_id in top3),
-            "allergySafe": not top_features["blocked"],
-            "ingredientScore": round(top_features["ingredients"], 3),
-            "matchPercent": round(top_score * 100),
-        })
-
-    return {
-        "goalRecommendationAccuracy": round(sum(item["top3Hit"] for item in results) / len(results) * 100),
-        "topMealApprovalAccuracy": round(sum(item["topMealApproved"] for item in results) / len(results) * 100),
-        "allergyFilteringAccuracy": round(sum(item["allergySafe"] for item in results) / len(results) * 100),
-        "averageIngredientMatch": round(sum(item["ingredientScore"] for item in results) / len(results) * 100),
-        "averageTopMatch": round(sum(item["matchPercent"] for item in results) / len(results)),
-        "cases": results,
-    }
-
-
-def evaluate_neural(meals, cases, neural_model):
-    results = []
-    for case in cases:
-        ranked = rank_meals_neural(meals, case, neural_model)
+        ranked = rank_meals_forest(meals, case, forest_model)
         approved = set(case["approved_meals"])
         top_score, top_id, top_name, top_features = ranked[0]
         top3 = [meal_id for _, meal_id, _, _ in ranked[:3]]
@@ -401,33 +346,47 @@ def apply_expert_review(meals, expert_review):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--review-file", type=Path, default=REVIEW_PATH)
+    parser.add_argument("--export-review-queue", type=Path)
+    args = parser.parse_args()
     data = json.loads(DATASET_PATH.read_text())
     meals = data["meals"]
     cases = data["training_cases"]
+    validate_dataset(meals)
+    if args.export_review_queue:
+        selected_cases = [{**case, "mode": "swap"} for case in cases] + build_training_cases(meals)[:8]
+        print(json.dumps(export_review_queue(args.export_review_queue, meals, selected_cases, feature_vector, score_rubric,
+                                            lambda meal, case: portion_meal(meal, slot_targets(case, meal["type"])["calories"]),
+                                            recipe_signature)))
+        return
     expert_review = load_expert_review()
     expert_summary = apply_expert_review(meals, expert_review)
-    training = train_weights(meals, cases)
-    neural_network = train_neural_network(meals, cases)
-    evaluation = evaluate_neural(meals, cases, neural_network)
+    forest = train_random_forest(meals, args.review_file)
+    evaluation = evaluate_forest(meals, [{**case, "mode": "swap"} for case in cases], forest)
     artifact = {
         "modelName": "NutriCore AI",
-        "version": "1.4.0",
-        "trainedWith": "Python local feed-forward neural network",
-        "trainingSamples": neural_network["training_samples"],
-        "validationSamples": neural_network["validation_samples"],
+        "version": "2.2.0",
+        "trainedWith": "scikit-learn Random Forest classifier with rule-derived suitability labels",
+        "trainingSamples": forest["training_samples"],
+        "validationSamples": forest["validation_samples"],
         "expertValidation": expert_summary,
-        "weights": training["weights"],
-        "neural_network": neural_network,
-        "trainingMetrics": {
-            "neuralAccuracy": neural_network["trainingMetrics"]["accuracy"],
-            "neuralMeanAbsoluteError": neural_network["trainingMetrics"]["meanAbsoluteError"],
-            "top3Accuracy": evaluation["goalRecommendationAccuracy"],
-        },
-        "validationMetrics": evaluation,
+        "weights": PRIOR_WEIGHTS,
+        "random_forest": {key: value for key, value in forest.items() if key != "trees"},
+        "forestArtifact": "ml/nutrition_ai/nutricore_random_forest.json",
+        "trainingMetrics": forest["trainingMetrics"],
+        "validationMetrics": {**evaluation, "heldOutClassification": forest["validationMetrics"],
+                              "heldOutRanking": forest["heldOutRanking"],
+                              "labelProvenance": forest["label_provenance"],
+                              "evaluationScope": "four unchanged project reference shortlists using swap targets; no clinical validation"},
     }
-    MODEL_OUTPUT_PATH.write_text(json.dumps(artifact, indent=2))
-    print(json.dumps(artifact, indent=2))
-    print(f"\nSaved trained model artifact to {MODEL_OUTPUT_PATH}")
+    forest_path = Path(__file__).with_name("nutricore_random_forest.json")
+    forest_path.write_text(json.dumps(forest, separators=(",", ":")), encoding="utf-8")
+    MODEL_OUTPUT_PATH.write_text(json.dumps(artifact, indent=2), encoding="utf-8")
+    write_training_report(Path(__file__).with_name("MODEL_REPORT.md"), forest, evaluation)
+    print(json.dumps({"success": True, "artifact": str(MODEL_OUTPUT_PATH),
+                      "trainingMetrics": artifact["trainingMetrics"],
+                      "validationMetrics": artifact["validationMetrics"]}))
 
 
 if __name__ == "__main__":

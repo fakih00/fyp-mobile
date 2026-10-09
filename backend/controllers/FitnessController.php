@@ -303,17 +303,6 @@ class FitnessController extends BaseController {
         }
 
         if ($type === 'workout') {
-            // Check if user has active registered injuries
-            if (!empty($profile['injuries']) && strtolower($profile['injuries']) !== 'none') {
-                // Check if they have completed their AI Body Recovery plan
-                $stmtRec = $this->db->prepare("SELECT COUNT(*) FROM recovery_plans WHERE user_id = ?");
-                $stmtRec->execute([$user_id]);
-                $hasRecoveryPlan = (int)$stmtRec->fetchColumn();
-                if ($hasRecoveryPlan === 0) {
-                    $this->errorResponse("You must complete your AI Body Recovery assessment before generating a workout plan.", 400);
-                }
-            }
-
             require_once __DIR__ . '/../services/WorkoutAI.php';
             $ai = new WorkoutAI();
             $plan = $ai->generatePlan($profile);
@@ -449,7 +438,7 @@ class FitnessController extends BaseController {
         if (!empty($data->fridge_ingredients) && is_array($data->fridge_ingredients)) {
             $fridgeIngredients = array_values(array_filter(array_map('strval', $data->fridge_ingredients)));
         }
-        $newMeal = $ai->replaceMealWithHint($targetMeal, $data->hint ?? '', is_array($profile) ? $profile : [], $replacement, $fridgeIngredients);
+        $newMeal = $ai->replaceMealWithHint($targetMeal, $data->hint ?? '', is_array($profile) ? $profile : [], $replacement, $fridgeIngredients, $this->getMealReviewMap());
 
         if ($newMeal) {
             $meals[$targetMealIdx] = $newMeal;

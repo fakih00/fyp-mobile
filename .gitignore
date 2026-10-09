@@ -2,6 +2,7 @@
 
 # dependencies
 node_modules/
+.venv-models/
 
 # Expo
 .expo/
@@ -31,6 +32,9 @@ yarn-error.*
 expo-*.svg
 expo-*.png
 /tmp/
+/debug_schema_out.txt
+/presentation_build/friend_render/
+/presentation_build/friend_enhanced_v2/final_render/
 backend/last-login-test.json
 __pycache__/
 **/__pycache__/

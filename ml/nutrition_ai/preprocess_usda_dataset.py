@@ -1,5 +1,6 @@
 import csv
 import json
+import math
 import re
 import zipfile
 from itertools import product
@@ -43,7 +44,7 @@ INGREDIENT_KEYWORDS = {
     "banana": {"include": [r"\bBANANA"], "exclude": [], "prefer": ["RAW"]},
     "berries": {"include": [r"\bBLUEBERR", r"\bSTRAWBERR", r"\bRASPBERR"], "exclude": ["SYRUP"], "prefer": ["RAW", "FRESH"]},
     "apple": {"include": [r"\bAPPLE"], "exclude": ["JUICE", "SAUCE"], "prefer": ["RAW"]},
-    "milk": {"include": [r"\bMILK\b"], "exclude": ["YOGURT", "BUTTERMILK"], "prefer": ["WHOLE", "LOWFAT"]},
+    "milk": {"include": [r"\bMILK\b"], "exclude": ["YOGURT", "BUTTERMILK", "CHEESE", "POWDER", "DRIED", "COCONUT"], "prefer": ["WHOLE", "LOWFAT", "FLUID"]},
     "greek_yogurt": {"include": [r"\bYOGURT\b"], "exclude": [], "prefer": ["GREEK", "PLAIN"]},
 }
 
@@ -425,7 +426,7 @@ def find_best_food(food_by_id, ingredient_id):
     candidates = []
     for food in food_by_id.values():
         description = food["normalized"]
-        if not any(nutrient in food["nutrients"] for nutrient in [NUTRIENTS["energy_specific"], NUTRIENTS["energy_general"], NUTRIENTS["protein"], NUTRIENTS["fat"], NUTRIENTS["carbs"]]):
+        if not has_complete_nutrients(food):
             continue
         if any(exclude in description for exclude in rule.get("exclude", [])):
             continue
@@ -445,11 +446,41 @@ def find_best_food(food_by_id, ingredient_id):
     return sorted(candidates, key=lambda item: item[0], reverse=True)[0][1]
 
 
+def has_complete_nutrients(food):
+    nutrients = food["nutrients"]
+    required = [NUTRIENTS[key] for key in ["protein", "fat", "carbs"]]
+    if not all(key in nutrients and math.isfinite(nutrients[key]) and nutrients[key] >= 0 for key in required):
+        return False
+    energy = nutrients.get(NUTRIENTS["energy_specific"], nutrients.get(NUTRIENTS["energy_general"]))
+    return energy is not None and math.isfinite(energy) and energy > 0
+
+
 def nutrient_value(food, key):
     nutrients = food["nutrients"]
     if key == "calories":
-        return nutrients.get(NUTRIENTS["energy_specific"], nutrients.get(NUTRIENTS["energy_general"], 0))
-    return nutrients.get(NUTRIENTS[key], 0)
+        if NUTRIENTS["energy_specific"] in nutrients:
+            return nutrients[NUTRIENTS["energy_specific"]]
+        return nutrients[NUTRIENTS["energy_general"]]
+    return nutrients[NUTRIENTS[key]]
+
+
+def weight_basis(description):
+    text = description.upper()
+    if "DRAINED" in text:
+        return "drained weight"
+    if any(word in text for word in ["COOKED", "BRAISED", "ROASTED", "BAKED"]):
+        return "cooked weight"
+    if "RAW" in text:
+        return "raw/dry weight" if "RICE" in text else "raw weight"
+    if "OATS" in text or "ROLLED" in text:
+        return "dry weight"
+    return "as-sold weight; follow the source description"
+
+
+def descriptive_meal_name(template):
+    labels = [INGREDIENT_LABELS[item] for item in template["ingredients"]]
+    ingredients = ", ".join(labels[:-1]) + " and " + labels[-1]
+    return f"USDA {ingredients} {template['type']}"
 
 
 def build_meals(ingredient_foods):
@@ -466,6 +497,7 @@ def build_meals(ingredient_foods):
                 "fdcId": food["fdcId"],
                 "description": food["description"],
                 "publicationDate": food["publicationDate"],
+                "weightBasis": weight_basis(food["description"]),
             })
             calories += nutrient_value(food, "calories") * serving_multiplier
             protein += nutrient_value(food, "protein") * serving_multiplier
@@ -474,11 +506,13 @@ def build_meals(ingredient_foods):
 
         meal = {
             **template,
+            "name": descriptive_meal_name(template),
             "calories": round(calories),
             "protein": round(protein),
             "carbs": round(carbs),
             "fats": round(fats),
             "expert_score": 0.9 if "weight_loss" in template["goals"] or "muscle_gain" in template["goals"] else 0.86,
+            "expert_score_source": "rule_prior_not_human_review",
             "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
             "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
             "image": image_for_template(template),
@@ -502,6 +536,9 @@ def main():
         "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
         "source_url": "https://fdc.nal.usda.gov/download-datasets/",
         "license": "USDA FoodData Central data are public domain / CC0 1.0 Universal",
+        "preprocessing": {"missing_nutrients": "exclude incomplete ingredient records; never substitute zero",
+                          "portion_basis": "grams in the preparation state recorded in each ingredient source",
+                          "complete_ingredient_records": len(ingredient_foods)},
         "meals": meals,
         "training_cases": TRAINING_CASES,
     }

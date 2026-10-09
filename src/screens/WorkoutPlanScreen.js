@@ -38,7 +38,6 @@ const WorkoutPlanScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [floatingAnim] = useState(new Animated.Value(0));
-    const [hasRecoveryPlan, setHasRecoveryPlan] = useState(false);
     const [generating, setGenerating] = useState(false);
 
     // History Modal States
@@ -53,14 +52,6 @@ const WorkoutPlanScreen = ({ navigation }) => {
             const res = await api.getWorkouts();
             if (res.status === 200) {
                 setWorkouts(res.data);
-            }
-            if (user?.injuries && user.injuries !== 'none') {
-                const recRes = await api.getRecoveryPlan();
-                if (recRes.status === 200 && recRes.data) {
-                    setHasRecoveryPlan(true);
-                } else {
-                    setHasRecoveryPlan(false);
-                }
             }
         }
         setLoading(false);
@@ -598,58 +589,17 @@ const WorkoutPlanScreen = ({ navigation }) => {
                         </View>
                         <Text style={styles.emptyPlanTitle}>GENERATE WORKOUT PLAN</Text>
                         
-                        {user?.injuries && user.injuries !== 'none' ? (
-                            !hasRecoveryPlan ? (
-                                <>
-                                    <Text style={styles.emptyPlanSubtitle}>
-                                        You registered an active injury ({user.injuries.replace(/_/g, ' ')}).
-                                        To ensure your safety, you must complete your AI Body Recovery assessment before we can compile your workout plan.
-                                    </Text>
-                                    <TouchableOpacity
-                                        style={styles.actionButton}
-                                        onPress={() => {
-                                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                                            navigation.navigate('BodyRecovery');
-                                        }}
-                                    >
-                                        <LinearGradient colors={themeColors.gradient} style={styles.actionBtnGrad}>
-                                            <Text style={styles.actionBtnText}>START BODY RECOVERY</Text>
-                                            <Ionicons name="heart-half" size={16} color="#FFF" />
-                                        </LinearGradient>
-                                    </TouchableOpacity>
-                                </>
-                            ) : (
-                                <>
-                                    <Text style={styles.emptyPlanSubtitle}>
-                                        Your recovery assessment is complete! Click below to compile your sports-science workout plan tailored to your profile and restrictions.
-                                    </Text>
-                                    <TouchableOpacity
-                                        style={styles.actionButton}
-                                        onPress={handleGenerateWorkout}
-                                    >
-                                        <LinearGradient colors={themeColors.gradient} style={styles.actionBtnGrad}>
-                                            <Text style={styles.actionBtnText}>GENERATE WORKOUT PLAN</Text>
-                                            <Ionicons name="sparkles" size={16} color="#FFF" />
-                                        </LinearGradient>
-                                    </TouchableOpacity>
-                                </>
-                            )
-                        ) : (
-                            <>
-                                <Text style={styles.emptyPlanSubtitle}>
-                                    Generate your personalized AI-powered workout plan based on your onboarding preferences.
-                                </Text>
-                                <TouchableOpacity
-                                    style={styles.actionButton}
-                                    onPress={handleGenerateWorkout}
-                                >
-                                    <LinearGradient colors={themeColors.gradient} style={styles.actionBtnGrad}>
-                                        <Text style={styles.actionBtnText}>GENERATE WORKOUT PLAN</Text>
-                                        <Ionicons name="sparkles" size={16} color="#FFF" />
-                                    </LinearGradient>
-                                </TouchableOpacity>
-                            </>
-                        )}
+                        <Text style={styles.emptyPlanSubtitle}>
+                            {user?.injuries && user.injuries.toLowerCase() !== 'none'
+                                ? 'Your reported limitations will be used to exclude matching exercises. This is a fitness plan, not rehabilitation or medical clearance.'
+                                : 'Generate your personalized workout plan based on your onboarding preferences.'}
+                        </Text>
+                        <TouchableOpacity style={styles.actionButton} onPress={handleGenerateWorkout}>
+                            <LinearGradient colors={themeColors.gradient} style={styles.actionBtnGrad}>
+                                <Text style={styles.actionBtnText}>GENERATE WORKOUT PLAN</Text>
+                                <Ionicons name="sparkles" size={16} color="#FFF" />
+                            </LinearGradient>
+                        </TouchableOpacity>
                     </BlurView>
                 </View>
                 <Modal
@@ -728,6 +678,11 @@ const WorkoutPlanScreen = ({ navigation }) => {
                 ListHeaderComponent={() => (
                     <View style={styles.listHeaderElite}>
                         {renderPremiumDashboard()}
+                        {user?.injuries && user.injuries.toLowerCase() !== 'none' && (
+                            <Text style={styles.emptyPlanSubtitle}>
+                                Reported limitations: {user.injuries.replace(/_/g, ' ')}. Exercise exclusions are not rehabilitation or medical clearance.
+                            </Text>
+                        )}
                         <View style={styles.sectionHeaderElite}>
                             <Text style={styles.sectionTitleElite}>{selectedDay}'s Lineup</Text>
                             <View style={styles.sectionLine} />

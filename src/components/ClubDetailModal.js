@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -11,7 +11,8 @@ import {
     KeyboardAvoidingView,
     Platform,
     Dimensions,
-    Share
+    Share,
+    Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -19,29 +20,61 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { COLORS, SHADOWS } from '../constants/Theme';
+import { api } from '../services/api';
 
 const { width, height } = Dimensions.get('window');
 
 const ClubDetailModal = ({ visible, onClose, club, isMember, onJoinLeave }) => {
     const [activeTab, setActiveTab] = useState('Overview');
     const [message, setMessage] = useState('');
-    const [chatMessages, setChatMessages] = useState(club?.chatMessages || []);
+    const [chatMessages, setChatMessages] = useState([]);
+    const [sending, setSending] = useState(false);
+    const [chatError, setChatError] = useState('');
     const chatScrollViewRef = React.useRef(null);
+
+    useEffect(() => {
+        setActiveTab('Overview');
+        setMessage('');
+        setChatMessages([]);
+        setChatError('');
+    }, [visible, club?.id]);
+    useEffect(() => {
+        if (!visible || !club?.id || !isMember) {
+            setChatMessages([]);
+            return;
+        }
+        let cancelled = false;
+        const load = async () => {
+            const res = await api.getClubMessages(club.id);
+            if (cancelled) return;
+            if (res.status === 200) {
+                setChatMessages(res.data.records || []);
+                setChatError('');
+            } else setChatError(res.data?.message || 'Could not load club chat.');
+        };
+        load();
+        const timer = setInterval(load, 8000);
+        return () => { cancelled = true; clearInterval(timer); };
+    }, [visible, club?.id, isMember]);
 
     if (!club) return null;
 
-    const handleSend = () => {
-        if (!message.trim()) return;
-        const newMessage = {
-            id: Date.now().toString(),
-            user: 'You',
-            avatar: club?.user_avatar || null, // Using club user_avatar if available
-            text: message,
-            time: 'Just now'
-        };
-        setChatMessages([...chatMessages, newMessage]);
-        setMessage('');
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const handleSend = async () => {
+        if (!message.trim() || !isMember || sending) return;
+        setSending(true);
+        try {
+            const res = await api.sendClubMessage(club.id, message.trim());
+            if (res.status !== 201) {
+                Alert.alert('Could not send', res.data?.message || 'Please retry.');
+                return;
+            }
+            setMessage('');
+            const refreshed = await api.getClubMessages(club.id);
+            if (refreshed.status === 200) setChatMessages(refreshed.data.records || []);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        } finally {
+            setSending(false);
+        }
     };
 
     const handleShare = async () => {
@@ -87,7 +120,7 @@ const ClubDetailModal = ({ visible, onClose, club, isMember, onJoinLeave }) => {
 
             <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
                 <Ionicons name="share-social" size={20} color="#10B981" />
-                <Text style={styles.shareBtnText}>SHARE CLUB LINK</Text>
+                <Text style={styles.shareBtnText}>SHARE CLUB</Text>
             </TouchableOpacity>
         </ScrollView>
     );
@@ -100,15 +133,16 @@ const ClubDetailModal = ({ visible, onClose, club, isMember, onJoinLeave }) => {
                 ref={chatScrollViewRef}
                 onContentSizeChange={() => chatScrollViewRef.current?.scrollToEnd({ animated: true })}
             >
+                {chatError ? <Text style={styles.chatLockText}>{chatError}</Text> : isMember && chatMessages.length === 0 ? <Text style={styles.chatLockText}>No messages yet.</Text> : null}
                 {chatMessages.map((msg) => (
-                    <View key={msg.id} style={[styles.msgRow, msg.user === 'You' && styles.myMsgRow]}>
-                        {msg.user !== 'You' && (
+                    <View key={msg.id} style={[styles.msgRow, msg.is_mine && styles.myMsgRow]}>
+                        {!msg.is_mine && (
                             <Image source={{ uri: msg.avatar }} style={styles.msgAvatar} />
                         )}
-                        <View style={[styles.msgBubble, msg.user === 'You' && styles.myMsgBubble]}>
-                            {msg.user !== 'You' && <Text style={styles.msgUser}>{msg.user}</Text>}
-                            <Text style={[styles.msgText, msg.user === 'You' && styles.myMsgText]}>{msg.text}</Text>
-                            <Text style={[styles.msgTime, msg.user === 'You' && styles.myMsgTime]}>{msg.time}</Text>
+                        <View style={[styles.msgBubble, msg.is_mine && styles.myMsgBubble]}>
+                            {!msg.is_mine && <Text style={styles.msgUser}>{msg.user}</Text>}
+                            <Text style={[styles.msgText, msg.is_mine && styles.myMsgText]}>{msg.text}</Text>
+                            <Text style={[styles.msgTime, msg.is_mine && styles.myMsgTime]}>{msg.time}</Text>
                         </View>
                     </View>
                 ))}
@@ -136,7 +170,7 @@ const ClubDetailModal = ({ visible, onClose, club, isMember, onJoinLeave }) => {
                         onChangeText={setMessage}
                         placeholderTextColor="#94A3B8"
                     />
-                    <TouchableOpacity style={styles.sendBtn} onPress={handleSend}>
+                    <TouchableOpacity style={styles.sendBtn} onPress={handleSend} disabled={sending || !message.trim()}>
                         <LinearGradient colors={['#10B981', '#059669']} style={styles.sendGrad}>
                             <Ionicons name="send" size={18} color="#FFF" />
                         </LinearGradient>

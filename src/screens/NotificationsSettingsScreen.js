@@ -1,27 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useContext, useCallback } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     Switch,
     TouchableOpacity,
-    ScrollView
+    ScrollView,
+    Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/Theme';
+import { useFocusEffect } from '@react-navigation/native';
+import { api } from '../services/api';
+import { AppContext } from '../context/AppContext';
 
 const NotificationsSettingsScreen = ({ navigation }) => {
+    const { user, checkNotifications } = useContext(AppContext);
+    const [saving, setSaving] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [settings, setSettings] = useState({
-        pushEnabled: true,
-        workoutReminders: true,
-        mealReminders: false,
+        enabled: true,
+        activityUpdates: true,
         friendRequests: true,
-        communityUpdates: false
+        communityUpdates: true
     });
+    useFocusEffect(useCallback(() => {
+        let cancelled = false;
+        const load = async () => {
+            const res = await api.getUser();
+            if (cancelled) return;
+            if (res.status === 200) setSettings(current => ({ ...current, ...res.data.profile.notification_preferences }));
+            else Alert.alert('Preferences unavailable', res.data?.message || 'Please reopen this screen.');
+            setLoading(false);
+        };
+        load();
+        return () => { cancelled = true; };
+    }, [user?.user_id]));
 
-    const toggleSwitch = (key) => {
-        setSettings(prev => ({ ...prev, [key]: !prev[key] }));
+    const toggleSwitch = async (key) => {
+        if (saving || loading) return;
+        const previous = settings;
+        const next = { ...settings, [key]: !settings[key] };
+        setSettings(next);
+        setSaving(true);
+        try {
+            const res = await api.updateProfile({ notification_preferences: next });
+            if (res.status !== 200) {
+                setSettings(previous);
+                Alert.alert('Preferences not saved', res.data?.message || 'Please retry.');
+            } else await checkNotifications();
+        } finally {
+            setSaving(false);
+        }
     };
 
     const renderToggle = (label, subLabel, key) => (
@@ -31,6 +62,8 @@ const NotificationsSettingsScreen = ({ navigation }) => {
                 {subLabel && <Text style={styles.toggleSub}>{subLabel}</Text>}
             </View>
             <Switch
+                accessibilityLabel={label}
+                disabled={saving || loading || (key !== 'enabled' && !settings.enabled)}
                 trackColor={{ false: '#E2E8F0', true: '#10B981' }}
                 thumbColor={COLORS.white}
                 ios_backgroundColor="#E2E8F0"
@@ -53,19 +86,18 @@ const NotificationsSettingsScreen = ({ navigation }) => {
             <ScrollView contentContainerStyle={styles.content}>
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>General</Text>
-                    {renderToggle('Push Notifications', 'Enable notifications for this app', 'pushEnabled')}
+                    {renderToggle('In-App Notifications', 'Show alerts in your notification inbox', 'enabled')}
                 </View>
 
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Reminders</Text>
-                    {renderToggle('Workout Reminders', 'Get notified for scheduled workouts', 'workoutReminders')}
-                    {renderToggle('Meal Reminders', 'Reminders to log your meals', 'mealReminders')}
+                    <Text style={styles.sectionTitle}>Activity</Text>
+                    {renderToggle('Activity Updates', 'Achievements, challenges and account updates', 'activityUpdates')}
                 </View>
 
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Social</Text>
                     {renderToggle('Friend Requests', 'When someone adds you', 'friendRequests')}
-                    {renderToggle('Community Updates', 'News from your clubs', 'communityUpdates')}
+                    {renderToggle('Community Updates', 'Likes and comments on your posts', 'communityUpdates')}
                 </View>
             </ScrollView>
         </SafeAreaView>

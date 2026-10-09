@@ -8,6 +8,25 @@ class ExerciseAIController extends BaseController {
 
         $userId = $this->requireAuth();
 
+        $uploadError = (int)($_FILES['video']['error'] ?? UPLOAD_ERR_OK);
+        if ($uploadError !== UPLOAD_ERR_OK) {
+            $tooLarge = in_array($uploadError, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true);
+            $messages = [
+                UPLOAD_ERR_PARTIAL => 'Video upload was interrupted. Retry with a stable Wi-Fi connection.',
+                UPLOAD_ERR_NO_FILE => 'No video was received. Select or record a video and retry.',
+                UPLOAD_ERR_NO_TMP_DIR => 'The backend video upload folder is unavailable.',
+                UPLOAD_ERR_CANT_WRITE => 'The backend could not write the uploaded video.',
+                UPLOAD_ERR_EXTENSION => 'The backend rejected the video upload.',
+            ];
+            $this->jsonResponse([
+                'success' => false,
+                'message' => $tooLarge
+                    ? 'Video exceeds the server upload limit. Record at lower quality or choose a smaller clip.'
+                    : ($messages[$uploadError] ?? 'Video upload failed. Please retry.'),
+                'upload_error' => $uploadError,
+            ], $tooLarge ? 413 : ($uploadError >= UPLOAD_ERR_NO_TMP_DIR ? 500 : 400));
+        }
+
         if (empty($_FILES['video']) || !is_uploaded_file($_FILES['video']['tmp_name'])) {
             $contentLength = (int)($_SERVER['CONTENT_LENGTH'] ?? 0);
             $serverLimitBytes = $this->parsePhpSize(ini_get('post_max_size'));
@@ -26,10 +45,6 @@ class ExerciseAIController extends BaseController {
         $exerciseName = trim($_POST['exercise_name'] ?? 'general');
         $targetReps = (int)($_POST['target_reps'] ?? 0);
         $file = $_FILES['video'];
-
-        if (!empty($file['error'])) {
-            $this->errorResponse('Video upload failed.', 400);
-        }
 
         $maxBytes = 38 * 1024 * 1024;
         if (($file['size'] ?? 0) > $maxBytes) {

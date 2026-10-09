@@ -102,16 +102,15 @@ const GeneratingPlanScreen = ({ navigation, route }) => {
 
                 // 2. Generate plans sequentially — PHP's built-in server is single-threaded,
                 //    concurrent requests would just queue up and each block for ~60s anyway.
-                const hasInjury = !!(userData?.injuries && userData.injuries.trim() !== '' && userData.injuries.toLowerCase() !== 'none');
-                
-                let workoutResult = null;
-                if (!hasInjury) {
-                    workoutResult = await api.post('generatePlan', { type: 'workout' });
-                    console.log('Workout result status:', workoutResult?.status);
-                } else {
-                    console.log('Skipping workout generation — user has injuries. Plan will be generated from WorkoutPlan screen after recovery assessment.');
+                const workoutResult = await api.post('generatePlan', { type: 'workout' });
+                if (workoutResult.status !== 200) {
+                    throw new Error(workoutResult.data?.message || 'Workout generation failed.');
                 }
+                console.log('Workout result status:', workoutResult?.status);
                 const nutritionResult = await api.post('generatePlan', { type: 'nutrition' });
+                if (nutritionResult.status !== 200) {
+                    throw new Error(nutritionResult.data?.message || 'Nutrition generation failed.');
+                }
 
                 // Fast forward progress if it finishes early
                 clearInterval(progressInterval);
@@ -128,24 +127,16 @@ const GeneratingPlanScreen = ({ navigation, route }) => {
                     console.warn('loadUserData failed, continuing to Main anyway:', hydrationError);
                 }
 
-                // Navigate based on injury profile
                 setTimeout(() => {
-                    if (hasInjury) {
-                        navigation.reset({
-                            index: 0,
-                            routes: [{ name: 'InjuryWarning', params: { userData } }],
-                        });
-                    } else {
-                        navigation.reset({
-                            index: 0,
-                            routes: [{ name: 'Main' }],
-                        });
-                    }
+                    navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'Main' }],
+                    });
                 }, 1000); // Small delay to let user see 100%
 
             } catch (error) {
                 console.error("AI Generation failed:", error);
-                alert("Generation took too long or failed. Please try logging in again.");
+                alert(error.message || "Plan generation failed. Please try logging in again.");
                 navigation.reset({
                     index: 0,
                     routes: [{ name: 'Login' }],

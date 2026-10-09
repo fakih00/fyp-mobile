@@ -45,11 +45,11 @@ const PART_LABELS = {
 };
 
 const HUD_TEXTS = [
-    "Analyzing Biomechanical Alignment...",
-    "Scanning Muscle Imbalances...",
-    "Calibrating Joint Injury Safety...",
-    "Mapping Posture Deviations...",
-    "Optimizing Plan Parameters..."
+    "Reported training limitations",
+    "Self-reported side dominance",
+    "Your posture observations",
+    "Your mobility observations",
+    "Fitness profile information"
 ];
 
 const PhysicalAssessmentScreen = ({ navigation, route }) => {
@@ -59,32 +59,32 @@ const PhysicalAssessmentScreen = ({ navigation, route }) => {
     const STEPS = [
         {
             id: 'injuries',
-            title: 'INJURIES & ACUTE PAIN',
-            subtitle: 'Tap specific muscle groups directly on the shaded 3D model or select them below to flag acute injury/pain areas.',
+            title: 'REPORTED LIMITATIONS',
+            subtitle: 'Select areas of injury or discomfort to exclude matching exercises. This is not a diagnosis or clearance to train.',
             icon: 'pulse'
         },
         {
             id: 'strength',
             title: 'STRENGTH SYMMETRY',
-            subtitle: 'Specify force dominance for both your upper and lower body separately to customize AI loading.',
+            subtitle: 'Choose which side feels stronger. When suitable exercises are available, your plan will favor a single-arm or single-leg option for the corresponding body region.',
             icon: 'barbell-outline'
         },
         {
             id: 'posture',
-            title: 'POSTURAL METRICS',
-            subtitle: 'Select any posture deviations to prescribe targeted corrective prehab movements.',
+            title: 'POSTURE PREFERENCES',
+            subtitle: 'Record any posture concerns you have noticed. No diagnosis or corrective treatment is prescribed.',
             icon: 'body-outline'
         },
         {
             id: 'mobility',
             title: 'MOBILITY LIMITATIONS',
-            subtitle: 'Select joint limitations to avoid dangerous load ranges and integrate corrective active mobility drills.',
+            subtitle: 'Record any mobility limitations you have noticed for your fitness profile.',
             icon: 'sync-outline'
         },
         {
             id: 'summary',
-            title: 'SAFETY SUMMARY',
-            subtitle: 'Optionally detail any chronic pain or specify particular movements to avoid completely.',
+            title: 'TRAINING LIMITATIONS',
+            subtitle: 'Record additional limitations for your profile. For persistent pain or an active injury, seek qualified advice before training.',
             icon: 'shield-checkmark-outline'
         }
     ];
@@ -473,10 +473,10 @@ const PhysicalAssessmentScreen = ({ navigation, route }) => {
 
         if (step.id === 'posture') {
             const postures = [
-                { id: 'none', label: 'Balanced Alignment', desc: 'Optimal natural posture.' },
-                { id: 'rounded_shoulders', label: 'Rounded Shoulders', desc: 'Forward scapular migration.' },
-                { id: 'forward_head', label: 'Forward Head Position', desc: 'Cervical extension under load.' },
-                { id: 'tilt', label: 'Anterior Pelvic Tilt', desc: 'Tight hip flexors pulling pelvis forward.' }
+                { id: 'none', label: 'No Concerns', desc: 'No posture concerns reported.' },
+                { id: 'rounded_shoulders', label: 'Rounded Shoulders', desc: 'Shoulders appear rounded forward.' },
+                { id: 'forward_head', label: 'Forward Head Position', desc: 'Head appears forward of the shoulders.' },
+                { id: 'tilt', label: 'Pelvic Tilt Concern', desc: 'A pelvic tilt you have noticed.' }
             ];
 
             return (
@@ -513,10 +513,10 @@ const PhysicalAssessmentScreen = ({ navigation, route }) => {
 
         if (step.id === 'mobility') {
             const mobilities = [
-                { id: 'none', label: 'Optimal Mobility', desc: 'No notable active range deficits.' },
-                { id: 'tight_hips', label: 'Tight Hip Flexors', desc: 'Limits posterior chain glute loading.' },
-                { id: 'stiff_ankles', label: 'Stiff Ankles / Feet', desc: 'Limits deep ankle flexion mechanics.' },
-                { id: 'tight_hamstrings', label: 'Tight Hamstrings', desc: 'Restricts lumbar pelvic hip hinge hinge movements.' }
+                { id: 'none', label: 'No Limitations', desc: 'No mobility limitations reported.' },
+                { id: 'tight_hips', label: 'Hip Tightness', desc: 'Self-reported tightness around the hips.' },
+                { id: 'stiff_ankles', label: 'Stiff Ankles / Feet', desc: 'Self-reported ankle or foot stiffness.' },
+                { id: 'tight_hamstrings', label: 'Hamstring Tightness', desc: 'Self-reported tightness behind the thighs.' }
             ];
 
             return (

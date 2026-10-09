@@ -18,11 +18,13 @@ const CreateClubModal = ({ visible, onClose, onSubmit, user }) => {
     const [name, setName] = useState('');
     const [tag, setTag] = useState('');
     const [description, setDescription] = useState('');
+    const [creating, setCreating] = useState(false);
 
     const CATEGORIES = ['Yoga', 'Strength', 'Cardio', 'HIIT', 'Running', 'Meditation'];
 
-    const handleSubmit = () => {
-        if (!name || !tag) return;
+    const handleSubmit = async () => {
+        if (!name.trim() || !tag || creating) return;
+        setCreating(true);
 
         const newClub = {
             id: Date.now().toString(),
@@ -38,8 +40,11 @@ const CreateClubModal = ({ visible, onClose, onSubmit, user }) => {
             chatMessages: []
         };
 
-        onSubmit(newClub);
-        resetForm();
+        try {
+            if (await onSubmit(newClub)) resetForm();
+        } finally {
+            setCreating(false);
+        }
     };
 
     const resetForm = () => {

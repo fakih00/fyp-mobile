@@ -1,6 +1,7 @@
 import argparse
 import base64
 import json
+import hashlib
 import math
 import subprocess
 import sys
@@ -8,19 +9,50 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "ml"))
+from random_forest import predict_forest
 MODULE_DIR = Path(__file__).resolve().parent
 DATASET_PATH = MODULE_DIR / "processed_data" / "usda_meal_training_dataset.json"
 MODEL_PATH = ROOT / "src" / "ai" / "trainedNutritionModel.json"
+FOREST_ARTIFACT_PATH = MODULE_DIR / "nutricore_random_forest.json"
 PREPROCESS_SCRIPT = MODULE_DIR / "preprocess_usda_dataset.py"
 TRAIN_SCRIPT = MODULE_DIR / "train_model.py"
 
 MODEL_NAME = "NutriCore AI"
-MODEL_VERSION = "1.4.0"
-NEURAL_MODEL_CACHE = None
+MODEL_VERSION = "2.2.0"
+FOREST_MODEL_CACHE = None
 REQUIRE_EXPERT_APPROVAL = True
 
 GOALS = ["weight_loss", "maintain", "muscle_gain", "weight_gain", "endurance", "performance"]
 MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack"]
+FEATURE_NAMES = ["calories", "protein", "goal", "ingredients", "preferences", "expert", "carbs", "fats"] + [
+    "is_breakfast", "is_lunch", "is_dinner", "is_snack"
+] + [f"goal_{goal}" for goal in GOALS]
+
+
+def dataset_fingerprint(meals):
+    fields = ["id", "name", "type", "calories", "protein", "carbs", "fats", "ingredients", "ingredientSources", "allergens", "goals"]
+    records = [{key: meal.get(key) for key in fields} for meal in meals]
+    return hashlib.sha256(json.dumps(records, sort_keys=True).encode()).hexdigest()
+
+def recipe_signature(meal):
+    if meal.get("recipe_signature"):
+        return meal["recipe_signature"]
+    sources = sorted((item.get("ingredient"), item.get("fdcId"), item.get("servingGrams"))
+                     for item in meal.get("ingredientSources", []))
+    recipe = sources or sorted(meal.get("ingredients", []))
+    return hashlib.sha256(json.dumps(recipe).encode()).hexdigest()
+
+
+def distinct_ranked_recipes(ranked, meal_for):
+    result, seen = [], set()
+    for item in ranked:
+        signature = recipe_signature(meal_for(item))
+        if signature not in seen:
+            result.append(item)
+            seen.add(signature)
+    return result
+
 
 DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 MEAL_STRUCTURES = {
@@ -80,14 +112,6 @@ IMAGE_BY_MEAL_THEME = {
 
 def clamp(value, low=0.0, high=1.0):
     return max(low, min(high, value))
-
-
-def sigmoid(value):
-    if value < -60:
-        return 0.0
-    if value > 60:
-        return 1.0
-    return 1 / (1 + math.exp(-value))
 
 
 def clean_term(value):
@@ -181,42 +205,35 @@ def load_model():
     }
 
 
-def load_neural_model():
-    global NEURAL_MODEL_CACHE
-    if NEURAL_MODEL_CACHE is not None:
-        return NEURAL_MODEL_CACHE
-    artifact = load_json(MODEL_PATH, {})
-    model = artifact.get("neural_network")
-    if not isinstance(model, dict) or not model.get("hidden_weights"):
-        return None
-    NEURAL_MODEL_CACHE = model
-    return NEURAL_MODEL_CACHE
+def load_forest_model():
+    global FOREST_MODEL_CACHE
+    if FOREST_MODEL_CACHE is not None:
+        return FOREST_MODEL_CACHE
+    model = load_json(FOREST_ARTIFACT_PATH, {})
+    if not model.get("trees"):
+        raise RuntimeError("NutriCore Random Forest missing; run npm run train:nutrition-ai")
+    if model.get("feature_names") != FEATURE_NAMES or model.get("dataset_fingerprint") != dataset_fingerprint(load_dataset()):
+        raise RuntimeError("NutriCore dataset or feature schema changed; retrain the Random Forest")
+    FOREST_MODEL_CACHE = model
+    return model
 
 
-def forward_neural(model, features):
-    hidden = []
-    for row, bias in zip(model["hidden_weights"], model["hidden_bias"]):
-        hidden.append(math.tanh(sum(weight * value for weight, value in zip(row, features)) + bias))
-    output_raw = sum(weight * value for weight, value in zip(model["output_weights"], hidden)) + model["output_bias"]
-    return sigmoid(output_raw)
-
-
-def neural_features_from_scores(features, goal, meal_type):
+def forest_features_from_scores(features, goal, meal_type):
     return (
-        [float(features[name]) for name in ["calories", "protein", "goal", "ingredients", "preferences", "expert"]]
+        [float(features[name]) for name in ["calories", "protein", "goal", "ingredients", "preferences", "expert", "carbs", "fats"]]
         + [1.0 if meal_type == item else 0.0 for item in MEAL_TYPES]
         + [1.0 if goal == item else 0.0 for item in GOALS]
     )
 
 
-def predict_neural_score(features, goal, meal_type):
-    model = load_neural_model()
+def predict_forest_score(features, goal, meal_type):
+    model = load_forest_model()
     if not model:
         return None
-    neural_features = neural_features_from_scores(features, goal, meal_type)
-    if len(neural_features) != int(model.get("feature_count", -1)):
-        return None
-    return forward_neural(model, neural_features)
+    forest_features = forest_features_from_scores(features, goal, meal_type)
+    if len(forest_features) != int(model.get("feature_count", -1)):
+        raise RuntimeError("NutriCore feature schema changed; retrain the Random Forest")
+    return predict_forest(model, forest_features)
 
 
 def macro_ratios(profile):
@@ -248,9 +265,19 @@ def blocks_meal(meal, allergies, dislikes):
         " ".join(clean_term(item) for item in meal.get("goals", [])),
     ])
     allergens = {clean_term(item) for item in meal.get("allergens", [])}
+    allergy_groups = [
+        {"milk", "dairy"}, {"egg", "eggs"}, {"wheat", "gluten"},
+        {"peanut", "peanuts"}, {"soy", "soya", "soybean", "soybeans"},
+        {"sesame"}, {"fish"}, {"shellfish", "crustacean shellfish"},
+        {"tree nut", "tree nuts"},
+    ]
 
     for allergy in allergies:
-        if allergy and (allergy in allergens or allergy in haystack):
+        term = clean_term(allergy)
+        alternatives = next((group for group in allergy_groups if term in group), {term})
+        if term == "nuts":
+            alternatives = {"peanut", "peanuts", "tree nut", "tree nuts"}
+        if term and any(item in allergens or item in haystack for item in alternatives):
             return True
     for dislike in dislikes:
         if dislike and dislike in haystack:
@@ -299,13 +326,28 @@ def preference_score(meal, likes, dislikes):
     return clamp(score)
 
 
-def score_meal(meal, context, meal_type, targets, allow_any_type=False):
+def portion_meal(meal, target_calories):
+    base_calories = float(meal.get("calories") or 0)
+    factor = clamp(float(target_calories) / base_calories, 0.5, 2.0) if base_calories > 0 and target_calories > 0 else 1.0
+    return {
+        **meal,
+        "recipe_signature": recipe_signature(meal),
+        **{key: round(float(meal.get(key) or 0) * factor) for key in ["calories", "protein", "carbs", "fats"]},
+        "portion_factor": round(factor, 4),
+        "ingredientSources": [{**item, "servingGrams": round(float(item.get("servingGrams") or 0) * factor)}
+                              for item in meal.get("ingredientSources", [])],
+    }
+
+
+def score_meal(meal, context, meal_type, targets, allow_any_type=False, use_model=True):
     allergies = context["allergies"]
     dislikes = context["dislikes"]
     if not allow_any_type and meal.get("type") != meal_type:
         return None
     if blocks_meal(meal, allergies, dislikes):
         return None
+
+    meal = portion_meal(meal, targets["calories"])
 
     goal = context["goal"]
     meal_goals = {normalize_goal(item) for item in meal.get("goals", [])}
@@ -317,9 +359,11 @@ def score_meal(meal, context, meal_type, targets, allow_any_type=False):
         "ingredients": fridge["score"],
         "preferences": preference_score(meal, context["likes"], dislikes),
         "expert": clamp(float(meal.get("expert_score", 0.82))),
+        "carbs": distance_score(meal.get("carbs"), targets["carbs"], max(30, targets["carbs"])),
+        "fats": distance_score(meal.get("fats"), targets["fats"], max(15, targets["fats"])),
     }
-    neural_score = predict_neural_score(features, goal, meal.get("type") or meal_type)
-    score = neural_score if neural_score is not None else sum(features[key] * context["weights"][key] for key in context["weights"])
+    forest_score = predict_forest_score(features, goal, meal.get("type") or meal_type) if use_model else None
+    score = forest_score if forest_score is not None else sum(features[key] * context["weights"][key] for key in context["weights"])
     macro_bonus = (
         distance_score(meal.get("carbs"), targets["carbs"], 55) * 0.05
         + distance_score(meal.get("fats"), targets["fats"], 25) * 0.04
@@ -333,7 +377,7 @@ def score_meal(meal, context, meal_type, targets, allow_any_type=False):
         "matchPercent": match_percent,
         "features": features,
         "fridge": fridge,
-        "neural_score": neural_score,
+        "forest_score": forest_score,
     }
 
 
@@ -346,7 +390,10 @@ def instructions_for(meal):
     prep = meal.get("prepMinutes") or meal.get("prep_minutes") or 15
     if not ingredients:
         return "Prepare the meal with balanced portions and adjust seasoning lightly."
-    return f"Prepare {', '.join(ingredients)} as a balanced {meal.get('type', 'meal').lower()} meal. Estimated prep time: {prep} minutes."
+    portions = "; ".join(f"{item['ingredient']}: {item['servingGrams']} g ({item.get('weightBasis', item.get('description', 'source weight basis'))})"
+                         for item in meal.get("ingredientSources", []))
+    portion_text = f" Portions: {portions}." if portions else ""
+    return f"Prepare {', '.join(ingredients)} as a balanced {meal.get('type', 'meal').lower()} meal. Estimated prep time: {prep} minutes.{portion_text}"
 
 
 def select_ranked_meal(meals, context, meal_type, targets, used_ids):
@@ -359,7 +406,7 @@ def select_ranked_meal(meals, context, meal_type, targets, used_ids):
         approval = approval_for(meal, approval_reviews)
         if REQUIRE_EXPERT_APPROVAL and not is_expert_approved(approval):
             continue
-        if meal.get("id") in used_ids:
+        if recipe_signature(meal) in used_ids:
             item["score"] -= 0.05
         item["score"] = clamp(item["score"] + 0.04, 0, 1.15)
         item["approval"] = approval
@@ -375,7 +422,7 @@ def select_ranked_meal(meals, context, meal_type, targets, used_ids):
             approval = approval_for(meal, approval_reviews)
             if REQUIRE_EXPERT_APPROVAL and not is_expert_approved(approval):
                 continue
-            if meal.get("id") in used_ids:
+            if recipe_signature(meal) in used_ids:
                 item["score"] -= 0.08
             item["score"] = clamp(item["score"] + 0.04, 0, 1.15)
             item["approval"] = approval
@@ -437,7 +484,7 @@ def generate_plan(payload):
             meal = selected["meal"]
             fridge = selected["fridge"]
             approval = selected.get("approval") or approval_for(meal, approval_reviews)
-            used_ids.add(meal.get("id"))
+            used_ids.add(recipe_signature(meal))
 
             plan.append({
                 "id": f"m{counter}",
@@ -445,10 +492,11 @@ def generate_plan(payload):
                 "day": day,
                 "type": meal_type,
                 "name": meal.get("name"),
-                "calories": round(targets["calories"]),
-                "protein": round(targets["protein"]),
-                "carbs": round(targets["carbs"]),
-                "fats": round(targets["fats"]),
+                "calories": meal["calories"],
+                "protein": meal["protein"],
+                "carbs": meal["carbs"],
+                "fats": meal["fats"],
+                "portion_factor": meal["portion_factor"],
                 "ingredients": meal.get("ingredients", []),
                 "instructions": instructions_for(meal),
                 "fridge_match": fridge["match"],
@@ -465,7 +513,7 @@ def generate_plan(payload):
                 "completed": False,
                 "ai_model": MODEL_NAME,
                 "model_version": MODEL_VERSION,
-                "model_type": "python_local_neural_meal_ranker",
+                "model_type": "python_local_random_forest_meal_ranker",
             })
             counter += 1
 
@@ -475,7 +523,7 @@ def generate_plan(payload):
             "error": "NutriCore could not fill every meal slot with expert-approved meals.",
             "model": MODEL_NAME,
             "version": MODEL_VERSION,
-            "model_type": "python_local_neural_meal_ranker",
+            "model_type": "python_local_random_forest_meal_ranker",
             "expert_approval": {
                 "gate_active": True,
                 "reviewedMeals": len(approval_reviews),
@@ -490,7 +538,7 @@ def generate_plan(payload):
         "success": True,
         "model": MODEL_NAME,
         "version": MODEL_VERSION,
-        "model_type": "python_local_neural_meal_ranker",
+        "model_type": "python_local_random_forest_meal_ranker",
         "is_recomp": is_recomp,
         "expert_approval": {
             "gate_active": True,
@@ -592,10 +640,11 @@ def build_replacement_output(selected, target_meal):
         "type": meal_type,
         "meal": meal_type,
         "name": meal.get("name"),
-        "calories": int(target_meal.get("calories") or meal.get("calories") or 0),
-        "protein": int(target_meal.get("protein") or meal.get("protein") or 0),
-        "carbs": int(target_meal.get("carbs") or meal.get("carbs") or 0),
-        "fats": int(target_meal.get("fats") or meal.get("fats") or 0),
+        "calories": meal["calories"],
+        "protein": meal["protein"],
+        "carbs": meal["carbs"],
+        "fats": meal["fats"],
+        "portion_factor": meal["portion_factor"],
         "ingredients": ingredients,
         "instructions": instructions,
         "fridge_match": fridge["match"],
@@ -609,7 +658,10 @@ def build_replacement_output(selected, target_meal):
         "completed": False,
         "ai_model": MODEL_NAME,
         "model_version": MODEL_VERSION,
-        "model_type": "python_local_neural_meal_swap_ranker",
+        "model_type": "python_local_random_forest_meal_swap_ranker",
+        "approval": selected["approval"],
+        "expert_approved": is_expert_approved(selected["approval"]),
+        "model_approved": False,
     }
 
 
@@ -634,12 +686,16 @@ def replace_meal(payload):
                 "success": False,
                 "error": "Selected replacement is not part of the trained NutriCore meal dataset.",
             }
+        approval = approval_for(resolved_replacement, context["approval_reviews"])
+        if REQUIRE_EXPERT_APPROVAL and not is_expert_approved(approval):
+            return {"success": False, "error": "Selected replacement requires manual expert approval."}
         selected = score_meal(resolved_replacement, context, meal_type, targets)
         if not selected:
             return {
                 "success": False,
                 "error": "Selected replacement does not pass NutriCore allergy, dislike, or meal-type constraints.",
             }
+        selected["approval"] = approval
         selected["score"] = clamp(selected["score"] + hint_score(resolved_replacement, hint, target_meal), 0, 1.25)
         if "fridge" in clean_term(hint):
             selected["score"] = clamp(selected["score"] + (selected["fridge"]["score"] * 0.25), 0, 1.25)
@@ -648,7 +704,7 @@ def replace_meal(payload):
             "success": True,
             "model": MODEL_NAME,
             "version": MODEL_VERSION,
-            "model_type": "python_local_neural_meal_swap_ranker",
+            "model_type": "python_local_random_forest_meal_swap_ranker",
             "replacement": build_replacement_output(selected, target_meal),
             "alternatives": [],
         }
@@ -660,9 +716,13 @@ def replace_meal(payload):
     for meal in candidates:
         if clean_term(meal.get("name")) == current_name:
             continue
+        approval = approval_for(meal, context["approval_reviews"])
+        if REQUIRE_EXPERT_APPROVAL and not is_expert_approved(approval):
+            continue
         item = score_meal(meal, context, meal_type, targets)
         if not item:
             continue
+        item["approval"] = approval
         item["score"] = clamp(item["score"] + hint_score(meal, hint, target_meal), 0, 1.25)
         if "fridge" in hint_text:
             item["score"] = clamp(item["score"] + (item["fridge"]["score"] * 0.25), 0, 1.25)
@@ -672,7 +732,7 @@ def replace_meal(payload):
     if not ranked:
         return {
             "success": False,
-            "error": "No safe replacement meal matched the user's allergy, dislike, and meal-type constraints.",
+            "error": "No approved replacement meal matched the user's allergy, dislike, and meal-type constraints.",
         }
 
     ranked.sort(key=lambda item: item["score"], reverse=True)
@@ -680,7 +740,7 @@ def replace_meal(payload):
         "success": True,
         "model": MODEL_NAME,
         "version": MODEL_VERSION,
-        "model_type": "python_local_neural_meal_swap_ranker",
+        "model_type": "python_local_random_forest_meal_swap_ranker",
         "replacement": build_replacement_output(ranked[0], target_meal),
         "alternatives": [
             {
@@ -688,7 +748,7 @@ def replace_meal(payload):
                 "match_percent": item["matchPercent"],
                 "ai_score": round(item["score"] * 100, 1),
             }
-            for item in ranked[1:4]
+            for item in distinct_ranked_recipes(ranked, lambda item: item["meal"])[1:4]
         ],
     }
 
@@ -778,7 +838,8 @@ def recommend_swaps(payload):
 
     ranked.sort(key=lambda item: item[0], reverse=True)
     recommendations = []
-    for _, selected, approval in ranked[:max_results]:
+    distinct = distinct_ranked_recipes(ranked, lambda item: item[1]["meal"])
+    for _, selected, approval in distinct[:max_results]:
         meal = selected["meal"]
         recommendations.append({
             "id": meal.get("id"),
@@ -808,7 +869,7 @@ def recommend_swaps(payload):
             "explanation": explain_swap(meal, selected, targets),
             "ai_model": MODEL_NAME,
             "model_version": MODEL_VERSION,
-            "model_type": "python_local_neural_meal_swap_ranker",
+            "model_type": "python_local_random_forest_meal_swap_ranker",
         })
 
     return {
@@ -823,7 +884,7 @@ def recommend_swaps(payload):
         "model": {
             "name": MODEL_NAME,
             "version": MODEL_VERSION,
-            "trainedWith": "Python local neural meal ranking and swap model",
+            "trainedWith": "Python local Random Forest meal ranking and swap model",
             "trainingSamples": len(meals) + len(feedback),
             "learnedSamples": len(feedback),
             "weights": context["weights"],
@@ -839,7 +900,7 @@ def run_training():
     artifact = load_json(MODEL_PATH, {})
     artifact["modelName"] = MODEL_NAME
     artifact["version"] = MODEL_VERSION
-    artifact["runtime"] = "Python local neural meal ranker"
+    artifact["runtime"] = "Python local Random Forest meal ranker"
     MODEL_PATH.write_text(json.dumps(artifact, indent=2), encoding="utf-8")
     return {
         "success": True,

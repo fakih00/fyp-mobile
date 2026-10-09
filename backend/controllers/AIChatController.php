@@ -5,8 +5,8 @@ require_once __DIR__ . '/../services/GeminiService.php';
 /**
  * AIChatController.php
  * 
- * Handles conversational coaching. Gemini is optional and only used for chat;
- * custom AI modules own workout, meal, fridge, pose, progress, and recovery logic.
+ * Handles Gemini-only conversational coaching.
+ * Local modules own workout, meal, fridge, pose, and progress logic.
  */
 class AIChatController extends BaseController {
 
@@ -44,18 +44,13 @@ class AIChatController extends BaseController {
         }
         $history[] = ['role' => 'user', 'text' => (string)$data->message];
 
-        $reply = null;
-        $modelName = "Local Coach Rules";
         $gemini = new GeminiService();
-        if ($gemini->isAvailable()) {
-            $reply = $gemini->chat($history, $this->buildChatSystemPrompt($profile ?: []));
-            if ($reply !== null) {
-                $modelName = "Gemini Chat Assistant";
-            }
+        if (!$gemini->isAvailable()) {
+            $this->errorResponse('AI Coach is unavailable because Gemini has not been configured.', 503);
         }
-
-        if ($reply === null) {
-            $reply = $this->generateLocalCoachReply((string)$data->message, $profile ?: []);
+        $reply = $gemini->chat($history, $this->buildChatSystemPrompt($profile ?: []));
+        if ($reply === null || trim($reply) === '') {
+            $this->errorResponse('Gemini could not respond right now. Please try again shortly.', 502);
         }
 
         // ── Persist both messages to the database ──────────────────────────
@@ -67,8 +62,8 @@ class AIChatController extends BaseController {
 
         $this->jsonResponse([
             "reply"      => $reply,
-            "ai_powered" => $modelName === "Gemini Chat Assistant",
-            "model" => $modelName
+            "ai_powered" => true,
+            "model" => "Gemini Chat Assistant"
         ]);
     }
 
@@ -107,34 +102,6 @@ class AIChatController extends BaseController {
     }
 
 
-    private function generateLocalCoachReply(string $message, array $profile): string {
-        $text = strtolower($message);
-        $name = $profile['name'] ?? 'Champion';
-        $goal = str_replace('_', ' ', $profile['goal'] ?? 'general fitness');
-        $days = (int)($profile['training_days_per_week'] ?? 3);
-        $location = $profile['training_location'] ?? 'gym';
-        $injuries = strtolower((string)($profile['injuries'] ?? 'none'));
-        $allergies = trim((string)($profile['allergies'] ?? ''));
-
-        if (str_contains($text, 'meal') || str_contains($text, 'food') || str_contains($text, 'nutrition') || str_contains($text, 'diet')) {
-            return "{$name}, your meal plans are handled by NutriCore AI, the local Python nutrition model. Use Nutrition Plan or Fridge Sync so it can apply your allergies" . ($allergies ? " ({$allergies})" : "") . ", fridge ingredients, calorie target, and macro needs safely.";
-        }
-
-        if (str_contains($text, 'pain') || str_contains($text, 'injury') || str_contains($text, 'hurt')) {
-            return "Treat pain as a signal, not a challenge. Because your profile lists injuries as '{$injuries}', reduce load, avoid painful ranges, use the Recovery screen for the local rehab plan, and seek professional care if pain is sharp, worsening, or persistent.";
-        }
-
-        if (str_contains($text, 'workout') || str_contains($text, 'train') || str_contains($text, 'exercise')) {
-            return "For {$goal}, stay consistent with {$days} focused sessions per week at your {$location} setup. Generate the plan with TrainCore AI, then use PoseForm AI on key exercises so reps, form score, and technique feedback are measured from video.";
-        }
-
-        if (str_contains($text, 'progress') || str_contains($text, 'plateau') || str_contains($text, 'weight')) {
-            return "Check the Progress screen after logging workouts, meals, sleep, steps, and weight for at least a few days. The local progress logic will be much more useful when it has a full weekly pattern instead of one isolated log.";
-        }
-
-        return "{$name}, focus on the next measurable action: complete today's plan, log meals honestly, and analyze one exercise with PoseForm AI. Your current target is {$goal}, so consistency and clean execution matter more than adding random extra work.";
-    }
-
     private function buildChatSystemPrompt(array $profile): string {
         $name = $profile['name'] ?? 'Champion';
         $goal = str_replace('_', ' ', $profile['goal'] ?? 'general fitness');
@@ -146,7 +113,7 @@ class AIChatController extends BaseController {
         $dislikes = $profile['dislikes'] ?? 'None specified';
 
         return <<<PROMPT
-You are the app's optional Gemini-powered conversational coach.
+You are the app's Gemini-powered conversational coach.
 
 Important boundaries:
 - Do not generate full workout plans. TrainCore AI, the local Python module, owns workout generation.

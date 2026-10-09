@@ -18,14 +18,14 @@ const PrivacyScreen = ({ navigation }) => {
     };
 
     const renderItem = (icon, label, onPress) => (
-        <TouchableOpacity style={styles.itemRow} onPress={onPress}>
-            <View style={styles.itemLeft}>
+        <TouchableOpacity style={styles.itemRow} disabled accessibilityLabel={`${label}, not available`}>
+            <View style={[styles.itemLeft, { flex: 1 }]}>
                 <View style={styles.iconBox}>
                     <Ionicons name={icon} size={20} color="#64748B" />
                 </View>
-                <Text style={styles.itemLabel}>{label}</Text>
+                <Text style={[styles.itemLabel, { flexShrink: 1 }]}>{label}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
+            <Text style={{ color: '#64748B', fontSize: 11, marginLeft: 8 }}>Not available</Text>
         </TouchableOpacity>
     );
 
@@ -54,10 +54,7 @@ const PrivacyScreen = ({ navigation }) => {
 
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Account</Text>
-                    <TouchableOpacity style={styles.deleteBtn} onPress={() => Alert.alert("Delete Account", "Are you sure? This cannot be undone.", [{ text: "Cancel" }, { text: "Delete", style: 'destructive' }])}>
-                        <Ionicons name="trash-outline" size={20} color="#EF4444" />
-                        <Text style={styles.deleteText}>Delete Account</Text>
-                    </TouchableOpacity>
+                    {renderItem('trash-outline', 'Delete Account')}
                 </View>
             </ScrollView>
         </SafeAreaView>

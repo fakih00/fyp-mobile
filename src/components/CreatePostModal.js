@@ -77,11 +77,11 @@ const CreatePostModal = ({ visible, onClose, onSubmit, user }) => {
             visibility: visibility
         };
 
-        // Simulating a small delay for better UX
-        setTimeout(() => {
-            onSubmit(newPost);
-            onClose();
-        }, 800);
+        try {
+            if (await onSubmit(newPost)) onClose();
+        } finally {
+            setIsPosting(false);
+        }
     };
 
     return (

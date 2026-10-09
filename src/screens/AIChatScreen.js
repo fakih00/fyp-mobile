@@ -140,10 +140,13 @@ const AIChatScreen = ({ navigation }) => {
         setIsTyping(true);
 
         try {
-            // Call the AI Coach backend; it uses Gemini for chat if configured, otherwise local coach logic.
+            // Only successful Gemini replies enter the conversation history.
             const result = await api.aiChat(messageText, chatHistoryRef.current);
 
-            let replyText = "Sorry, I couldn't connect to my AI brain. Please try again!";
+            if (result.status !== 200 || !result.data.reply) {
+                throw new Error(result.data?.message || 'Gemini could not respond. Please retry.');
+            }
+            let replyText;
 
             if (result.status === 200 && result.data.reply) {
                 replyText = result.data.reply;
@@ -169,7 +172,7 @@ const AIChatScreen = ({ navigation }) => {
             console.error("AI Chat Error:", error);
             const errorMessage = {
                 _id: Math.round(Math.random() * 1000000),
-                text: "I'm having trouble connecting right now. Please check your connection and try again.",
+                text: error.message || 'Could not reach AI Coach. Please try again.',
                 createdAt: new Date(),
                 user: { _id: 2, name: 'AI' },
             };

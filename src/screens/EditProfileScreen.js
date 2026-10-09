@@ -89,7 +89,7 @@ const EditProfileScreen = ({ navigation }) => {
     const [activeTab, setActiveTab] = useState('Personal');
     const pulseAnim = useRef(new Animated.Value(1)).current;
 
-    const tabs = ['Personal', 'Body', 'Fitness', 'Nutrition', 'Recovery'];
+    const tabs = ['Personal', 'Body', 'Fitness', 'Nutrition', 'Limitations'];
 
     const textColor = themeColors.isDark ? COLORS.white : COLORS.text;
     const subTextColor = themeColors.isDark ? 'rgba(255,255,255,0.6)' : '#64748B';
@@ -149,8 +149,8 @@ const EditProfileScreen = ({ navigation }) => {
         });
         if (!result.canceled) {
             const base64Uri = `data:image/jpeg;base64,${result.assets[0].base64}`;
-            updateUserProfileImage(base64Uri);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            if (await updateUserProfileImage(base64Uri)) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            else Alert.alert('Photo not saved', 'Please choose an image under 6 MB and retry.');
         }
     };
 
@@ -164,10 +164,27 @@ const EditProfileScreen = ({ navigation }) => {
     };
 
     const handleSave = async () => {
+        if (loading) return;
+        if (!formData.name.trim()) {
+            Alert.alert('Name required', 'Enter your name before saving.');
+            return;
+        }
+        const ranges = {
+            age: [1, 120], weight: [20, 400], height: [80, 250],
+            training_days_per_week: [1, 7], meals_per_day: [1, 8], sleep_hours: [0, 24],
+        };
+        for (const [field, [min, max]] of Object.entries(ranges)) {
+            const value = Number(formData[field]);
+            if (!String(formData[field]).trim() || !Number.isFinite(value) || value < min || value > max || (['age', 'training_days_per_week', 'meals_per_day'].includes(field) && !Number.isInteger(value))) {
+                Alert.alert('Check your profile', `Enter a valid ${field.replace(/_/g, ' ')} between ${min} and ${max}.`);
+                return;
+            }
+        }
         setLoading(true);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         try {
             const payload = {
+                name: formData.name.trim(),
                 age: safeInt(formData.age),
                 gender: formData.gender,
                 weight: safeFloat(formData.weight),
@@ -197,13 +214,14 @@ const EditProfileScreen = ({ navigation }) => {
             if (res.status === 200) {
                 setUser(prev => ({
                     ...prev,
-                    name: formData.name,
+                    ...payload,
+                    name: formData.name.trim(),
                     profile: { ...prev.profile, ...payload }
                 }));
                 Alert.alert('✓ Saved', 'Your profile has been updated!');
                 navigation.goBack();
             } else {
-                Alert.alert('Error', 'Failed to update profile.');
+                Alert.alert('Error', res.data?.message || 'Failed to update profile.');
             }
         } catch (error) {
             console.error('Update error:', error);
@@ -525,11 +543,21 @@ const EditProfileScreen = ({ navigation }) => {
     );
 
     // ── Recovery Tab ───────────────────────────────────────────────────────────
+    const dominanceFor = (region) => {
+        const match = formData.strong_side.match(new RegExp(`${region} Body:\\s*(left|right|symmetric)`, 'i'));
+        if (match) return match[1].toLowerCase();
+        return ['left', 'right'].includes(formData.strong_side.toLowerCase()) ? formData.strong_side.toLowerCase() : 'symmetric';
+    };
+    const updateDominance = (region, side) => {
+        const upper = region === 'Upper' ? side : dominanceFor('Upper');
+        const lower = region === 'Lower' ? side : dominanceFor('Lower');
+        handleChange('strong_side', `Upper Body: ${upper.toUpperCase()}, Lower Body: ${lower.toUpperCase()}`);
+    };
     const renderRecovery = () => (
         <AnimatedCard delay={100} style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: themeColors.accent }]}>🩺 RECOVERY & HEALTH</Text>
+            <Text style={[styles.sectionTitle, { color: themeColors.accent }]}>TRAINING LIMITATIONS</Text>
             <Text style={[styles.sectionNote, { color: subTextColor }]}>
-                This data helps our AI tailor a safe, injury-aware training plan for you.
+                Reported limitations support exercise exclusions. This is not rehabilitation or medical clearance.
             </Text>
 
             <InputField
@@ -561,14 +589,21 @@ const EditProfileScreen = ({ navigation }) => {
 
             <GlassCard style={styles.inputCard}>
                 <SelectionChips
-                    label="DOMINANT SIDE"
+                    label="UPPER BODY SIDE"
                     options={[
-                        { label: '🤜 Right', value: 'right' },
-                        { label: '🤛 Left', value: 'left' },
-                        { label: '⚖️ Both', value: 'both' }
+                        { label: 'Right', value: 'right' },
+                        { label: 'Left', value: 'left' },
+                        { label: 'Symmetric', value: 'symmetric' }
                     ]}
-                    selected={formData.strong_side}
-                    onSelect={v => handleChange('strong_side', v)}
+                    selected={dominanceFor('Upper')}
+                    onSelect={v => updateDominance('Upper', v)}
+                    themeColors={themeColors}
+                />
+                <SelectionChips
+                    label="LOWER BODY SIDE"
+                    options={[{ label: 'Right', value: 'right' }, { label: 'Left', value: 'left' }, { label: 'Symmetric', value: 'symmetric' }]}
+                    selected={dominanceFor('Lower')}
+                    onSelect={v => updateDominance('Lower', v)}
                     themeColors={themeColors}
                 />
             </GlassCard>
@@ -620,7 +655,7 @@ const EditProfileScreen = ({ navigation }) => {
                     {activeTab === 'Body' && renderBody()}
                     {activeTab === 'Fitness' && renderFitness()}
                     {activeTab === 'Nutrition' && renderNutrition()}
-                    {activeTab === 'Recovery' && renderRecovery()}
+                    {activeTab === 'Limitations' && renderRecovery()}
 
                     <View style={{ height: 140 }} />
                 </ScrollView>

@@ -49,7 +49,7 @@ const ProfileScreen = ({ route, navigation }) => {
     useFocusEffect(
         useCallback(() => {
             fetchUserProfile();
-        }, [friendId])
+        }, [friendId, user?.user_id])
     );
 
     const fetchUserProfile = async () => {
@@ -76,15 +76,17 @@ const ProfileScreen = ({ route, navigation }) => {
 
         if (!result.canceled) {
             const base64Uri = `data:image/jpeg;base64,${result.assets[0].base64}`;
-            updateUserProfileImage(base64Uri);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            if (await updateUserProfileImage(base64Uri)) {
+                await fetchUserProfile();
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } else Alert.alert('Photo not saved', 'Choose an image under 6 MB and retry.');
         }
     };
 
     const stats = [
         { id: '1', label: 'Workouts', value: profileData?.stats?.workouts || '0', icon: 'barbell', color: '#10B981' },
-        { id: '2', label: 'Streak', value: `${profileData?.profile?.streak || user.profile?.streak || 0} Days`, icon: 'flame', color: '#F59E0B' },
-        { id: '3', label: 'Total XP', value: (profileData?.profile?.xp || user.xp || 0).toLocaleString(), icon: 'trending-up', color: '#3B82F6' },
+        { id: '2', label: 'Streak', value: `${profileData?.profile?.streak ?? (isFriendProfile ? 0 : user.profile?.streak ?? 0)} Days`, icon: 'flame', color: '#F59E0B' },
+        { id: '3', label: 'Current XP', value: Number(profileData?.profile?.xp ?? (isFriendProfile ? 0 : user.xp ?? 0)).toLocaleString(), icon: 'trending-up', color: '#3B82F6' },
     ];
 
     const handleAction = (label) => {
@@ -172,6 +174,7 @@ const ProfileScreen = ({ route, navigation }) => {
                     </View>
                     <TouchableOpacity
                         style={styles.headerActionBtn}
+                        disabled={isFriendProfile}
                         onPress={() => handleOpenSettings('App Theme')}
                     >
                         <BlurView intensity={20} tint="light" style={styles.iconBlur}>
@@ -223,18 +226,18 @@ const ProfileScreen = ({ route, navigation }) => {
                         </View>
 
                         <View style={styles.quickStatsRow}>
-                            <TouchableOpacity onPress={() => navigation.navigate('MyFriends')} style={styles.quickStatItem}>
+                            <TouchableOpacity disabled={isFriendProfile} onPress={() => navigation.navigate('MyFriends')} style={styles.quickStatItem}>
                                 <Text style={styles.quickStatVal}>{profileData?.stats?.friends || 0}</Text>
                                 <Text style={styles.quickStatLab}>Friends</Text>
                             </TouchableOpacity>
                             <View style={styles.statDivider} />
-                            <TouchableOpacity onPress={() => navigation.navigate('MyClubs')} style={styles.quickStatItem}>
+                            <TouchableOpacity disabled={isFriendProfile} onPress={() => navigation.navigate('MyClubs')} style={styles.quickStatItem}>
                                 <Text style={styles.quickStatVal}>{profileData?.stats?.clubs || 0}</Text>
                                 <Text style={styles.quickStatLab}>Clubs</Text>
                             </TouchableOpacity>
                             <View style={styles.statDivider} />
                             <View style={styles.quickStatItem}>
-                                <Text style={styles.quickStatVal}>{profileData?.profile?.points || user.points}</Text>
+                                <Text style={styles.quickStatVal}>{profileData?.profile?.points ?? (isFriendProfile ? 0 : user.points ?? 0)}</Text>
                                 <Text style={styles.quickStatLab}>Points</Text>
                             </View>
                         </View>
@@ -247,6 +250,7 @@ const ProfileScreen = ({ route, navigation }) => {
                         <TouchableOpacity
                             key={stat.id}
                             activeOpacity={0.8}
+                            disabled={isFriendProfile}
                             onPress={() => navigation.navigate('Progress')}
                             style={styles.statTouch}
                         >
@@ -269,7 +273,7 @@ const ProfileScreen = ({ route, navigation }) => {
                 <View style={styles.sectionElite}>
                     <View style={styles.sectionHeaderElite}>
                         <Text style={styles.sectionTitleElite}>Achievements</Text>
-                        <TouchableOpacity onPress={() => navigation.navigate('Achievements')}>
+                        <TouchableOpacity disabled={isFriendProfile} onPress={() => navigation.navigate('Achievements')}>
                             <Text style={[styles.seeAllElite, { color: themeColors.accent }]}>VIEW ALL</Text>
                         </TouchableOpacity>
                     </View>
@@ -383,9 +387,9 @@ const ProfileScreen = ({ route, navigation }) => {
                                             <TouchableOpacity
                                                 key={theme}
                                                 style={styles.themeOptionElite}
-                                                onPress={() => {
-                                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                                    setThemeName(theme);
+                                                onPress={async () => {
+                                                    if (!await setThemeName(theme)) Alert.alert('Theme not saved', 'Please retry.');
+                                                    else Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                                 }}
                                             >
                                                 <View style={[
@@ -411,7 +415,7 @@ const ProfileScreen = ({ route, navigation }) => {
                                             </View>
                                             <View style={styles.aboutAppTextStack}>
                                                 <Text style={styles.aboutAppName}>Elite Fitness AI</Text>
-                                                <Text style={styles.aboutAppVer}>Version 1.4.0 (Build 2026)</Text>
+                                                <Text style={styles.aboutAppVer}>Version 1.0.0 · Final-Year Project</Text>
                                             </View>
                                         </View>
                                         <Text style={styles.aboutAppDesc}>
@@ -419,15 +423,15 @@ const ProfileScreen = ({ route, navigation }) => {
                                         </Text>
                                         <View style={styles.aboutAppMetaRow}>
                                             <View style={styles.aboutAppMetaItem}>
-                                                <Text style={styles.aboutAppMetaTitle}>AI Model</Text>
-                                                <Text style={[styles.aboutAppMetaValue, { color: themeColors.accent }]}>Local Custom AI</Text>
+                                                <Text style={styles.aboutAppMetaTitle}>AI Models</Text>
+                                                <Text style={[styles.aboutAppMetaValue, { color: themeColors.accent }]}>Local Models + Gemini</Text>
                                             </View>
                                             <View style={styles.aboutAppMetaItem}>
                                                 <Text style={styles.aboutAppMetaTitle}>Platform</Text>
-                                                <Text style={styles.aboutAppMetaValue}>Hybrid Engine</Text>
+                                                <Text style={styles.aboutAppMetaValue}>React Native / Expo</Text>
                                             </View>
                                         </View>
-                                        <Text style={styles.aboutAppCopyright}>© 2026 Elite Fitness Inc. All rights reserved.</Text>
+                                        <Text style={styles.aboutAppCopyright}>Elite Fitness · 2026</Text>
                                     </View>
                                 ) : selectedSetting === 'Support Center' ? (
                                     <View style={styles.supportContainer}>
@@ -437,10 +441,10 @@ const ProfileScreen = ({ route, navigation }) => {
                                         <View style={styles.supportChannelsRow}>
                                             <TouchableOpacity 
                                                 style={[styles.supportChannelCard, { borderColor: themeColors.accent + '30' }]}
-                                                onPress={() => Alert.alert("Contact Support", "Please email us at: support@elitefitness.ai")}
+                                                onPress={() => Alert.alert('Project Support', 'Contact your project team for account or application assistance.')}
                                             >
                                                 <Ionicons name="mail" size={20} color={themeColors.accent} />
-                                                <Text style={styles.supportChannelTitle}>Email Support</Text>
+                                                <Text style={styles.supportChannelTitle}>Project Support</Text>
                                             </TouchableOpacity>
                                             <TouchableOpacity 
                                                 style={[styles.supportChannelCard, { borderColor: themeColors.accent + '30' }]}
@@ -458,9 +462,9 @@ const ProfileScreen = ({ route, navigation }) => {
                                         <Text style={styles.supportFaqHeader}>Frequently Asked Questions</Text>
                                         <View style={styles.supportFaqList}>
                                             {[
-                                                { q: "How does AI body scanning work?", a: "AI body recovery uses computer vision to check posture alignments and movement velocity." },
+                                                { q: "How does exercise analysis work?", a: "PoseForm analyzes a recorded or uploaded exercise video and returns estimated reps and form feedback." },
                                                 { q: "How do I change my daily goal?", a: "Navigate to Edit Profile from account settings and change your Primary Goal." },
-                                                { q: "Are training plans fully customized?", a: "Yes, our algorithms dynamically rebuild plans weekly based on logs." }
+                                                { q: "When do my plans change?", a: "Saved plans stay in place until you request a new plan. Update your profile before generating new recommendations." }
                                             ].map((faq, idx) => (
                                                 <TouchableOpacity 
                                                     key={idx} 

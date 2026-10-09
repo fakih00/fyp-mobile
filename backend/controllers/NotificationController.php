@@ -14,6 +14,15 @@ class NotificationController extends BaseController {
         $stmt = $this->db->prepare($query);
         $stmt->execute([$user_id]);
         $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $prefs = $this->db->prepare('SELECT notification_preferences FROM user_profiles WHERE user_id = ?');
+        $prefs->execute([$user_id]);
+        $settings = array_merge(['enabled' => true, 'friendRequests' => true, 'communityUpdates' => true, 'activityUpdates' => true], json_decode($prefs->fetchColumn() ?: '{}', true) ?: []);
+        $notifications = array_values(array_filter($notifications, function ($notification) use ($settings) {
+            if (!$settings['enabled']) return false;
+            if ($notification['type'] === 'friend_request') return $settings['friendRequests'];
+            if ($notification['type'] === 'social') return $settings['communityUpdates'];
+            return $settings['activityUpdates'];
+        }));
 
         foreach ($notifications as &$n) {
             $n['is_read'] = (bool)$n['is_read'];

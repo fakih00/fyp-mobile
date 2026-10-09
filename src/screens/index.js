@@ -28,7 +28,6 @@ import EliteSubscriptionScreen from './EliteSubscriptionScreen';
 import MyFriendsScreen from './MyFriendsScreen';
 import MyClubsScreen from './MyClubsScreen';
 import WaterLogScreen from './WaterLogScreen';
-import BodyRecoveryScreen from './BodyRecoveryScreen';
 import CompetitionPrepScreen from './CompetitionPrepScreen';
 
 // Onboarding
@@ -41,7 +40,6 @@ import LifestyleScreen from './onboarding/LifestyleScreen';
 import TrainingPreferenceScreen from './onboarding/TrainingPreferenceScreen';
 import DietaryPreferenceScreen from './onboarding/DietaryPreferenceScreen';
 import PhysicalAssessmentScreen from './onboarding/PhysicalAssessmentScreen';
-import InjuryWarningScreen from './onboarding/InjuryWarningScreen';
 
 export {
     SplashScreen,
@@ -57,7 +55,6 @@ export {
     TrainingPreferenceScreen,
     DietaryPreferenceScreen,
     PhysicalAssessmentScreen,
-    InjuryWarningScreen,
     HomeScreen,
     WorkoutPlanScreen,
     WorkoutPlayerScreen,
@@ -84,6 +81,5 @@ export {
     MyFriendsScreen,
     MyClubsScreen,
     WaterLogScreen,
-    BodyRecoveryScreen,
     CompetitionPrepScreen
 };

@@ -373,9 +373,6 @@ const WorkoutPlayerScreen = ({ navigation }) => {
                 }
                 const video = await cameraRef.current.recordAsync({
                     maxFileSize: 38 * 1024 * 1024,
-                    videoBitrate: 1000000,
-                    videoQuality: '480p',
-                    mute: true,
                 });
                 setAiVideoRecording(false);
                 if (video?.uri) {
@@ -611,6 +608,8 @@ const WorkoutPlayerScreen = ({ navigation }) => {
                         style={StyleSheet.absoluteFill}
                         facing={cameraFacing}
                         mode="video"
+                        videoQuality="480p"
+                        videoBitrate={1000000}
                         animateShutter={false}
                         mute
                         onCameraReady={handleCameraReady}

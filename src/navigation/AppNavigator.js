@@ -39,8 +39,6 @@ import {
     NutritionLogScreen,
     WaterLogScreen,
     GeneratingPlanScreen,
-    BodyRecoveryScreen,
-    InjuryWarningScreen,
     CompetitionPrepScreen
 } from '../screens';
 import TabNavigator from './TabNavigator';
@@ -65,7 +63,6 @@ const AppNavigator = () => {
                 <Stack.Screen name="DietaryPreference" component={DietaryPreferenceScreen} />
                 <Stack.Screen name="Activity" component={ActivityScreen} />
                 <Stack.Screen name="GeneratingPlan" component={GeneratingPlanScreen} />
-                <Stack.Screen name="InjuryWarning" component={InjuryWarningScreen} />
                 <Stack.Screen name="Main" component={TabNavigator} />
                 <Stack.Screen name="Shop" component={ShopScreen} />
                 <Stack.Screen name="Chat" component={ChatScreen} />
@@ -88,7 +85,6 @@ const AppNavigator = () => {
                 <Stack.Screen name="EliteSubscription" component={EliteSubscriptionScreen} />
                 <Stack.Screen name="MyFriends" component={MyFriendsScreen} />
                 <Stack.Screen name="MyClubs" component={MyClubsScreen} />
-                <Stack.Screen name="BodyRecovery" component={BodyRecoveryScreen} />
                 <Stack.Screen name="CompetitionPrep" component={CompetitionPrepScreen} />
                 <Stack.Screen
                     name="AIChat"

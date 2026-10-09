@@ -22,11 +22,13 @@ const { width, height } = Dimensions.get('window');
 
 const PostDetailModal = ({ visible, onClose, post, currentUser, onAddComment }) => {
     const [commentText, setCommentText] = useState('');
+    const [sending, setSending] = useState(false);
 
     if (!post) return null;
 
-    const handleAddComment = () => {
-        if (commentText.trim().length === 0) return;
+    const handleAddComment = async () => {
+        if (commentText.trim().length === 0 || sending) return;
+        setSending(true);
 
         const newComment = {
             id: Date.now().toString(),
@@ -36,9 +38,14 @@ const PostDetailModal = ({ visible, onClose, post, currentUser, onAddComment }) 
             time: 'Just now'
         };
 
-        onAddComment(post.id, newComment);
-        setCommentText('');
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        try {
+            if (await onAddComment(post.id, newComment)) {
+                setCommentText('');
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
+        } finally {
+            setSending(false);
+        }
     };
 
     return (

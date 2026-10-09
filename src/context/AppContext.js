@@ -21,11 +21,20 @@ export const AppProvider = ({ children }) => {
     const colors = THEMES[themeName] || THEMES[DEFAULT_THEME];
     
     const setThemeName = async (newTheme) => {
+        if (!THEMES[newTheme]) return false;
+        const previousTheme = themeName;
         rawSetThemeName(newTheme);
         try {
-            await api.updateProfile({ theme: newTheme });
+            const res = await api.updateProfile({ theme: newTheme });
+            if (res.status !== 200) {
+                rawSetThemeName(previousTheme);
+                return false;
+            }
+            return true;
         } catch (e) {
+            rawSetThemeName(previousTheme);
             console.error("Failed to update theme in database", e);
+            return false;
         }
     };
 
@@ -60,6 +69,7 @@ export const AppProvider = ({ children }) => {
             setUser(prev => ({
                 ...prev,
                 ...userData,
+                profile: userData,
                 profileImage: userData.avatar, // Map backend 'avatar' to frontend 'profileImage'
                 id: res.data.id,
                 user_id: res.data.id,
@@ -68,7 +78,7 @@ export const AppProvider = ({ children }) => {
                 email: res.data.email
             }));
             if (userData.theme) {
-                setThemeName(userData.theme);
+                rawSetThemeName(THEMES[userData.theme] ? userData.theme : DEFAULT_THEME);
             }
         }
 
@@ -378,17 +388,18 @@ export const AppProvider = ({ children }) => {
     };
 
     const updateUserProfileImage = async (uri) => {
-        // Optimistic update
-        setUser(prev => ({ ...prev, profileImage: uri }));
-
         if (user?.user_id) {
             try {
-                // Sync with backend
-                await api.updateProfile({ avatar: uri });
+                const res = await api.updateProfile({ avatar: uri });
+                if (res.status !== 200) return false;
+                const savedUri = res.data.avatar || uri;
+                setUser(prev => ({ ...prev, profileImage: savedUri, profile: { ...prev.profile, avatar: savedUri } }));
+                return true;
             } catch (err) {
                 console.error("Profile Image Sync Error:", err);
             }
         }
+        return false;
     };
 
     const logout = async () => {

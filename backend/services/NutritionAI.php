@@ -95,9 +95,9 @@ class NutritionAI {
         return $payload['plan'];
     }
 
-    public function replaceMealWithHint($mealToReplace, $hint, array $profile = [], $replacement = null, array $fridgeIngredients = []) {
+    public function replaceMealWithHint($mealToReplace, $hint, array $profile = [], $replacement = null, array $fridgeIngredients = [], array $approvalReviews = []) {
         $this->lastError = null;
-        $pythonMeal = $this->replaceWithPython($mealToReplace, $hint, $profile, $replacement, $fridgeIngredients);
+        $pythonMeal = $this->replaceWithPython($mealToReplace, $hint, $profile, $replacement, $fridgeIngredients, $approvalReviews);
         if (is_array($pythonMeal) && !empty($pythonMeal['name'])) {
             return $pythonMeal;
         }
@@ -109,7 +109,7 @@ class NutritionAI {
         return null;
     }
 
-    private function replaceWithPython($mealToReplace, $hint, array $profile = [], $replacement = null, array $fridgeIngredients = []): ?array {
+    private function replaceWithPython($mealToReplace, $hint, array $profile = [], $replacement = null, array $fridgeIngredients = [], array $approvalReviews = []): ?array {
         $script = realpath(__DIR__ . '/../../ml/nutrition_ai/nutricore_model.py');
         if (!$script) {
             error_log('NutriCore AI Python swap model not found.');
@@ -126,6 +126,7 @@ class NutritionAI {
             'profile' => $profile,
             'fridge_ingredients' => array_values($fridgeIngredients),
             'replacement' => is_array($replacement) ? $replacement : null,
+            'approval_reviews' => $approvalReviews,
         ];
         $payloadJson = json_encode($payload, JSON_UNESCAPED_SLASHES);
         if ($payloadJson === false) {

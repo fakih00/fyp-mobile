@@ -803,24 +803,6 @@ const HomeScreen = ({ navigation }) => {
                                 </BlurView>
                             </TouchableOpacity>
 
-                            {/* AI Body Recovery */}
-                            <TouchableOpacity
-                                style={styles.aiSuiteGridItem}
-                                activeOpacity={0.85}
-                                onPress={() => {
-                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                                    navigation.navigate('BodyRecovery');
-                                }}
-                            >
-                                <BlurView intensity={20} tint="light" style={styles.aiSuiteItemBlur}>
-                                    <View style={[styles.aiSuiteIconBox, { backgroundColor: 'rgba(239, 68, 68, 0.12)' }]}>
-                                        <Ionicons name="pulse" size={20} color="#EF4444" />
-                                    </View>
-                                    <Text style={styles.aiSuiteItemName}>Recovery</Text>
-                                    <Text style={styles.aiSuiteItemSub}>Rehab Scanner</Text>
-                                </BlurView>
-                            </TouchableOpacity>
-
                             {/* AI Competition Prep */}
                             <TouchableOpacity
                                 style={styles.aiSuiteGridItem}

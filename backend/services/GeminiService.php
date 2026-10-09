@@ -9,10 +9,12 @@
  */
 class GeminiService {
     private $apiKey;
-    private $modelEndpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+    private $modelEndpoint;
 
     public function __construct() {
         $this->apiKey = getenv('GEMINI_API_KEY');
+        $model = getenv('GEMINI_MODEL') ?: 'gemini-flash-lite-latest';
+        $this->modelEndpoint = 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) . ':generateContent';
     }
 
     public function isAvailable(): bool {
@@ -45,13 +47,12 @@ class GeminiService {
             ];
         }
 
-        $url = $this->modelEndpoint . '?key=' . urlencode($this->apiKey);
-        $ch = curl_init($url);
+        $ch = curl_init($this->modelEndpoint);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 25);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', 'x-goog-api-key: ' . $this->apiKey]);
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -63,7 +64,13 @@ class GeminiService {
         }
 
         $decoded = json_decode($response, true);
-        return $decoded['candidates'][0]['content']['parts'][0]['text'] ?? null;
+        $texts = [];
+        foreach ($decoded['candidates'][0]['content']['parts'] ?? [] as $part) {
+            if (isset($part['text']) && empty($part['thought'])) {
+                $texts[] = $part['text'];
+            }
+        }
+        return $texts ? implode("\n", $texts) : null;
     }
 }
 ?>

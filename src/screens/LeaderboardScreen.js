@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect, useCallback } from 'react';
+import React, { useState, useContext, useEffect, useCallback, useRef } from 'react';
 import {
     View,
     Text,
@@ -6,7 +6,7 @@ import {
     ScrollView,
     TouchableOpacity,
     Image,
-    Dimensions,
+    useWindowDimensions,
     Animated,
     Modal,
     ActivityIndicator,
@@ -23,14 +23,12 @@ import { AnimatedCard, GlassCard, AuraBackground } from '../components';
 import { api } from '../services/api';
 import { AppContext } from '../context/AppContext';
 
-const { width } = Dimensions.get('window');
-
 const LEAGUES = [
     { name: 'Bronze',  color: '#CD7F32', gradient: ['#CD7F32', '#A0522D'], icon: 'shield',        minXP: 0,     maxXP: 500  },
     { name: 'Silver',  color: '#94A3B8', gradient: ['#94A3B8', '#64748B'], icon: 'shield-half',   minXP: 500,   maxXP: 1500 },
     { name: 'Gold',    color: '#F59E0B', gradient: ['#F59E0B', '#D97706'], icon: 'shield-checkmark', minXP: 1500, maxXP: 4000 },
     { name: 'Emerald', color: '#10B981', gradient: ['#10B981', '#059669'], icon: 'diamond',        minXP: 4000,  maxXP: 10000},
-    { name: 'Diamond', color: '#7DD3FC', gradient: ['#7DD3FC', '#38BDF8'], icon: 'star',           minXP: 10000, maxXP: 99999},
+    { name: 'Diamond', color: '#7DD3FC', gradient: ['#7DD3FC', '#38BDF8'], icon: 'star',           minXP: 10000, maxXP: Infinity},
 ];
 
 const getLeagueForXP = (xp) => {
@@ -50,6 +48,8 @@ const getSeasonTimer = () => {
 };
 
 const LeaderboardScreen = ({ navigation }) => {
+    const { width: windowWidth } = useWindowDimensions();
+    const podiumSize = Math.min(85, Math.max(48, (windowWidth - 115) / 3));
     const { user, colors: themeColors } = useContext(AppContext);
     const [mode, setMode] = useState('Global');
     const [selectedLeague, setSelectedLeague] = useState(LEAGUES[3]);
@@ -59,27 +59,39 @@ const LeaderboardScreen = ({ navigation }) => {
     const [refreshing, setRefreshing] = useState(false);
     const [seasonTimer] = useState(getSeasonTimer());
     const [floatingAnim] = useState(new Animated.Value(0));
+    const latestRequest = useRef(0);
+    const leagueInitialized = useRef(false);
 
     const fetchLeaderboard = useCallback(async (isRefreshing = false) => {
         if (!user?.user_id) return;
+        const requestId = ++latestRequest.current;
         console.log("Fetching real-time rankings and league positions for leaderboard...");
         if (!isRefreshing) setLoading(true);
         try {
             const res = await api.getLeaderboard(mode);
+            if (requestId !== latestRequest.current) return;
             if (res.status === 200) {
                 const records = res.data.records || [];
                 setRankings(records);
                 // Auto-set league based on user's XP
                 const myRecord = records.find(r => r.id == user?.user_id);
-                if (myRecord) {
+                if (myRecord && !leagueInitialized.current) {
                     setSelectedLeague(getLeagueForXP(myRecord.xp || 0));
+                    leagueInitialized.current = true;
                 }
+            } else {
+                setRankings([]);
+                Alert.alert('Rankings unavailable', res.data?.message || 'Please try refreshing.');
             }
         } catch (error) {
+            if (requestId !== latestRequest.current) return;
+            setRankings([]);
             console.error('Fetch Leaderboard Error:', error);
         } finally {
-            setLoading(false);
-            setRefreshing(false);
+            if (requestId === latestRequest.current) {
+                setLoading(false);
+                setRefreshing(false);
+            }
         }
     }, [user?.user_id, mode]);
 
@@ -106,22 +118,22 @@ const LeaderboardScreen = ({ navigation }) => {
         r.xp >= selectedLeague.minXP && r.xp < selectedLeague.maxXP
     );
 
-    const displayRankings = leagueRankings.length > 0 ? leagueRankings : rankings;
+    const displayRankings = leagueRankings.map((record, index) => ({ ...record, rank: index + 1 }));
 
     const topThree = [
-        displayRankings.find(r => r.rank === 2) || displayRankings[1] || { name: '—', xp: 0, avatar: '?' },
-        displayRankings.find(r => r.rank === 1) || displayRankings[0] || { name: '—', xp: 0, avatar: '?' },
-        displayRankings.find(r => r.rank === 3) || displayRankings[2] || { name: '—', xp: 0, avatar: '?' },
+        displayRankings[1],
+        displayRankings[0],
+        displayRankings[2],
     ];
-    const otherRankings = displayRankings.filter(r => r.rank > 3);
+    const otherRankings = displayRankings.slice(3);
 
     const myRecord = rankings.find(r => r.id == user?.user_id) || { rank: '?', xp: 0 };
     const myXP = myRecord.xp || 0;
     const myLeague = getLeagueForXP(myXP);
-    const xpProgress = myLeague.maxXP < 99999
+    const xpProgress = Number.isFinite(myLeague.maxXP)
         ? Math.min(((myXP - myLeague.minXP) / (myLeague.maxXP - myLeague.minXP)) * 100, 100)
         : 100;
-    const xpToNext = myLeague.maxXP < 99999 ? (myLeague.maxXP - myXP) : 0;
+    const xpToNext = Number.isFinite(myLeague.maxXP) ? (myLeague.maxXP - myXP) : 0;
 
     const handleModeSwitch = (newMode) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -136,7 +148,7 @@ const LeaderboardScreen = ({ navigation }) => {
 
     // ── Sub-components ──────────────────────────────────────────────
     const PodiumItem = ({ userData, delay, size, rank, isWinner }) => (
-        <AnimatedCard delay={delay} style={[styles.podiumItemElite, isWinner && styles.winnerShift]}>
+        <AnimatedCard delay={delay} style={[styles.podiumItemElite, { width: size + 10 }, isWinner && styles.winnerShift]}>
             <View style={[styles.podiumAvatarFrame, { width: size + 10, height: size + 10, borderRadius: (size + 10) / 2 }]}>
                 <LinearGradient
                     colors={isWinner ? themeColors.gradient : ['#E2E8F0', '#94A3B8']}
@@ -145,7 +157,7 @@ const LeaderboardScreen = ({ navigation }) => {
                     {userData?.avatar_url ? (
                         <Image source={{ uri: userData.avatar_url }} style={{ width: size, height: size, borderRadius: size / 2 }} />
                     ) : (
-                        <Text style={[styles.podiumAvatarText, { fontSize: size * 0.4 }]}>{userData?.avatar || '?'}</Text>
+                        <Text style={[styles.podiumAvatarText, { fontSize: isWinner ? 32 : 26 }]}>{userData?.avatar || '?'}</Text>
                     )}
                 </LinearGradient>
                 <View style={[styles.rankBadgeElite, { backgroundColor: isWinner ? themeColors.accent : '#64748B' }]}>
@@ -277,7 +289,7 @@ const LeaderboardScreen = ({ navigation }) => {
                                     {selectedLeague.name} League
                                 </Text>
                                 <Text style={styles.leagueBannerSub}>
-                                    {selectedLeague.minXP.toLocaleString()} – {selectedLeague.maxXP < 99999 ? selectedLeague.maxXP.toLocaleString() : '∞'} XP
+                                    {selectedLeague.minXP.toLocaleString()} – {Number.isFinite(selectedLeague.maxXP) ? (selectedLeague.maxXP - 1).toLocaleString() : '∞'} XP
                                 </Text>
                             </View>
                         </View>
@@ -291,9 +303,9 @@ const LeaderboardScreen = ({ navigation }) => {
                     {/* ── Podium ── */}
                     {displayRankings.length >= 1 ? (
                         <View style={styles.podiumWrapperElite}>
-                            <PodiumItem userData={topThree[0]} delay={200} size={85} rank={2} />
-                            <PodiumItem userData={topThree[1]} delay={100} size={110} rank={1} isWinner />
-                            <PodiumItem userData={topThree[2]} delay={300} size={80} rank={3} />
+                            {topThree[0] && <PodiumItem userData={topThree[0]} delay={200} size={podiumSize} rank={2} />}
+                            {topThree[1] && <PodiumItem userData={topThree[1]} delay={100} size={podiumSize + 25} rank={1} isWinner />}
+                            {topThree[2] && <PodiumItem userData={topThree[2]} delay={300} size={podiumSize} rank={3} />}
                         </View>
                     ) : (
                         <View style={styles.emptyLeague}>
@@ -388,10 +400,10 @@ const LeaderboardScreen = ({ navigation }) => {
                         <View style={styles.rankXPProgressElite}>
                             <View style={styles.rankXPTextRow}>
                                 <Text style={styles.rankXPProgLabel}>
-                                    {myLeague.maxXP < 99999 ? `NEXT LEAGUE PROGRESS` : 'MAX LEAGUE REACHED 🏆'}
+                                    {Number.isFinite(myLeague.maxXP) ? `NEXT LEAGUE PROGRESS` : 'MAX LEAGUE REACHED 🏆'}
                                 </Text>
                                 <Text style={[styles.rankXPProgVal, { color: themeColors.accent }]}>
-                                    {myLeague.maxXP < 99999 ? `${xpToNext.toLocaleString()} XP to go` : `${myXP.toLocaleString()} XP`}
+                                    {Number.isFinite(myLeague.maxXP) ? `${xpToNext.toLocaleString()} XP to go` : `${myXP.toLocaleString()} XP`}
                                 </Text>
                             </View>
                             <View style={styles.progBarBgElite}>
@@ -407,7 +419,7 @@ const LeaderboardScreen = ({ navigation }) => {
                                     <Ionicons name={myLeague.icon} size={11} color={myLeague.color} style={{ marginRight: 3 }} />
                                     <Text style={[styles.leagueChipText, { color: myLeague.color }]}>{myLeague.name}</Text>
                                 </View>
-                                {myLeague.maxXP < 99999 && (
+                                {Number.isFinite(myLeague.maxXP) && (
                                     <View style={styles.leagueProgressChip}>
                                         <Ionicons name={LEAGUES[LEAGUES.indexOf(myLeague) + 1]?.icon || 'star'} size={11} color="#94A3B8" style={{ marginRight: 3 }} />
                                         <Text style={[styles.leagueChipText, { color: '#94A3B8' }]}>
@@ -466,7 +478,7 @@ const LeaderboardScreen = ({ navigation }) => {
                                             )}
                                         </View>
                                         <Text style={styles.leagueOptionRange}>
-                                            {league.minXP.toLocaleString()} – {league.maxXP < 99999 ? league.maxXP.toLocaleString() : '∞'} XP  •  {count} players
+                                            {league.minXP.toLocaleString()} – {Number.isFinite(league.maxXP) ? (league.maxXP - 1).toLocaleString() : '∞'} XP  •  {count} players
                                         </Text>
                                     </View>
                                     {isSelected && <Ionicons name="checkmark-circle" size={22} color={league.color} />}
@@ -513,7 +525,7 @@ const styles = StyleSheet.create({
     eliteSubtitle: { fontSize: 10, fontWeight: 'bold', color: 'rgba(255,255,255,0.7)', letterSpacing: 2, marginTop: 2 },
     headerActionBtn: { width: 44, height: 44, borderRadius: 14, overflow: 'hidden' },
     iconBlur: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    leagueSelectorElite: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 },
+    leagueSelectorElite: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between', alignItems: 'center', marginTop: 14 },
     leaguePillElite: {
         flexDirection: 'row', alignItems: 'center',
         backgroundColor: 'rgba(255,255,255,0.15)',
@@ -567,7 +579,7 @@ const styles = StyleSheet.create({
     },
     rankBadgeTextElite: { color: COLORS.white, fontWeight: '900', fontSize: 14 },
     winnerCrown: { position: 'absolute', top: -24 },
-    podiumNameElite: { fontSize: 15, fontWeight: 'bold', color: '#0F172A', marginBottom: 6, width: 90, textAlign: 'center' },
+    podiumNameElite: { fontSize: 15, fontWeight: 'bold', color: '#0F172A', marginBottom: 6, width: '100%', textAlign: 'center' },
     podiumXPBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, gap: 3 },
     podiumXPElite: { fontSize: 12, fontWeight: '900' },
     podiumXPUnitElite: { fontSize: 9, fontWeight: '800', color: '#94A3B8' },

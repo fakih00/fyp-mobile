@@ -7,7 +7,8 @@ import {
     TouchableOpacity,
     ImageBackground,
     ActivityIndicator,
-    Dimensions
+    Dimensions,
+    Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,7 +18,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { AppContext } from '../context/AppContext';
 import { COLORS, FONTS, SIZES } from '../constants/Theme';
 import { api } from '../services/api';
-import { AnimatedCard, GlassCard, AuraBackground } from '../components';
+import { AnimatedCard, GlassCard, AuraBackground, ClubDetailModal } from '../components';
 import { StatusBar } from 'expo-status-bar';
 
 const { width } = Dimensions.get('window');
@@ -26,6 +27,8 @@ const MyClubsScreen = ({ navigation }) => {
     const { user, colors: themeColors } = useContext(AppContext);
     const [clubs, setClubs] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedClub, setSelectedClub] = useState(null);
+    const [updating, setUpdating] = useState(false);
 
     const textColor = themeColors.isDark ? COLORS.white : COLORS.text;
     const subTextColor = themeColors.isDark ? 'rgba(255,255,255,0.6)' : 'rgba(15,23,42,0.6)';
@@ -35,8 +38,10 @@ const MyClubsScreen = ({ navigation }) => {
         try {
             const res = await api.getClubs();
             if (res.status === 200) {
-                const joinedClubs = (res.data.records || []).filter(c => c.is_member);
+                const allClubs = res.data.records || [];
+                const joinedClubs = allClubs.filter(c => c.is_member);
                 setClubs(joinedClubs);
+                setSelectedClub(current => current ? allClubs.find(club => club.id === current.id) || null : null);
             }
         } catch (error) {
             console.error("Fetch Clubs Error:", error);
@@ -48,14 +53,27 @@ const MyClubsScreen = ({ navigation }) => {
     useFocusEffect(
         useCallback(() => {
             fetchClubs();
-        }, [])
+        }, [user?.user_id])
     );
+
+    const handleMembership = async (clubId) => {
+        if (updating) return;
+        setUpdating(true);
+        try {
+            const res = await api.joinClub(clubId);
+            if (res.status === 200) await fetchClubs();
+            else Alert.alert('Could not update membership', res.data?.message || 'Please retry.');
+        } finally {
+            setUpdating(false);
+        }
+    };
 
     const renderClubItem = ({ item, index }) => (
         <AnimatedCard delay={index * 100} style={styles.cardWrapper}>
             <TouchableOpacity
                 activeOpacity={0.9}
                 style={styles.cardBtn}
+                onPress={() => setSelectedClub(item)}
             >
                 <ImageBackground
                     source={{ uri: item.image }}
@@ -79,7 +97,7 @@ const MyClubsScreen = ({ navigation }) => {
                             </View>
                             <View style={[styles.activePill, { backgroundColor: themeColors.accent + '30' }]}>
                                 <View style={[styles.activeDot, { backgroundColor: themeColors.accent }]} />
-                                <Text style={[styles.activeText, { color: themeColors.accent }]}>ACTIVE</Text>
+                                <Text style={[styles.activeText, { color: themeColors.accent }]}>MEMBER</Text>
                             </View>
                         </View>
                     </LinearGradient>
@@ -143,6 +161,7 @@ const MyClubsScreen = ({ navigation }) => {
                     }
                 />
             )}
+            <ClubDetailModal visible={!!selectedClub} club={selectedClub} isMember={!!selectedClub?.is_member} onClose={() => setSelectedClub(null)} onJoinLeave={handleMembership} />
         </AuraBackground>
     );
 };

@@ -2,7 +2,7 @@
   "meals": [
     {
       "id": "usda_chicken_rice_bowl",
-      "name": "USDA Chicken Rice Power Bowl",
+      "name": "USDA Chicken, Rice, Broccoli and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "chicken",
@@ -16,11 +16,12 @@
       ],
       "allergens": [],
       "prepMinutes": 25,
-      "calories": 324,
-      "protein": 35,
-      "carbs": 10,
-      "fats": 21,
+      "calories": 627,
+      "protein": 41,
+      "carbs": 67,
+      "fats": 22,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=900&q=80",
@@ -30,34 +31,38 @@
           "servingGrams": 135,
           "fdcId": "331897",
           "description": "Chicken, broilers or fryers, drumstick, meat only, cooked, braised",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "cooked weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "broccoli",
           "servingGrams": 85,
-          "fdcId": "321900",
+          "fdcId": "747447",
           "description": "Broccoli, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-12-16",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_egg_oats_breakfast",
-      "name": "USDA Egg and Oat Breakfast",
+      "name": "USDA Egg, Oat, Banana and Milk Breakfast",
       "type": "Breakfast",
       "ingredients": [
         "eggs",
@@ -74,11 +79,12 @@
         "dairy"
       ],
       "prepMinutes": 12,
-      "calories": 358,
-      "protein": 20,
-      "carbs": 59,
-      "fats": 22,
+      "calories": 539,
+      "protein": 29,
+      "carbs": 71,
+      "fats": 16,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=900&q=80",
@@ -88,34 +94,38 @@
           "servingGrams": 100,
           "fdcId": "323604",
           "description": "Egg, whole, raw, frozen, pasteurized",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "oats",
           "servingGrams": 55,
           "fdcId": "2346396",
           "description": "Oats, whole grain, rolled, old fashioned",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "dry weight"
         },
         {
           "ingredient": "banana",
           "servingGrams": 100,
-          "fdcId": "790774",
+          "fdcId": "1105073",
           "description": "Bananas, overripe, raw",
-          "publicationDate": "2020-04-01"
+          "publicationDate": "2020-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "milk",
           "servingGrams": 240,
-          "fdcId": "322562",
-          "description": "MILK, WHOLE ",
-          "publicationDate": "2019-04-01"
+          "fdcId": "746772",
+          "description": "Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",
+          "publicationDate": "2019-12-16",
+          "weightBasis": "as-sold weight; follow the source description"
         }
       ]
     },
     {
       "id": "usda_salmon_potato_plate",
-      "name": "USDA Salmon Potato Plate",
+      "name": "USDA Salmon, Potato, Spinach and Avocado Dinner",
       "type": "Dinner",
       "ingredients": [
         "salmon",
@@ -136,6 +146,7 @@
       "carbs": 28,
       "fats": 18,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -145,34 +156,38 @@
           "servingGrams": 130,
           "fdcId": "2684440",
           "description": "Fish, salmon, sockeye, wild caught, raw",
-          "publicationDate": "2024-04-18"
+          "publicationDate": "2024-04-18",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "spinach",
           "servingGrams": 45,
           "fdcId": "1750352",
           "description": "Spinach, baby",
-          "publicationDate": "2021-04-28"
+          "publicationDate": "2021-04-28",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_beans_rice_bowl",
-      "name": "USDA Bean Rice Green Bowl",
+      "name": "USDA Bean, Rice, Broccoli and Avocado Dinner",
       "type": "Dinner",
       "ingredients": [
         "beans",
@@ -186,11 +201,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 113,
-      "protein": 3,
-      "carbs": 10,
+      "calories": 533,
+      "protein": 15,
+      "carbs": 87,
       "fats": 15,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=900&q=80",
@@ -198,36 +214,40 @@
         {
           "ingredient": "beans",
           "servingGrams": 100,
-          "fdcId": "2645873",
-          "description": "beans, navy, canned, sodium added",
-          "publicationDate": "2023-10-26"
+          "fdcId": "2644286",
+          "description": "Beans, navy, canned, sodium added, drained and rinsed",
+          "publicationDate": "2023-10-26",
+          "weightBasis": "drained weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "broccoli",
           "servingGrams": 85,
-          "fdcId": "321900",
+          "fdcId": "747447",
           "description": "Broccoli, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-12-16",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_beef_potato_builder",
-      "name": "USDA Lean Beef Potato Builder",
+      "name": "USDA Beef, Potato, Tomato and Spinach Dinner",
       "type": "Dinner",
       "ingredients": [
         "beef",
@@ -241,11 +261,12 @@
       ],
       "allergens": [],
       "prepMinutes": 28,
-      "calories": 134,
-      "protein": 36,
+      "calories": 345,
+      "protein": 38,
       "carbs": 28,
-      "fats": 13,
+      "fats": 9,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=900&q=80",
@@ -253,36 +274,40 @@
         {
           "ingredient": "beef",
           "servingGrams": 120,
-          "fdcId": "334861",
-          "description": "Proximates, Beef, Tenderloin Roast, lean only, cooked, animal 5, select",
-          "publicationDate": "2019-04-01"
+          "fdcId": "746758",
+          "description": "Beef, loin, tenderloin roast, separable lean only, boneless, trimmed to 0\" fat, select, cooked, roasted",
+          "publicationDate": "2019-12-16",
+          "weightBasis": "cooked weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "tomato",
           "servingGrams": 80,
           "fdcId": "321360",
           "description": "Tomatoes, grape, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "spinach",
           "servingGrams": 45,
           "fdcId": "1750352",
           "description": "Spinach, baby",
-          "publicationDate": "2021-04-28"
+          "publicationDate": "2021-04-28",
+          "weightBasis": "as-sold weight; follow the source description"
         }
       ]
     },
     {
       "id": "usda_yogurt_oat_bowl",
-      "name": "USDA Yogurt Oat Protein Bowl",
+      "name": "USDA Yogurt, Berry, Oat and Peanut Butter Snack",
       "type": "Snack",
       "ingredients": [
         "greek_yogurt",
@@ -300,11 +325,12 @@
         "peanuts"
       ],
       "prepMinutes": 5,
-      "calories": 503,
-      "protein": 32,
-      "carbs": 51,
-      "fats": 21,
+      "calories": 547,
+      "protein": 33,
+      "carbs": 62,
+      "fats": 20,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=900&q=80",
@@ -314,34 +340,38 @@
           "servingGrams": 170,
           "fdcId": "330137",
           "description": "Yogurt, Greek, plain, nonfat",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "berries",
           "servingGrams": 85,
-          "fdcId": "2264194",
-          "description": "raspberries, fresh, raw",
-          "publicationDate": "2022-04-28"
+          "fdcId": "2263888",
+          "description": "Raspberries, raw",
+          "publicationDate": "2022-04-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "oats",
           "servingGrams": 55,
           "fdcId": "2346396",
           "description": "Oats, whole grain, rolled, old fashioned",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "dry weight"
         },
         {
           "ingredient": "peanut_butter",
           "servingGrams": 32,
           "fdcId": "324860",
           "description": "Peanut butter, smooth style, with salt",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "as-sold weight; follow the source description"
         }
       ]
     },
     {
       "id": "usda_turkey_hummus_wrap",
-      "name": "USDA Turkey Hummus Plate",
+      "name": "USDA Turkey, Toast, Hummus, Lettuce and Tomato Lunch",
       "type": "Lunch",
       "ingredients": [
         "turkey",
@@ -364,6 +394,7 @@
       "carbs": 47,
       "fats": 25,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?auto=format&fit=crop&w=900&q=80",
@@ -373,41 +404,46 @@
           "servingGrams": 125,
           "fdcId": "2514747",
           "description": "Turkey, ground, 93% lean/ 7% fat, raw",
-          "publicationDate": "2023-04-20"
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "bread",
           "servingGrams": 65,
           "fdcId": "325871",
           "description": "Bread, white, commercially prepared",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "hummus",
           "servingGrams": 60,
           "fdcId": "321358",
           "description": "Hummus, commercial",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "lettuce",
           "servingGrams": 50,
           "fdcId": "2346388",
           "description": "Lettuce, iceberg, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "tomato",
           "servingGrams": 80,
           "fdcId": "321360",
           "description": "Tomatoes, grape, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_mass_gain_smoothie",
-      "name": "USDA Mass Gain Smoothie",
+      "name": "USDA Milk, Banana, Oat, Peanut Butter and Yogurt Snack",
       "type": "Snack",
       "ingredients": [
         "milk",
@@ -425,11 +461,12 @@
         "peanuts"
       ],
       "prepMinutes": 6,
-      "calories": 503,
-      "protein": 33,
-      "carbs": 71,
-      "fats": 28,
+      "calories": 683,
+      "protein": 41,
+      "carbs": 84,
+      "fats": 23,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1553530666-ba11a7da3888?auto=format&fit=crop&w=900&q=80",
@@ -437,43 +474,48 @@
         {
           "ingredient": "milk",
           "servingGrams": 240,
-          "fdcId": "322562",
-          "description": "MILK, WHOLE ",
-          "publicationDate": "2019-04-01"
+          "fdcId": "746772",
+          "description": "Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",
+          "publicationDate": "2019-12-16",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "banana",
           "servingGrams": 100,
-          "fdcId": "790774",
+          "fdcId": "1105073",
           "description": "Bananas, overripe, raw",
-          "publicationDate": "2020-04-01"
+          "publicationDate": "2020-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "oats",
           "servingGrams": 55,
           "fdcId": "2346396",
           "description": "Oats, whole grain, rolled, old fashioned",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "dry weight"
         },
         {
           "ingredient": "peanut_butter",
           "servingGrams": 32,
           "fdcId": "324860",
           "description": "Peanut butter, smooth style, with salt",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "greek_yogurt",
           "servingGrams": 170,
           "fdcId": "330137",
           "description": "Yogurt, Greek, plain, nonfat",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "as-sold weight; follow the source description"
         }
       ]
     },
     {
       "id": "usda_omelette_plate",
-      "name": "USDA Vegetable Omelette Plate",
+      "name": "USDA Egg, Spinach, Tomato and Avocado Breakfast",
       "type": "Breakfast",
       "ingredients": [
         "eggs",
@@ -494,6 +536,7 @@
       "carbs": 11,
       "fats": 22,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=900&q=80",
@@ -503,34 +546,38 @@
           "servingGrams": 100,
           "fdcId": "323604",
           "description": "Egg, whole, raw, frozen, pasteurized",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "spinach",
           "servingGrams": 45,
           "fdcId": "1750352",
           "description": "Spinach, baby",
-          "publicationDate": "2021-04-28"
+          "publicationDate": "2021-04-28",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "tomato",
           "servingGrams": 80,
           "fdcId": "321360",
           "description": "Tomatoes, grape, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_pollock_rice_plate",
-      "name": "USDA Pollock Rice Plate",
+      "name": "USDA Pollock, Rice, Broccoli and Avocado Dinner",
       "type": "Dinner",
       "ingredients": [
         "pollock",
@@ -546,11 +593,12 @@
         "fish"
       ],
       "prepMinutes": 24,
-      "calories": 189,
-      "protein": 20,
-      "carbs": 10,
+      "calories": 492,
+      "protein": 25,
+      "carbs": 67,
       "fats": 14,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -560,34 +608,38 @@
           "servingGrams": 135,
           "fdcId": "333476",
           "description": "Fish, pollock, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "broccoli",
           "servingGrams": 85,
-          "fdcId": "321900",
+          "fdcId": "747447",
           "description": "Broccoli, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-12-16",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_chicken_rice_broccoli_bowl",
-      "name": "USDA Chicken Rice Broccoli Bowl",
+      "name": "USDA Chicken, Rice, Broccoli and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "chicken",
@@ -601,11 +653,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 324,
-      "protein": 35,
-      "carbs": 10,
-      "fats": 21,
+      "calories": 627,
+      "protein": 41,
+      "carbs": 67,
+      "fats": 22,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=900&q=80",
@@ -615,34 +668,38 @@
           "servingGrams": 135,
           "fdcId": "331897",
           "description": "Chicken, broilers or fryers, drumstick, meat only, cooked, braised",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "cooked weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "broccoli",
           "servingGrams": 85,
-          "fdcId": "321900",
+          "fdcId": "747447",
           "description": "Broccoli, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-12-16",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_chicken_rice_spinach_bowl",
-      "name": "USDA Chicken Rice Spinach Bowl",
+      "name": "USDA Chicken, Rice, Spinach and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "chicken",
@@ -656,11 +713,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 333,
-      "protein": 35,
-      "carbs": 6,
-      "fats": 21,
+      "calories": 610,
+      "protein": 40,
+      "carbs": 63,
+      "fats": 22,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=900&q=80",
@@ -670,34 +728,38 @@
           "servingGrams": 135,
           "fdcId": "331897",
           "description": "Chicken, broilers or fryers, drumstick, meat only, cooked, braised",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "cooked weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "spinach",
           "servingGrams": 45,
           "fdcId": "1750352",
           "description": "Spinach, baby",
-          "publicationDate": "2021-04-28"
+          "publicationDate": "2021-04-28",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_chicken_rice_tomato_bowl",
-      "name": "USDA Chicken Rice Tomato Bowl",
+      "name": "USDA Chicken, Rice, Tomato and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "chicken",
@@ -711,11 +773,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 346,
-      "protein": 34,
-      "carbs": 9,
+      "calories": 622,
+      "protein": 39,
+      "carbs": 67,
       "fats": 22,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=900&q=80",
@@ -725,34 +788,38 @@
           "servingGrams": 135,
           "fdcId": "331897",
           "description": "Chicken, broilers or fryers, drumstick, meat only, cooked, braised",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "cooked weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "tomato",
           "servingGrams": 80,
           "fdcId": "321360",
           "description": "Tomatoes, grape, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_chicken_rice_lettuce_bowl",
-      "name": "USDA Chicken Rice Lettuce Bowl",
+      "name": "USDA Chicken, Rice, Lettuce and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "chicken",
@@ -766,11 +833,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 331,
-      "protein": 34,
-      "carbs": 6,
-      "fats": 21,
+      "calories": 607,
+      "protein": 39,
+      "carbs": 64,
+      "fats": 22,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=900&q=80",
@@ -780,34 +848,38 @@
           "servingGrams": 135,
           "fdcId": "331897",
           "description": "Chicken, broilers or fryers, drumstick, meat only, cooked, braised",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "cooked weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "lettuce",
           "servingGrams": 50,
           "fdcId": "2346388",
           "description": "Lettuce, iceberg, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_chicken_potato_broccoli_bowl",
-      "name": "USDA Chicken Potato Broccoli Bowl",
+      "name": "USDA Chicken, Potato, Broccoli and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "chicken",
@@ -821,11 +893,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 427,
+      "calories": 454,
       "protein": 38,
       "carbs": 33,
       "fats": 20,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=900&q=80",
@@ -835,34 +908,38 @@
           "servingGrams": 135,
           "fdcId": "331897",
           "description": "Chicken, broilers or fryers, drumstick, meat only, cooked, braised",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "cooked weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "broccoli",
           "servingGrams": 85,
-          "fdcId": "321900",
+          "fdcId": "747447",
           "description": "Broccoli, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-12-16",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_chicken_potato_spinach_bowl",
-      "name": "USDA Chicken Potato Spinach Bowl",
+      "name": "USDA Chicken, Potato, Spinach and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "chicken",
@@ -881,6 +958,7 @@
       "carbs": 28,
       "fats": 20,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=900&q=80",
@@ -890,34 +968,38 @@
           "servingGrams": 135,
           "fdcId": "331897",
           "description": "Chicken, broilers or fryers, drumstick, meat only, cooked, braised",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "cooked weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "spinach",
           "servingGrams": 45,
           "fdcId": "1750352",
           "description": "Spinach, baby",
-          "publicationDate": "2021-04-28"
+          "publicationDate": "2021-04-28",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_chicken_potato_tomato_bowl",
-      "name": "USDA Chicken Potato Tomato Bowl",
+      "name": "USDA Chicken, Potato, Tomato and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "chicken",
@@ -936,6 +1018,7 @@
       "carbs": 32,
       "fats": 20,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=900&q=80",
@@ -945,34 +1028,38 @@
           "servingGrams": 135,
           "fdcId": "331897",
           "description": "Chicken, broilers or fryers, drumstick, meat only, cooked, braised",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "cooked weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "tomato",
           "servingGrams": 80,
           "fdcId": "321360",
           "description": "Tomatoes, grape, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_chicken_potato_lettuce_bowl",
-      "name": "USDA Chicken Potato Lettuce Bowl",
+      "name": "USDA Chicken, Potato, Lettuce and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "chicken",
@@ -991,6 +1078,7 @@
       "carbs": 29,
       "fats": 20,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=900&q=80",
@@ -1000,34 +1088,38 @@
           "servingGrams": 135,
           "fdcId": "331897",
           "description": "Chicken, broilers or fryers, drumstick, meat only, cooked, braised",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "cooked weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "lettuce",
           "servingGrams": 50,
           "fdcId": "2346388",
           "description": "Lettuce, iceberg, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_turkey_rice_broccoli_bowl",
-      "name": "USDA Turkey Rice Broccoli Bowl",
+      "name": "USDA Turkey, Rice, Broccoli and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "turkey",
@@ -1041,11 +1133,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 310,
-      "protein": 25,
-      "carbs": 10,
-      "fats": 25,
+      "calories": 614,
+      "protein": 30,
+      "carbs": 67,
+      "fats": 26,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=900&q=80",
@@ -1055,34 +1148,38 @@
           "servingGrams": 125,
           "fdcId": "2514747",
           "description": "Turkey, ground, 93% lean/ 7% fat, raw",
-          "publicationDate": "2023-04-20"
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "broccoli",
           "servingGrams": 85,
-          "fdcId": "321900",
+          "fdcId": "747447",
           "description": "Broccoli, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-12-16",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_turkey_rice_spinach_bowl",
-      "name": "USDA Turkey Rice Spinach Bowl",
+      "name": "USDA Turkey, Rice, Spinach and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "turkey",
@@ -1096,11 +1193,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 320,
-      "protein": 24,
-      "carbs": 6,
-      "fats": 25,
+      "calories": 596,
+      "protein": 29,
+      "carbs": 63,
+      "fats": 26,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=900&q=80",
@@ -1110,34 +1208,38 @@
           "servingGrams": 125,
           "fdcId": "2514747",
           "description": "Turkey, ground, 93% lean/ 7% fat, raw",
-          "publicationDate": "2023-04-20"
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "spinach",
           "servingGrams": 45,
           "fdcId": "1750352",
           "description": "Spinach, baby",
-          "publicationDate": "2021-04-28"
+          "publicationDate": "2021-04-28",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_turkey_rice_tomato_bowl",
-      "name": "USDA Turkey Rice Tomato Bowl",
+      "name": "USDA Turkey, Rice, Tomato and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "turkey",
@@ -1151,11 +1253,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 332,
-      "protein": 23,
-      "carbs": 9,
+      "calories": 608,
+      "protein": 29,
+      "carbs": 67,
       "fats": 26,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=900&q=80",
@@ -1165,34 +1268,38 @@
           "servingGrams": 125,
           "fdcId": "2514747",
           "description": "Turkey, ground, 93% lean/ 7% fat, raw",
-          "publicationDate": "2023-04-20"
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "tomato",
           "servingGrams": 80,
           "fdcId": "321360",
           "description": "Tomatoes, grape, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_turkey_rice_lettuce_bowl",
-      "name": "USDA Turkey Rice Lettuce Bowl",
+      "name": "USDA Turkey, Rice, Lettuce and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "turkey",
@@ -1206,11 +1313,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 318,
-      "protein": 23,
-      "carbs": 6,
-      "fats": 25,
+      "calories": 594,
+      "protein": 28,
+      "carbs": 64,
+      "fats": 26,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=900&q=80",
@@ -1220,34 +1328,38 @@
           "servingGrams": 125,
           "fdcId": "2514747",
           "description": "Turkey, ground, 93% lean/ 7% fat, raw",
-          "publicationDate": "2023-04-20"
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "lettuce",
           "servingGrams": 50,
           "fdcId": "2346388",
           "description": "Lettuce, iceberg, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_turkey_potato_broccoli_bowl",
-      "name": "USDA Turkey Potato Broccoli Bowl",
+      "name": "USDA Turkey, Potato, Broccoli and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "turkey",
@@ -1261,11 +1373,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 413,
+      "calories": 440,
       "protein": 28,
       "carbs": 33,
       "fats": 24,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=900&q=80",
@@ -1275,34 +1388,38 @@
           "servingGrams": 125,
           "fdcId": "2514747",
           "description": "Turkey, ground, 93% lean/ 7% fat, raw",
-          "publicationDate": "2023-04-20"
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "broccoli",
           "servingGrams": 85,
-          "fdcId": "321900",
+          "fdcId": "747447",
           "description": "Broccoli, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-12-16",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_turkey_potato_spinach_bowl",
-      "name": "USDA Turkey Potato Spinach Bowl",
+      "name": "USDA Turkey, Potato, Spinach and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "turkey",
@@ -1321,6 +1438,7 @@
       "carbs": 28,
       "fats": 24,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=900&q=80",
@@ -1330,34 +1448,38 @@
           "servingGrams": 125,
           "fdcId": "2514747",
           "description": "Turkey, ground, 93% lean/ 7% fat, raw",
-          "publicationDate": "2023-04-20"
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "spinach",
           "servingGrams": 45,
           "fdcId": "1750352",
           "description": "Spinach, baby",
-          "publicationDate": "2021-04-28"
+          "publicationDate": "2021-04-28",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_turkey_potato_tomato_bowl",
-      "name": "USDA Turkey Potato Tomato Bowl",
+      "name": "USDA Turkey, Potato, Tomato and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "turkey",
@@ -1376,6 +1498,7 @@
       "carbs": 32,
       "fats": 24,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=900&q=80",
@@ -1385,34 +1508,38 @@
           "servingGrams": 125,
           "fdcId": "2514747",
           "description": "Turkey, ground, 93% lean/ 7% fat, raw",
-          "publicationDate": "2023-04-20"
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "tomato",
           "servingGrams": 80,
           "fdcId": "321360",
           "description": "Tomatoes, grape, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_turkey_potato_lettuce_bowl",
-      "name": "USDA Turkey Potato Lettuce Bowl",
+      "name": "USDA Turkey, Potato, Lettuce and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "turkey",
@@ -1431,6 +1558,7 @@
       "carbs": 29,
       "fats": 24,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=900&q=80",
@@ -1440,34 +1568,38 @@
           "servingGrams": 125,
           "fdcId": "2514747",
           "description": "Turkey, ground, 93% lean/ 7% fat, raw",
-          "publicationDate": "2023-04-20"
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "lettuce",
           "servingGrams": 50,
           "fdcId": "2346388",
           "description": "Lettuce, iceberg, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_beef_rice_broccoli_bowl",
-      "name": "USDA Beef Rice Broccoli Bowl",
+      "name": "USDA Beef, Rice, Broccoli and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "beef",
@@ -1481,11 +1613,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 113,
-      "protein": 34,
-      "carbs": 10,
-      "fats": 25,
+      "calories": 628,
+      "protein": 42,
+      "carbs": 67,
+      "fats": 22,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=900&q=80",
@@ -1493,36 +1626,40 @@
         {
           "ingredient": "beef",
           "servingGrams": 120,
-          "fdcId": "334861",
-          "description": "Proximates, Beef, Tenderloin Roast, lean only, cooked, animal 5, select",
-          "publicationDate": "2019-04-01"
+          "fdcId": "746758",
+          "description": "Beef, loin, tenderloin roast, separable lean only, boneless, trimmed to 0\" fat, select, cooked, roasted",
+          "publicationDate": "2019-12-16",
+          "weightBasis": "cooked weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "broccoli",
           "servingGrams": 85,
-          "fdcId": "321900",
+          "fdcId": "747447",
           "description": "Broccoli, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-12-16",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_beef_rice_spinach_bowl",
-      "name": "USDA Beef Rice Spinach Bowl",
+      "name": "USDA Beef, Rice, Spinach and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "beef",
@@ -1536,11 +1673,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 123,
-      "protein": 33,
-      "carbs": 6,
-      "fats": 25,
+      "calories": 610,
+      "protein": 41,
+      "carbs": 63,
+      "fats": 22,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=900&q=80",
@@ -1548,36 +1686,40 @@
         {
           "ingredient": "beef",
           "servingGrams": 120,
-          "fdcId": "334861",
-          "description": "Proximates, Beef, Tenderloin Roast, lean only, cooked, animal 5, select",
-          "publicationDate": "2019-04-01"
+          "fdcId": "746758",
+          "description": "Beef, loin, tenderloin roast, separable lean only, boneless, trimmed to 0\" fat, select, cooked, roasted",
+          "publicationDate": "2019-12-16",
+          "weightBasis": "cooked weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "spinach",
           "servingGrams": 45,
           "fdcId": "1750352",
           "description": "Spinach, baby",
-          "publicationDate": "2021-04-28"
+          "publicationDate": "2021-04-28",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_beef_rice_tomato_bowl",
-      "name": "USDA Beef Rice Tomato Bowl",
+      "name": "USDA Beef, Rice, Tomato and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "beef",
@@ -1591,11 +1733,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 135,
-      "protein": 32,
-      "carbs": 9,
-      "fats": 25,
+      "calories": 622,
+      "protein": 40,
+      "carbs": 67,
+      "fats": 22,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=900&q=80",
@@ -1603,36 +1746,40 @@
         {
           "ingredient": "beef",
           "servingGrams": 120,
-          "fdcId": "334861",
-          "description": "Proximates, Beef, Tenderloin Roast, lean only, cooked, animal 5, select",
-          "publicationDate": "2019-04-01"
+          "fdcId": "746758",
+          "description": "Beef, loin, tenderloin roast, separable lean only, boneless, trimmed to 0\" fat, select, cooked, roasted",
+          "publicationDate": "2019-12-16",
+          "weightBasis": "cooked weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "tomato",
           "servingGrams": 80,
           "fdcId": "321360",
           "description": "Tomatoes, grape, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_beef_rice_lettuce_bowl",
-      "name": "USDA Beef Rice Lettuce Bowl",
+      "name": "USDA Beef, Rice, Lettuce and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "beef",
@@ -1646,11 +1793,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 121,
-      "protein": 32,
-      "carbs": 6,
-      "fats": 25,
+      "calories": 608,
+      "protein": 40,
+      "carbs": 64,
+      "fats": 21,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=900&q=80",
@@ -1658,36 +1806,40 @@
         {
           "ingredient": "beef",
           "servingGrams": 120,
-          "fdcId": "334861",
-          "description": "Proximates, Beef, Tenderloin Roast, lean only, cooked, animal 5, select",
-          "publicationDate": "2019-04-01"
+          "fdcId": "746758",
+          "description": "Beef, loin, tenderloin roast, separable lean only, boneless, trimmed to 0\" fat, select, cooked, roasted",
+          "publicationDate": "2019-12-16",
+          "weightBasis": "cooked weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "lettuce",
           "servingGrams": 50,
           "fdcId": "2346388",
           "description": "Lettuce, iceberg, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_beef_potato_broccoli_bowl",
-      "name": "USDA Beef Potato Broccoli Bowl",
+      "name": "USDA Beef, Potato, Broccoli and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "beef",
@@ -1701,11 +1853,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 216,
-      "protein": 37,
+      "calories": 454,
+      "protein": 39,
       "carbs": 33,
-      "fats": 23,
+      "fats": 19,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=900&q=80",
@@ -1713,36 +1866,40 @@
         {
           "ingredient": "beef",
           "servingGrams": 120,
-          "fdcId": "334861",
-          "description": "Proximates, Beef, Tenderloin Roast, lean only, cooked, animal 5, select",
-          "publicationDate": "2019-04-01"
+          "fdcId": "746758",
+          "description": "Beef, loin, tenderloin roast, separable lean only, boneless, trimmed to 0\" fat, select, cooked, roasted",
+          "publicationDate": "2019-12-16",
+          "weightBasis": "cooked weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "broccoli",
           "servingGrams": 85,
-          "fdcId": "321900",
+          "fdcId": "747447",
           "description": "Broccoli, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-12-16",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_beef_potato_spinach_bowl",
-      "name": "USDA Beef Potato Spinach Bowl",
+      "name": "USDA Beef, Potato, Spinach and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "beef",
@@ -1756,11 +1913,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 225,
-      "protein": 36,
+      "calories": 437,
+      "protein": 38,
       "carbs": 28,
-      "fats": 23,
+      "fats": 19,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=900&q=80",
@@ -1768,36 +1926,40 @@
         {
           "ingredient": "beef",
           "servingGrams": 120,
-          "fdcId": "334861",
-          "description": "Proximates, Beef, Tenderloin Roast, lean only, cooked, animal 5, select",
-          "publicationDate": "2019-04-01"
+          "fdcId": "746758",
+          "description": "Beef, loin, tenderloin roast, separable lean only, boneless, trimmed to 0\" fat, select, cooked, roasted",
+          "publicationDate": "2019-12-16",
+          "weightBasis": "cooked weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "spinach",
           "servingGrams": 45,
           "fdcId": "1750352",
           "description": "Spinach, baby",
-          "publicationDate": "2021-04-28"
+          "publicationDate": "2021-04-28",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_beef_potato_tomato_bowl",
-      "name": "USDA Beef Potato Tomato Bowl",
+      "name": "USDA Beef, Potato, Tomato and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "beef",
@@ -1811,11 +1973,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 238,
-      "protein": 35,
+      "calories": 449,
+      "protein": 38,
       "carbs": 32,
-      "fats": 23,
+      "fats": 20,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=900&q=80",
@@ -1823,36 +1986,40 @@
         {
           "ingredient": "beef",
           "servingGrams": 120,
-          "fdcId": "334861",
-          "description": "Proximates, Beef, Tenderloin Roast, lean only, cooked, animal 5, select",
-          "publicationDate": "2019-04-01"
+          "fdcId": "746758",
+          "description": "Beef, loin, tenderloin roast, separable lean only, boneless, trimmed to 0\" fat, select, cooked, roasted",
+          "publicationDate": "2019-12-16",
+          "weightBasis": "cooked weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "tomato",
           "servingGrams": 80,
           "fdcId": "321360",
           "description": "Tomatoes, grape, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_beef_potato_lettuce_bowl",
-      "name": "USDA Beef Potato Lettuce Bowl",
+      "name": "USDA Beef, Potato, Lettuce and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "beef",
@@ -1866,11 +2033,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 223,
-      "protein": 35,
+      "calories": 434,
+      "protein": 37,
       "carbs": 29,
-      "fats": 23,
+      "fats": 19,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=900&q=80",
@@ -1878,36 +2046,40 @@
         {
           "ingredient": "beef",
           "servingGrams": 120,
-          "fdcId": "334861",
-          "description": "Proximates, Beef, Tenderloin Roast, lean only, cooked, animal 5, select",
-          "publicationDate": "2019-04-01"
+          "fdcId": "746758",
+          "description": "Beef, loin, tenderloin roast, separable lean only, boneless, trimmed to 0\" fat, select, cooked, roasted",
+          "publicationDate": "2019-12-16",
+          "weightBasis": "cooked weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "lettuce",
           "servingGrams": 50,
           "fdcId": "2346388",
           "description": "Lettuce, iceberg, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_salmon_rice_broccoli_bowl",
-      "name": "USDA Salmon Rice Broccoli Bowl",
+      "name": "USDA Salmon, Rice, Broccoli and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "salmon",
@@ -1923,11 +2095,12 @@
         "fish"
       ],
       "prepMinutes": 22,
-      "calories": 290,
-      "protein": 32,
-      "carbs": 10,
+      "calories": 594,
+      "protein": 38,
+      "carbs": 67,
       "fats": 20,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -1937,34 +2110,38 @@
           "servingGrams": 130,
           "fdcId": "2684440",
           "description": "Fish, salmon, sockeye, wild caught, raw",
-          "publicationDate": "2024-04-18"
+          "publicationDate": "2024-04-18",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "broccoli",
           "servingGrams": 85,
-          "fdcId": "321900",
+          "fdcId": "747447",
           "description": "Broccoli, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-12-16",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_salmon_rice_spinach_bowl",
-      "name": "USDA Salmon Rice Spinach Bowl",
+      "name": "USDA Salmon, Rice, Spinach and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "salmon",
@@ -1980,11 +2157,12 @@
         "fish"
       ],
       "prepMinutes": 22,
-      "calories": 300,
-      "protein": 31,
-      "carbs": 6,
+      "calories": 576,
+      "protein": 37,
+      "carbs": 63,
       "fats": 20,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -1994,34 +2172,38 @@
           "servingGrams": 130,
           "fdcId": "2684440",
           "description": "Fish, salmon, sockeye, wild caught, raw",
-          "publicationDate": "2024-04-18"
+          "publicationDate": "2024-04-18",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "spinach",
           "servingGrams": 45,
           "fdcId": "1750352",
           "description": "Spinach, baby",
-          "publicationDate": "2021-04-28"
+          "publicationDate": "2021-04-28",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_salmon_rice_tomato_bowl",
-      "name": "USDA Salmon Rice Tomato Bowl",
+      "name": "USDA Salmon, Rice, Tomato and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "salmon",
@@ -2037,11 +2219,12 @@
         "fish"
       ],
       "prepMinutes": 22,
-      "calories": 312,
-      "protein": 31,
-      "carbs": 9,
-      "fats": 20,
+      "calories": 588,
+      "protein": 36,
+      "carbs": 67,
+      "fats": 21,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -2051,34 +2234,38 @@
           "servingGrams": 130,
           "fdcId": "2684440",
           "description": "Fish, salmon, sockeye, wild caught, raw",
-          "publicationDate": "2024-04-18"
+          "publicationDate": "2024-04-18",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "tomato",
           "servingGrams": 80,
           "fdcId": "321360",
           "description": "Tomatoes, grape, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_salmon_rice_lettuce_bowl",
-      "name": "USDA Salmon Rice Lettuce Bowl",
+      "name": "USDA Salmon, Rice, Lettuce and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "salmon",
@@ -2094,11 +2281,12 @@
         "fish"
       ],
       "prepMinutes": 22,
-      "calories": 298,
-      "protein": 30,
-      "carbs": 6,
+      "calories": 574,
+      "protein": 36,
+      "carbs": 64,
       "fats": 20,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -2108,34 +2296,38 @@
           "servingGrams": 130,
           "fdcId": "2684440",
           "description": "Fish, salmon, sockeye, wild caught, raw",
-          "publicationDate": "2024-04-18"
+          "publicationDate": "2024-04-18",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "lettuce",
           "servingGrams": 50,
           "fdcId": "2346388",
           "description": "Lettuce, iceberg, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_salmon_potato_broccoli_bowl",
-      "name": "USDA Salmon Potato Broccoli Bowl",
+      "name": "USDA Salmon, Potato, Broccoli and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "salmon",
@@ -2151,11 +2343,12 @@
         "fish"
       ],
       "prepMinutes": 22,
-      "calories": 393,
+      "calories": 420,
       "protein": 35,
       "carbs": 33,
       "fats": 18,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -2165,34 +2358,38 @@
           "servingGrams": 130,
           "fdcId": "2684440",
           "description": "Fish, salmon, sockeye, wild caught, raw",
-          "publicationDate": "2024-04-18"
+          "publicationDate": "2024-04-18",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "broccoli",
           "servingGrams": 85,
-          "fdcId": "321900",
+          "fdcId": "747447",
           "description": "Broccoli, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-12-16",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_salmon_potato_spinach_bowl",
-      "name": "USDA Salmon Potato Spinach Bowl",
+      "name": "USDA Salmon, Potato, Spinach and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "salmon",
@@ -2213,6 +2410,7 @@
       "carbs": 28,
       "fats": 18,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -2222,34 +2420,38 @@
           "servingGrams": 130,
           "fdcId": "2684440",
           "description": "Fish, salmon, sockeye, wild caught, raw",
-          "publicationDate": "2024-04-18"
+          "publicationDate": "2024-04-18",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "spinach",
           "servingGrams": 45,
           "fdcId": "1750352",
           "description": "Spinach, baby",
-          "publicationDate": "2021-04-28"
+          "publicationDate": "2021-04-28",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_salmon_potato_tomato_bowl",
-      "name": "USDA Salmon Potato Tomato Bowl",
+      "name": "USDA Salmon, Potato, Tomato and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "salmon",
@@ -2270,6 +2472,7 @@
       "carbs": 32,
       "fats": 18,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -2279,34 +2482,38 @@
           "servingGrams": 130,
           "fdcId": "2684440",
           "description": "Fish, salmon, sockeye, wild caught, raw",
-          "publicationDate": "2024-04-18"
+          "publicationDate": "2024-04-18",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "tomato",
           "servingGrams": 80,
           "fdcId": "321360",
           "description": "Tomatoes, grape, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_salmon_potato_lettuce_bowl",
-      "name": "USDA Salmon Potato Lettuce Bowl",
+      "name": "USDA Salmon, Potato, Lettuce and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "salmon",
@@ -2327,6 +2534,7 @@
       "carbs": 29,
       "fats": 18,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -2336,34 +2544,38 @@
           "servingGrams": 130,
           "fdcId": "2684440",
           "description": "Fish, salmon, sockeye, wild caught, raw",
-          "publicationDate": "2024-04-18"
+          "publicationDate": "2024-04-18",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "lettuce",
           "servingGrams": 50,
           "fdcId": "2346388",
           "description": "Lettuce, iceberg, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_tuna_rice_broccoli_bowl",
-      "name": "USDA Tuna Rice Broccoli Bowl",
+      "name": "USDA Tuna, Rice, Broccoli and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "tuna",
@@ -2379,11 +2591,12 @@
         "fish"
       ],
       "prepMinutes": 22,
-      "calories": 113,
-      "protein": 3,
-      "carbs": 10,
+      "calories": 525,
+      "protein": 31,
+      "carbs": 68,
       "fats": 15,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -2391,36 +2604,40 @@
         {
           "ingredient": "tuna",
           "servingGrams": 120,
-          "fdcId": "333961",
-          "description": "Tuna; chunk light; canned in water; drained solids",
-          "publicationDate": "2019-04-01"
+          "fdcId": "334194",
+          "description": "Fish, tuna, light, canned in water, drained solids",
+          "publicationDate": "2019-04-01",
+          "weightBasis": "drained weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "broccoli",
           "servingGrams": 85,
-          "fdcId": "321900",
+          "fdcId": "747447",
           "description": "Broccoli, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-12-16",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_tuna_rice_spinach_bowl",
-      "name": "USDA Tuna Rice Spinach Bowl",
+      "name": "USDA Tuna, Rice, Spinach and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "tuna",
@@ -2436,11 +2653,12 @@
         "fish"
       ],
       "prepMinutes": 22,
-      "calories": 123,
-      "protein": 2,
-      "carbs": 6,
-      "fats": 14,
+      "calories": 507,
+      "protein": 31,
+      "carbs": 63,
+      "fats": 15,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -2448,36 +2666,40 @@
         {
           "ingredient": "tuna",
           "servingGrams": 120,
-          "fdcId": "333961",
-          "description": "Tuna; chunk light; canned in water; drained solids",
-          "publicationDate": "2019-04-01"
+          "fdcId": "334194",
+          "description": "Fish, tuna, light, canned in water, drained solids",
+          "publicationDate": "2019-04-01",
+          "weightBasis": "drained weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "spinach",
           "servingGrams": 45,
           "fdcId": "1750352",
           "description": "Spinach, baby",
-          "publicationDate": "2021-04-28"
+          "publicationDate": "2021-04-28",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_tuna_rice_tomato_bowl",
-      "name": "USDA Tuna Rice Tomato Bowl",
+      "name": "USDA Tuna, Rice, Tomato and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "tuna",
@@ -2493,11 +2715,12 @@
         "fish"
       ],
       "prepMinutes": 22,
-      "calories": 135,
-      "protein": 2,
-      "carbs": 9,
+      "calories": 519,
+      "protein": 30,
+      "carbs": 67,
       "fats": 15,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -2505,36 +2728,40 @@
         {
           "ingredient": "tuna",
           "servingGrams": 120,
-          "fdcId": "333961",
-          "description": "Tuna; chunk light; canned in water; drained solids",
-          "publicationDate": "2019-04-01"
+          "fdcId": "334194",
+          "description": "Fish, tuna, light, canned in water, drained solids",
+          "publicationDate": "2019-04-01",
+          "weightBasis": "drained weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "tomato",
           "servingGrams": 80,
           "fdcId": "321360",
           "description": "Tomatoes, grape, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_tuna_rice_lettuce_bowl",
-      "name": "USDA Tuna Rice Lettuce Bowl",
+      "name": "USDA Tuna, Rice, Lettuce and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "tuna",
@@ -2550,11 +2777,12 @@
         "fish"
       ],
       "prepMinutes": 22,
-      "calories": 121,
-      "protein": 1,
-      "carbs": 6,
-      "fats": 14,
+      "calories": 505,
+      "protein": 30,
+      "carbs": 64,
+      "fats": 15,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -2562,36 +2790,40 @@
         {
           "ingredient": "tuna",
           "servingGrams": 120,
-          "fdcId": "333961",
-          "description": "Tuna; chunk light; canned in water; drained solids",
-          "publicationDate": "2019-04-01"
+          "fdcId": "334194",
+          "description": "Fish, tuna, light, canned in water, drained solids",
+          "publicationDate": "2019-04-01",
+          "weightBasis": "drained weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "lettuce",
           "servingGrams": 50,
           "fdcId": "2346388",
           "description": "Lettuce, iceberg, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_tuna_potato_broccoli_bowl",
-      "name": "USDA Tuna Potato Broccoli Bowl",
+      "name": "USDA Tuna, Potato, Broccoli and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "tuna",
@@ -2607,11 +2839,12 @@
         "fish"
       ],
       "prepMinutes": 22,
-      "calories": 216,
-      "protein": 6,
+      "calories": 351,
+      "protein": 29,
       "carbs": 33,
       "fats": 13,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -2619,36 +2852,40 @@
         {
           "ingredient": "tuna",
           "servingGrams": 120,
-          "fdcId": "333961",
-          "description": "Tuna; chunk light; canned in water; drained solids",
-          "publicationDate": "2019-04-01"
+          "fdcId": "334194",
+          "description": "Fish, tuna, light, canned in water, drained solids",
+          "publicationDate": "2019-04-01",
+          "weightBasis": "drained weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "broccoli",
           "servingGrams": 85,
-          "fdcId": "321900",
+          "fdcId": "747447",
           "description": "Broccoli, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-12-16",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_tuna_potato_spinach_bowl",
-      "name": "USDA Tuna Potato Spinach Bowl",
+      "name": "USDA Tuna, Potato, Spinach and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "tuna",
@@ -2664,11 +2901,12 @@
         "fish"
       ],
       "prepMinutes": 22,
-      "calories": 225,
-      "protein": 5,
-      "carbs": 28,
+      "calories": 333,
+      "protein": 28,
+      "carbs": 29,
       "fats": 13,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -2676,36 +2914,40 @@
         {
           "ingredient": "tuna",
           "servingGrams": 120,
-          "fdcId": "333961",
-          "description": "Tuna; chunk light; canned in water; drained solids",
-          "publicationDate": "2019-04-01"
+          "fdcId": "334194",
+          "description": "Fish, tuna, light, canned in water, drained solids",
+          "publicationDate": "2019-04-01",
+          "weightBasis": "drained weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "spinach",
           "servingGrams": 45,
           "fdcId": "1750352",
           "description": "Spinach, baby",
-          "publicationDate": "2021-04-28"
+          "publicationDate": "2021-04-28",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_tuna_potato_tomato_bowl",
-      "name": "USDA Tuna Potato Tomato Bowl",
+      "name": "USDA Tuna, Potato, Tomato and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "tuna",
@@ -2721,11 +2963,12 @@
         "fish"
       ],
       "prepMinutes": 22,
-      "calories": 238,
-      "protein": 5,
+      "calories": 346,
+      "protein": 27,
       "carbs": 32,
       "fats": 13,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -2733,36 +2976,40 @@
         {
           "ingredient": "tuna",
           "servingGrams": 120,
-          "fdcId": "333961",
-          "description": "Tuna; chunk light; canned in water; drained solids",
-          "publicationDate": "2019-04-01"
+          "fdcId": "334194",
+          "description": "Fish, tuna, light, canned in water, drained solids",
+          "publicationDate": "2019-04-01",
+          "weightBasis": "drained weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "tomato",
           "servingGrams": 80,
           "fdcId": "321360",
           "description": "Tomatoes, grape, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_tuna_potato_lettuce_bowl",
-      "name": "USDA Tuna Potato Lettuce Bowl",
+      "name": "USDA Tuna, Potato, Lettuce and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "tuna",
@@ -2778,11 +3025,12 @@
         "fish"
       ],
       "prepMinutes": 22,
-      "calories": 223,
-      "protein": 4,
+      "calories": 331,
+      "protein": 27,
       "carbs": 29,
       "fats": 13,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -2790,36 +3038,40 @@
         {
           "ingredient": "tuna",
           "servingGrams": 120,
-          "fdcId": "333961",
-          "description": "Tuna; chunk light; canned in water; drained solids",
-          "publicationDate": "2019-04-01"
+          "fdcId": "334194",
+          "description": "Fish, tuna, light, canned in water, drained solids",
+          "publicationDate": "2019-04-01",
+          "weightBasis": "drained weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "lettuce",
           "servingGrams": 50,
           "fdcId": "2346388",
           "description": "Lettuce, iceberg, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_pollock_rice_broccoli_bowl",
-      "name": "USDA Pollock Rice Broccoli Bowl",
+      "name": "USDA Pollock, Rice, Broccoli and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "pollock",
@@ -2835,11 +3087,12 @@
         "fish"
       ],
       "prepMinutes": 22,
-      "calories": 189,
-      "protein": 20,
-      "carbs": 10,
+      "calories": 492,
+      "protein": 25,
+      "carbs": 67,
       "fats": 14,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -2849,34 +3102,38 @@
           "servingGrams": 135,
           "fdcId": "333476",
           "description": "Fish, pollock, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "broccoli",
           "servingGrams": 85,
-          "fdcId": "321900",
+          "fdcId": "747447",
           "description": "Broccoli, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-12-16",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_pollock_rice_spinach_bowl",
-      "name": "USDA Pollock Rice Spinach Bowl",
+      "name": "USDA Pollock, Rice, Spinach and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "pollock",
@@ -2892,11 +3149,12 @@
         "fish"
       ],
       "prepMinutes": 22,
-      "calories": 198,
-      "protein": 19,
-      "carbs": 6,
+      "calories": 475,
+      "protein": 24,
+      "carbs": 63,
       "fats": 14,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -2906,34 +3164,38 @@
           "servingGrams": 135,
           "fdcId": "333476",
           "description": "Fish, pollock, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "spinach",
           "servingGrams": 45,
           "fdcId": "1750352",
           "description": "Spinach, baby",
-          "publicationDate": "2021-04-28"
+          "publicationDate": "2021-04-28",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_pollock_rice_tomato_bowl",
-      "name": "USDA Pollock Rice Tomato Bowl",
+      "name": "USDA Pollock, Rice, Tomato and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "pollock",
@@ -2949,11 +3211,12 @@
         "fish"
       ],
       "prepMinutes": 22,
-      "calories": 211,
-      "protein": 18,
-      "carbs": 9,
-      "fats": 14,
+      "calories": 487,
+      "protein": 24,
+      "carbs": 67,
+      "fats": 15,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -2963,34 +3226,38 @@
           "servingGrams": 135,
           "fdcId": "333476",
           "description": "Fish, pollock, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "tomato",
           "servingGrams": 80,
           "fdcId": "321360",
           "description": "Tomatoes, grape, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_pollock_rice_lettuce_bowl",
-      "name": "USDA Pollock Rice Lettuce Bowl",
+      "name": "USDA Pollock, Rice, Lettuce and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "pollock",
@@ -3006,11 +3273,12 @@
         "fish"
       ],
       "prepMinutes": 22,
-      "calories": 196,
-      "protein": 18,
-      "carbs": 6,
+      "calories": 472,
+      "protein": 23,
+      "carbs": 64,
       "fats": 14,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -3020,34 +3288,38 @@
           "servingGrams": 135,
           "fdcId": "333476",
           "description": "Fish, pollock, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "lettuce",
           "servingGrams": 50,
           "fdcId": "2346388",
           "description": "Lettuce, iceberg, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_pollock_potato_broccoli_bowl",
-      "name": "USDA Pollock Potato Broccoli Bowl",
+      "name": "USDA Pollock, Potato, Broccoli and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "pollock",
@@ -3063,11 +3335,12 @@
         "fish"
       ],
       "prepMinutes": 22,
-      "calories": 292,
+      "calories": 319,
       "protein": 23,
       "carbs": 33,
       "fats": 12,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -3077,34 +3350,38 @@
           "servingGrams": 135,
           "fdcId": "333476",
           "description": "Fish, pollock, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "broccoli",
           "servingGrams": 85,
-          "fdcId": "321900",
+          "fdcId": "747447",
           "description": "Broccoli, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-12-16",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_pollock_potato_spinach_bowl",
-      "name": "USDA Pollock Potato Spinach Bowl",
+      "name": "USDA Pollock, Potato, Spinach and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "pollock",
@@ -3125,6 +3402,7 @@
       "carbs": 28,
       "fats": 12,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -3134,34 +3412,38 @@
           "servingGrams": 135,
           "fdcId": "333476",
           "description": "Fish, pollock, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "spinach",
           "servingGrams": 45,
           "fdcId": "1750352",
           "description": "Spinach, baby",
-          "publicationDate": "2021-04-28"
+          "publicationDate": "2021-04-28",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_pollock_potato_tomato_bowl",
-      "name": "USDA Pollock Potato Tomato Bowl",
+      "name": "USDA Pollock, Potato, Tomato and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "pollock",
@@ -3182,6 +3464,7 @@
       "carbs": 32,
       "fats": 13,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -3191,34 +3474,38 @@
           "servingGrams": 135,
           "fdcId": "333476",
           "description": "Fish, pollock, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "tomato",
           "servingGrams": 80,
           "fdcId": "321360",
           "description": "Tomatoes, grape, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_pollock_potato_lettuce_bowl",
-      "name": "USDA Pollock Potato Lettuce Bowl",
+      "name": "USDA Pollock, Potato, Lettuce and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "pollock",
@@ -3239,6 +3526,7 @@
       "carbs": 29,
       "fats": 12,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1467003909585-2f8a7270028d?auto=format&fit=crop&w=900&q=80",
@@ -3248,34 +3536,38 @@
           "servingGrams": 135,
           "fdcId": "333476",
           "description": "Fish, pollock, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "lettuce",
           "servingGrams": 50,
           "fdcId": "2346388",
           "description": "Lettuce, iceberg, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_beans_rice_broccoli_bowl",
-      "name": "USDA Bean Rice Broccoli Bowl",
+      "name": "USDA Bean, Rice, Broccoli and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "beans",
@@ -3289,11 +3581,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 113,
-      "protein": 3,
-      "carbs": 10,
+      "calories": 533,
+      "protein": 15,
+      "carbs": 87,
       "fats": 15,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=900&q=80",
@@ -3301,36 +3594,40 @@
         {
           "ingredient": "beans",
           "servingGrams": 100,
-          "fdcId": "2645873",
-          "description": "beans, navy, canned, sodium added",
-          "publicationDate": "2023-10-26"
+          "fdcId": "2644286",
+          "description": "Beans, navy, canned, sodium added, drained and rinsed",
+          "publicationDate": "2023-10-26",
+          "weightBasis": "drained weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "broccoli",
           "servingGrams": 85,
-          "fdcId": "321900",
+          "fdcId": "747447",
           "description": "Broccoli, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-12-16",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_beans_rice_spinach_bowl",
-      "name": "USDA Bean Rice Spinach Bowl",
+      "name": "USDA Bean, Rice, Spinach and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "beans",
@@ -3344,11 +3641,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 123,
-      "protein": 2,
-      "carbs": 6,
+      "calories": 515,
+      "protein": 14,
+      "carbs": 83,
       "fats": 15,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=900&q=80",
@@ -3356,36 +3654,40 @@
         {
           "ingredient": "beans",
           "servingGrams": 100,
-          "fdcId": "2645873",
-          "description": "beans, navy, canned, sodium added",
-          "publicationDate": "2023-10-26"
+          "fdcId": "2644286",
+          "description": "Beans, navy, canned, sodium added, drained and rinsed",
+          "publicationDate": "2023-10-26",
+          "weightBasis": "drained weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "spinach",
           "servingGrams": 45,
           "fdcId": "1750352",
           "description": "Spinach, baby",
-          "publicationDate": "2021-04-28"
+          "publicationDate": "2021-04-28",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_beans_rice_tomato_bowl",
-      "name": "USDA Bean Rice Tomato Bowl",
+      "name": "USDA Bean, Rice, Tomato and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "beans",
@@ -3399,11 +3701,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 135,
-      "protein": 2,
-      "carbs": 9,
-      "fats": 15,
+      "calories": 527,
+      "protein": 14,
+      "carbs": 86,
+      "fats": 16,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=900&q=80",
@@ -3411,36 +3714,40 @@
         {
           "ingredient": "beans",
           "servingGrams": 100,
-          "fdcId": "2645873",
-          "description": "beans, navy, canned, sodium added",
-          "publicationDate": "2023-10-26"
+          "fdcId": "2644286",
+          "description": "Beans, navy, canned, sodium added, drained and rinsed",
+          "publicationDate": "2023-10-26",
+          "weightBasis": "drained weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "tomato",
           "servingGrams": 80,
           "fdcId": "321360",
           "description": "Tomatoes, grape, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_beans_rice_lettuce_bowl",
-      "name": "USDA Bean Rice Lettuce Bowl",
+      "name": "USDA Bean, Rice, Lettuce and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "beans",
@@ -3454,11 +3761,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 121,
-      "protein": 1,
-      "carbs": 6,
-      "fats": 14,
+      "calories": 513,
+      "protein": 13,
+      "carbs": 84,
+      "fats": 15,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=900&q=80",
@@ -3466,36 +3774,40 @@
         {
           "ingredient": "beans",
           "servingGrams": 100,
-          "fdcId": "2645873",
-          "description": "beans, navy, canned, sodium added",
-          "publicationDate": "2023-10-26"
+          "fdcId": "2644286",
+          "description": "Beans, navy, canned, sodium added, drained and rinsed",
+          "publicationDate": "2023-10-26",
+          "weightBasis": "drained weight"
         },
         {
           "ingredient": "rice",
           "servingGrams": 75,
-          "fdcId": "2514400",
-          "description": "brown rice, long grain, unenriched",
-          "publicationDate": "2023-04-20"
+          "fdcId": "2512380",
+          "description": "Rice, brown, long grain, unenriched, raw",
+          "publicationDate": "2023-04-20",
+          "weightBasis": "raw/dry weight"
         },
         {
           "ingredient": "lettuce",
           "servingGrams": 50,
           "fdcId": "2346388",
           "description": "Lettuce, iceberg, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_beans_potato_broccoli_bowl",
-      "name": "USDA Bean Potato Broccoli Bowl",
+      "name": "USDA Bean, Potato, Broccoli and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "beans",
@@ -3509,11 +3821,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 216,
-      "protein": 6,
-      "carbs": 33,
+      "calories": 359,
+      "protein": 13,
+      "carbs": 53,
       "fats": 13,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=900&q=80",
@@ -3521,36 +3834,40 @@
         {
           "ingredient": "beans",
           "servingGrams": 100,
-          "fdcId": "2645873",
-          "description": "beans, navy, canned, sodium added",
-          "publicationDate": "2023-10-26"
+          "fdcId": "2644286",
+          "description": "Beans, navy, canned, sodium added, drained and rinsed",
+          "publicationDate": "2023-10-26",
+          "weightBasis": "drained weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "broccoli",
           "servingGrams": 85,
-          "fdcId": "321900",
+          "fdcId": "747447",
           "description": "Broccoli, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-12-16",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_beans_potato_spinach_bowl",
-      "name": "USDA Bean Potato Spinach Bowl",
+      "name": "USDA Bean, Potato, Spinach and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "beans",
@@ -3564,11 +3881,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 225,
-      "protein": 5,
-      "carbs": 28,
+      "calories": 341,
+      "protein": 12,
+      "carbs": 48,
       "fats": 13,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=900&q=80",
@@ -3576,36 +3894,40 @@
         {
           "ingredient": "beans",
           "servingGrams": 100,
-          "fdcId": "2645873",
-          "description": "beans, navy, canned, sodium added",
-          "publicationDate": "2023-10-26"
+          "fdcId": "2644286",
+          "description": "Beans, navy, canned, sodium added, drained and rinsed",
+          "publicationDate": "2023-10-26",
+          "weightBasis": "drained weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "spinach",
           "servingGrams": 45,
           "fdcId": "1750352",
           "description": "Spinach, baby",
-          "publicationDate": "2021-04-28"
+          "publicationDate": "2021-04-28",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_beans_potato_tomato_bowl",
-      "name": "USDA Bean Potato Tomato Bowl",
+      "name": "USDA Bean, Potato, Tomato and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "beans",
@@ -3619,11 +3941,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 238,
-      "protein": 5,
-      "carbs": 32,
+      "calories": 353,
+      "protein": 11,
+      "carbs": 52,
       "fats": 13,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=900&q=80",
@@ -3631,36 +3954,40 @@
         {
           "ingredient": "beans",
           "servingGrams": 100,
-          "fdcId": "2645873",
-          "description": "beans, navy, canned, sodium added",
-          "publicationDate": "2023-10-26"
+          "fdcId": "2644286",
+          "description": "Beans, navy, canned, sodium added, drained and rinsed",
+          "publicationDate": "2023-10-26",
+          "weightBasis": "drained weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "tomato",
           "servingGrams": 80,
           "fdcId": "321360",
           "description": "Tomatoes, grape, raw",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_beans_potato_lettuce_bowl",
-      "name": "USDA Bean Potato Lettuce Bowl",
+      "name": "USDA Bean, Potato, Lettuce and Avocado Lunch",
       "type": "Lunch",
       "ingredients": [
         "beans",
@@ -3674,11 +4001,12 @@
       ],
       "allergens": [],
       "prepMinutes": 22,
-      "calories": 223,
-      "protein": 4,
-      "carbs": 29,
+      "calories": 339,
+      "protein": 11,
+      "carbs": 49,
       "fats": 13,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=900&q=80",
@@ -3686,36 +4014,40 @@
         {
           "ingredient": "beans",
           "servingGrams": 100,
-          "fdcId": "2645873",
-          "description": "beans, navy, canned, sodium added",
-          "publicationDate": "2023-10-26"
+          "fdcId": "2644286",
+          "description": "Beans, navy, canned, sodium added, drained and rinsed",
+          "publicationDate": "2023-10-26",
+          "weightBasis": "drained weight"
         },
         {
           "ingredient": "potato",
           "servingGrams": 140,
           "fdcId": "2346402",
           "description": "Potatoes, red, without skin, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "lettuce",
           "servingGrams": 50,
           "fdcId": "2346388",
           "description": "Lettuce, iceberg, raw",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "avocado",
           "servingGrams": 55,
           "fdcId": "2710824",
           "description": "Avocado, Hass, peeled, raw",
-          "publicationDate": "2024-10-31"
+          "publicationDate": "2024-10-31",
+          "weightBasis": "raw weight"
         }
       ]
     },
     {
       "id": "usda_eggs_oats_banana_breakfast",
-      "name": "USDA Egg Banana Breakfast",
+      "name": "USDA Egg, Oat, Banana and Milk Breakfast",
       "type": "Breakfast",
       "ingredients": [
         "eggs",
@@ -3733,11 +4065,12 @@
         "eggs"
       ],
       "prepMinutes": 12,
-      "calories": 358,
-      "protein": 20,
-      "carbs": 59,
-      "fats": 22,
+      "calories": 539,
+      "protein": 29,
+      "carbs": 71,
+      "fats": 16,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=900&q=80",
@@ -3747,34 +4080,38 @@
           "servingGrams": 100,
           "fdcId": "323604",
           "description": "Egg, whole, raw, frozen, pasteurized",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "oats",
           "servingGrams": 55,
           "fdcId": "2346396",
           "description": "Oats, whole grain, rolled, old fashioned",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "dry weight"
         },
         {
           "ingredient": "banana",
           "servingGrams": 100,
-          "fdcId": "790774",
+          "fdcId": "1105073",
           "description": "Bananas, overripe, raw",
-          "publicationDate": "2020-04-01"
+          "publicationDate": "2020-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "milk",
           "servingGrams": 240,
-          "fdcId": "322562",
-          "description": "MILK, WHOLE ",
-          "publicationDate": "2019-04-01"
+          "fdcId": "746772",
+          "description": "Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",
+          "publicationDate": "2019-12-16",
+          "weightBasis": "as-sold weight; follow the source description"
         }
       ]
     },
     {
       "id": "usda_eggs_oats_berries_breakfast",
-      "name": "USDA Egg Berry Breakfast",
+      "name": "USDA Egg, Oat, Berry and Milk Breakfast",
       "type": "Breakfast",
       "ingredients": [
         "eggs",
@@ -3792,11 +4129,12 @@
         "eggs"
       ],
       "prepMinutes": 12,
-      "calories": 358,
-      "protein": 20,
-      "carbs": 39,
-      "fats": 22,
+      "calories": 505,
+      "protein": 29,
+      "carbs": 62,
+      "fats": 16,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=900&q=80",
@@ -3806,34 +4144,38 @@
           "servingGrams": 100,
           "fdcId": "323604",
           "description": "Egg, whole, raw, frozen, pasteurized",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "oats",
           "servingGrams": 55,
           "fdcId": "2346396",
           "description": "Oats, whole grain, rolled, old fashioned",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "dry weight"
         },
         {
           "ingredient": "berries",
           "servingGrams": 85,
-          "fdcId": "2264194",
-          "description": "raspberries, fresh, raw",
-          "publicationDate": "2022-04-28"
+          "fdcId": "2263888",
+          "description": "Raspberries, raw",
+          "publicationDate": "2022-04-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "milk",
           "servingGrams": 240,
-          "fdcId": "322562",
-          "description": "MILK, WHOLE ",
-          "publicationDate": "2019-04-01"
+          "fdcId": "746772",
+          "description": "Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",
+          "publicationDate": "2019-12-16",
+          "weightBasis": "as-sold weight; follow the source description"
         }
       ]
     },
     {
       "id": "usda_eggs_oats_apple_breakfast",
-      "name": "USDA Egg Apple Breakfast",
+      "name": "USDA Egg, Oat, Apple and Milk Breakfast",
       "type": "Breakfast",
       "ingredients": [
         "eggs",
@@ -3851,11 +4193,12 @@
         "eggs"
       ],
       "prepMinutes": 12,
-      "calories": 413,
-      "protein": 20,
-      "carbs": 53,
-      "fats": 22,
+      "calories": 517,
+      "protein": 28,
+      "carbs": 66,
+      "fats": 16,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=900&q=80",
@@ -3865,34 +4208,38 @@
           "servingGrams": 100,
           "fdcId": "323604",
           "description": "Egg, whole, raw, frozen, pasteurized",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "oats",
           "servingGrams": 55,
           "fdcId": "2346396",
           "description": "Oats, whole grain, rolled, old fashioned",
-          "publicationDate": "2022-10-28"
+          "publicationDate": "2022-10-28",
+          "weightBasis": "dry weight"
         },
         {
           "ingredient": "apple",
           "servingGrams": 100,
           "fdcId": "1105781",
           "description": "Apples, gala, with skin, raw",
-          "publicationDate": "2020-10-30"
+          "publicationDate": "2020-10-30",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "milk",
           "servingGrams": 240,
-          "fdcId": "322562",
-          "description": "MILK, WHOLE ",
-          "publicationDate": "2019-04-01"
+          "fdcId": "746772",
+          "description": "Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",
+          "publicationDate": "2019-12-16",
+          "weightBasis": "as-sold weight; follow the source description"
         }
       ]
     },
     {
       "id": "usda_eggs_bread_banana_breakfast",
-      "name": "USDA Egg Banana Breakfast",
+      "name": "USDA Egg, Toast, Banana and Milk Breakfast",
       "type": "Breakfast",
       "ingredients": [
         "eggs",
@@ -3911,11 +4258,12 @@
         "gluten"
       ],
       "prepMinutes": 12,
-      "calories": 326,
-      "protein": 19,
-      "carbs": 53,
-      "fats": 21,
+      "calories": 506,
+      "protein": 27,
+      "carbs": 65,
+      "fats": 15,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=900&q=80",
@@ -3925,34 +4273,38 @@
           "servingGrams": 100,
           "fdcId": "323604",
           "description": "Egg, whole, raw, frozen, pasteurized",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "bread",
           "servingGrams": 65,
           "fdcId": "325871",
           "description": "Bread, white, commercially prepared",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "banana",
           "servingGrams": 100,
-          "fdcId": "790774",
+          "fdcId": "1105073",
           "description": "Bananas, overripe, raw",
-          "publicationDate": "2020-04-01"
+          "publicationDate": "2020-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "milk",
           "servingGrams": 240,
-          "fdcId": "322562",
-          "description": "MILK, WHOLE ",
-          "publicationDate": "2019-04-01"
+          "fdcId": "746772",
+          "description": "Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",
+          "publicationDate": "2019-12-16",
+          "weightBasis": "as-sold weight; follow the source description"
         }
       ]
     },
     {
       "id": "usda_eggs_bread_berries_breakfast",
-      "name": "USDA Egg Berry Breakfast",
+      "name": "USDA Egg, Toast, Berry and Milk Breakfast",
       "type": "Breakfast",
       "ingredients": [
         "eggs",
@@ -3971,11 +4323,12 @@
         "gluten"
       ],
       "prepMinutes": 12,
-      "calories": 326,
-      "protein": 18,
-      "carbs": 33,
-      "fats": 21,
+      "calories": 472,
+      "protein": 27,
+      "carbs": 56,
+      "fats": 15,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=900&q=80",
@@ -3985,34 +4338,38 @@
           "servingGrams": 100,
           "fdcId": "323604",
           "description": "Egg, whole, raw, frozen, pasteurized",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "bread",
           "servingGrams": 65,
           "fdcId": "325871",
           "description": "Bread, white, commercially prepared",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "berries",
           "servingGrams": 85,
-          "fdcId": "2264194",
-          "description": "raspberries, fresh, raw",
-          "publicationDate": "2022-04-28"
+          "fdcId": "2263888",
+          "description": "Raspberries, raw",
+          "publicationDate": "2022-04-28",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "milk",
           "servingGrams": 240,
-          "fdcId": "322562",
-          "description": "MILK, WHOLE ",
-          "publicationDate": "2019-04-01"
+          "fdcId": "746772",
+          "description": "Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",
+          "publicationDate": "2019-12-16",
+          "weightBasis": "as-sold weight; follow the source description"
         }
       ]
     },
     {
       "id": "usda_eggs_bread_apple_breakfast",
-      "name": "USDA Egg Apple Breakfast",
+      "name": "USDA Egg, Toast, Apple and Milk Breakfast",
       "type": "Breakfast",
       "ingredients": [
         "eggs",
@@ -4031,11 +4388,12 @@
         "gluten"
       ],
       "prepMinutes": 12,
-      "calories": 380,
-      "protein": 19,
-      "carbs": 48,
-      "fats": 21,
+      "calories": 484,
+      "protein": 27,
+      "carbs": 60,
+      "fats": 15,
       "expert_score": 0.9,
+      "expert_score_source": "rule_prior_not_human_review",
       "source": "USDA FoodData Central Foundation Foods CSV 2026-04-30",
       "sourceUrl": "https://fdc.nal.usda.gov/download-datasets/",
       "image": "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=900&q=80",
@@ -4045,28 +4403,32 @@
           "servingGrams": 100,
           "fdcId": "323604",
           "description": "Egg, whole, raw, frozen, pasteurized",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "bread",
           "servingGrams": 65,
           "fdcId": "325871",
           "description": "Bread, white, commercially prepared",
-          "publicationDate": "2019-04-01"
+          "publicationDate": "2019-04-01",
+          "weightBasis": "as-sold weight; follow the source description"
         },
         {
           "ingredient": "apple",
           "servingGrams": 100,
           "fdcId": "1105781",
           "description": "Apples, gala, with skin, raw",
-          "publicationDate": "2020-10-30"
+          "publicationDate": "2020-10-30",
+          "weightBasis": "raw weight"
         },
         {
           "ingredient": "milk",
           "servingGrams": 240,
-          "fdcId": "322562",
-          "description": "MILK, WHOLE ",
-          "publicationDate": "2019-04-01"
+          "fdcId": "746772",
+          "description": "Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",
+          "publicationDate": "2019-12-16",
+          "weightBasis": "as-sold weight; follow the source description"
         }
       ]
     }

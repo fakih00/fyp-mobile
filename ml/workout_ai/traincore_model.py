@@ -13,21 +13,25 @@ import base64
 import json
 import math
 import random
+import re
 import sys
 import zlib
 from dataclasses import dataclass
+from functools import lru_cache
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "ml"))
+from random_forest import predict_forest, train_forest
 ARTIFACT_PATH = ROOT / "ml" / "workout_ai" / "traincore_trained_model.json"
 DATASET_PATH = ROOT / "ml" / "workout_ai" / "datasets" / "traincore_exercise_dataset.json"
 
 MODEL_NAME = "TrainCore AI"
-MODEL_VERSION = "1.1.0"
-NEURAL_MODEL_CACHE = None
+MODEL_VERSION = "2.0.0"
+FOREST_MODEL_CACHE = None
 FEATURE_SCHEMA_CACHE = None
 DATASET_METADATA = {}
 
@@ -223,7 +227,7 @@ def model_card() -> Dict[str, Any]:
     return {
         "name": MODEL_NAME,
         "version": MODEL_VERSION,
-        "type": "Python local neural-network workout recommendation model",
+        "type": "Python local Random Forest workout recommendation model",
         "primary_inputs": [
             "goal",
             "training_days_per_week",
@@ -244,7 +248,7 @@ def model_card() -> Dict[str, Any]:
         "dataset_source_url": DATASET_METADATA.get("source_url"),
         "public_reference_sources": DATASET_METADATA.get("public_reference_sources", []),
         "weights": WEIGHTS,
-        "training_method": "A local feed-forward neural network is trained from expert-rule labels over profile/exercise pairs; hard injury and location filters remain outside the model for safety",
+        "training_method": "A Random Forest regressor is trained from expert-rule labels over profile/exercise pairs with held-out profile validation; hard injury and location filters remain outside the model",
         "external_generation_api": False,
     }
 
@@ -355,14 +359,6 @@ def exercise_matches_focus(exercise: Dict[str, Any], focus: str) -> bool:
     return contains_any(muscles, targets) or category in targets
 
 
-def sigmoid(value: float) -> float:
-    if value < -60:
-        return 0.0
-    if value > 60:
-        return 1.0
-    return 1 / (1 + math.exp(-value))
-
-
 def traincore_feature_schema() -> Dict[str, List[str]]:
     global FEATURE_SCHEMA_CACHE
     if FEATURE_SCHEMA_CACHE is not None:
@@ -381,7 +377,7 @@ def one_hot(value: str, choices: List[str]) -> List[float]:
     return [1.0 if value == choice else 0.0 for choice in choices]
 
 
-def neural_features(exercise: Dict[str, Any], goal: str, focus: str, location: str, intensity: str, frequency: int) -> List[float]:
+def forest_features(exercise: Dict[str, Any], goal: str, focus: str, location: str, intensity: str, frequency: int) -> List[float]:
     schema = traincore_feature_schema()
     category = str(exercise.get("cat", "base")).lower()
     family = movement_family(exercise)
@@ -404,43 +400,38 @@ def neural_features(exercise: Dict[str, Any], goal: str, focus: str, location: s
             goal_category_fit,
             goal_muscle_fit,
             expert_score(category),
+            1.0 if focus_targets(focus) else 0.0,
         ]
     )
 
 
-def forward_neural(model: Dict[str, Any], features: List[float]) -> float:
-    hidden = []
-    for row, bias in zip(model["hidden_weights"], model["hidden_bias"]):
-        hidden.append(math.tanh(sum(weight * value for weight, value in zip(row, features)) + bias))
-    output_raw = sum(weight * value for weight, value in zip(model["output_weights"], hidden)) + model["output_bias"]
-    return sigmoid(output_raw)
-
-
-def load_neural_model() -> Dict[str, Any] | None:
-    global NEURAL_MODEL_CACHE
-    if NEURAL_MODEL_CACHE is not None:
-        return NEURAL_MODEL_CACHE
+def load_forest_model() -> Dict[str, Any] | None:
+    global FOREST_MODEL_CACHE
+    if FOREST_MODEL_CACHE is not None:
+        return FOREST_MODEL_CACHE
     if not ARTIFACT_PATH.exists():
-        return None
-    try:
-        artifact = json.loads(ARTIFACT_PATH.read_text(encoding="utf-8"))
-    except Exception:
-        return None
-    model = artifact.get("neural_network")
-    if not isinstance(model, dict) or not model.get("hidden_weights"):
-        return None
-    NEURAL_MODEL_CACHE = model
-    return NEURAL_MODEL_CACHE
+        raise RuntimeError("TrainCore Random Forest missing; run npm run train:workout-ai")
+    artifact = json.loads(ARTIFACT_PATH.read_text(encoding="utf-8"))
+    model = artifact.get("random_forest")
+    if not isinstance(model, dict) or not model.get("trees"):
+        raise RuntimeError("TrainCore Random Forest missing; run npm run train:workout-ai")
+    if model.get("feature_schema") != traincore_feature_schema():
+        raise RuntimeError("TrainCore dataset schema changed; retrain the Random Forest")
+    FOREST_MODEL_CACHE = model
+    return model
 
 
-def neural_score_exercise(exercise: Dict[str, Any], goal: str, focus: str, location: str, intensity: str, frequency: int) -> float | None:
-    model = load_neural_model()
+@lru_cache(maxsize=65536)
+def predict_workout_features(features: tuple) -> float:
+    return predict_forest(load_forest_model(), features)
+
+
+def forest_score_exercise(exercise: Dict[str, Any], goal: str, focus: str, location: str, intensity: str, frequency: int) -> float | None:
+    model = load_forest_model()
     if not model:
         return None
-    features = neural_features(exercise, goal, focus, location, intensity, frequency)
-    if len(features) != int(model.get("feature_count", -1)):
-        return None
-    return round(max(0.0, min(99.0, forward_neural(model, features) * 99)), 4)
+    features = forest_features(exercise, goal, focus, location, intensity, frequency)
+    return round(max(0.0, min(99.0, predict_workout_features(tuple(features)) * 99)), 4)
 
 
 def expert_rule_score_exercise(exercise: Dict[str, Any], goal: str, focus: str, location: str, intensity: str, frequency: int, day_index: int) -> float:
@@ -488,10 +479,10 @@ def expert_rule_score_exercise(exercise: Dict[str, Any], goal: str, focus: str, 
 
 
 def score_exercise(exercise: Dict[str, Any], goal: str, focus: str, location: str, intensity: str, frequency: int, day_index: int) -> float:
-    neural_score = neural_score_exercise(exercise, goal, focus, location, intensity, frequency)
-    if neural_score is not None:
+    forest_score = forest_score_exercise(exercise, goal, focus, location, intensity, frequency)
+    if forest_score is not None:
         seed = zlib.crc32(f"{goal}|{focus}|{location}|{intensity}|{frequency}|{day_index}|{exercise['id']}".encode("utf-8"))
-        return round(max(0.0, min(99.0, neural_score + ((seed % 100) / 100) * 1.5)), 4)
+        return round(max(0.0, min(99.0, forest_score + ((seed % 100) / 100) * 1.5)), 4)
     return expert_rule_score_exercise(exercise, goal, focus, location, intensity, frequency, day_index)
 
 
@@ -506,6 +497,30 @@ def intensity_params(intensity: str) -> IntensityParams:
 def build_exercise_guide(exercise: Dict[str, Any], focus: str, score: float) -> str:
     muscles = ", ".join(exercise.get("muscles", []))
     return f"{MODEL_NAME} selected this for {focus}. Match score {round(score)}%. Focus on {muscles} and keep controlled form."
+
+
+def dominance_variation(exercise: Dict[str, Any], profile: Dict[str, Any]) -> str | None:
+    dominance = str(profile.get("strong_side") or "").lower()
+    upper = re.search(r"upper body:\s*(left|right)\b", dominance)
+    lower = re.search(r"lower body:\s*(left|right)\b", dominance)
+    name = exercise["name"].lower()
+    upper_options = {
+        "bent-over dumbbell row",
+        "chest-supported dumbbell row",
+        "dumbbell bicep curl",
+        "dumbbell reverse curl",
+    }
+    lower_options = {
+        "bodyweight reverse lunge",
+        "bulgarian split squat",
+        "dumbbell lunge",
+        "dumbbell kickstand deadlift",
+    }
+    if upper and name in upper_options:
+        return "Single-arm option: work one arm at a time, using the same rep target on each side."
+    if lower and name in lower_options:
+        return "Single-leg option: work each side separately, using the same rep target on each side."
+    return None
 
 
 def generate_workout_day(profile: Dict[str, Any], index: int, location: str, frequency: int) -> Dict[str, Any]:
@@ -533,6 +548,11 @@ def generate_workout_day(profile: Dict[str, Any], index: int, location: str, fre
     target_count = 6 if frequency >= 5 else 5
     preferred_ranked = [item for item in ranked if exercise_matches_focus(item["exercise"], focus)]
     fallback_ranked = [item for item in ranked if not exercise_matches_focus(item["exercise"], focus)]
+
+    # Prefer one matching unilateral option after injury and location exclusions.
+    unilateral = next((item for item in preferred_ranked if dominance_variation(item["exercise"], profile)), None)
+    if unilateral:
+        preferred_ranked = [unilateral] + [item for item in preferred_ranked if item is not unilateral]
 
     for candidate in preferred_ranked:
         exercise = candidate["exercise"]
@@ -575,12 +595,19 @@ def generate_workout_day(profile: Dict[str, Any], index: int, location: str, fre
                 break
 
     rotation_type = "Advanced Split" if frequency >= 5 else ("Foundation Cycle" if frequency >= 3 else "Maintenance")
+    unilateral_selected = False
+    for item in selected:
+        if unilateral and item["id"] == unilateral["exercise"]["id"]:
+            item["guide"] = dominance_variation(unilateral["exercise"], profile) + " " + item["guide"]
+            unilateral_selected = True
     loc_name = "Elite Training Facility" if location == "gym" else location.capitalize()
     rationale = (
         f"Based on your {goal} goal and {frequency}-day frequency, TrainCore AI designed a {rotation_type} program. "
         f"Since you requested {intensity} intensity, it optimized parameters for {params.description} using the available equipment at your {loc_name}. "
         f"Today's {focus} session was ranked using goal fit, body-part focus, location, safety, and intensity."
     )
+    if unilateral_selected:
+        rationale += " A unilateral option was prioritized for your reported side dominance; train both sides with the same rep target."
 
     return {
         "focus": focus,
@@ -620,7 +647,7 @@ def generate_plan(profile: Dict[str, Any]) -> List[Dict[str, Any]]:
             "location": location,
             "ai_model": MODEL_NAME,
             "model_version": MODEL_VERSION,
-            "model_type": "python_local_neural_exercise_ranker",
+            "model_type": "python_local_random_forest_exercise_ranker",
             "completed": False,
         })
     return plan
@@ -640,14 +667,13 @@ def validate_plan(plan: Any) -> bool:
     return True
 
 
-def train_neural_network() -> Dict[str, Any]:
+def train_random_forest() -> Dict[str, Any]:
     goals = ["lose_weight", "gain_muscle", "build_muscle", "gain_weight", "maintain", "running", "boxing", "swimming", "cycling", "martial_arts", "yoga_flexibility"]
     locations = ["gym", "home", "outdoor", "studio"]
     intensities = ["light", "moderate", "heavy"]
     injuries = ["none", "left shoulder pain", "knee pain", "lower back pain", "ankle pain"]
     frequencies = [2, 3, 4, 5]
-    samples = []
-    rng = random.Random(42)
+    features, labels, groups = [], [], []
 
     for goal in goals:
         splits = GOAL_SPLITS.get(goal, ["Full Body (A)", "Full Body (B)", "Full Body (C)"])
@@ -655,83 +681,29 @@ def train_neural_network() -> Dict[str, Any]:
             for intensity in intensities:
                 for injury in injuries:
                     for frequency in frequencies:
+                        # Injury variants share a group: the same profile cannot leak across the split.
+                        group = f"{goal}|{location}|{intensity}|{frequency}"
                         for day_index, focus in enumerate(splits[:min(frequency, len(splits))]):
                             for exercise in EXERCISES:
                                 if not location_matches(exercise, location) or not is_exercise_safe(exercise, injury):
                                     continue
-                                seed = zlib.crc32(f"{goal}|{location}|{intensity}|{injury}|{frequency}|{focus}|{exercise['id']}".encode("utf-8"))
+                                seed = zlib.crc32(f"{group}|{injury}|{focus}|{exercise['id']}".encode("utf-8"))
                                 if seed % 23 != 0:
                                     continue
-                                features = neural_features(exercise, goal, focus, location, intensity, frequency)
-                                label = expert_rule_score_exercise(exercise, goal, focus, location, intensity, frequency, day_index) / 99
-                                samples.append((features, label))
-
-    if not samples:
-        raise RuntimeError("No TrainCore neural training samples were generated.")
-
-    rng.shuffle(samples)
-    feature_count = len(samples[0][0])
-    hidden_count = 8
-    hidden_weights = [[rng.uniform(-0.18, 0.18) for _ in range(feature_count)] for _ in range(hidden_count)]
-    hidden_bias = [0.0 for _ in range(hidden_count)]
-    output_weights = [rng.uniform(-0.18, 0.18) for _ in range(hidden_count)]
-    output_bias = 0.0
-    learning_rate = 0.045
-    epochs = 8
-
-    for _ in range(epochs):
-        for features, label in samples:
-            hidden = [
-                math.tanh(sum(weight * value for weight, value in zip(row, features)) + bias)
-                for row, bias in zip(hidden_weights, hidden_bias)
-            ]
-            output_raw = sum(weight * value for weight, value in zip(output_weights, hidden)) + output_bias
-            prediction = sigmoid(output_raw)
-            output_delta = (prediction - label) * prediction * (1 - prediction)
-
-            previous_output_weights = output_weights[:]
-            for idx in range(hidden_count):
-                output_weights[idx] -= learning_rate * output_delta * hidden[idx]
-            output_bias -= learning_rate * output_delta
-
-            for hidden_idx in range(hidden_count):
-                hidden_delta = output_delta * previous_output_weights[hidden_idx] * (1 - hidden[hidden_idx] ** 2)
-                for feature_idx in range(feature_count):
-                    hidden_weights[hidden_idx][feature_idx] -= learning_rate * hidden_delta * features[feature_idx]
-                hidden_bias[hidden_idx] -= learning_rate * hidden_delta
-
-    absolute_errors = []
-    for features, label in samples:
-        model = {
-            "hidden_weights": hidden_weights,
-            "hidden_bias": hidden_bias,
-            "output_weights": output_weights,
-            "output_bias": output_bias,
-        }
-        absolute_errors.append(abs(forward_neural(model, features) - label))
-
-    return {
-        "type": "feed_forward_mlp_regressor",
-        "framework": "pure_python",
-        "input": "user profile features + exercise features",
-        "output": "exercise suitability score",
-        "feature_schema": traincore_feature_schema(),
-        "feature_count": feature_count,
-        "hidden_layers": [hidden_count],
-        "activation": "tanh_hidden_sigmoid_output",
-        "training_samples": len(samples),
-        "epochs": epochs,
-        "label_source": "expert-rule TrainCore suitability scores",
-        "mean_absolute_error": round(sum(absolute_errors) / len(absolute_errors), 4),
-        "hidden_weights": hidden_weights,
-        "hidden_bias": hidden_bias,
-        "output_weights": output_weights,
-        "output_bias": output_bias,
-    }
+                                features.append(forest_features(exercise, goal, focus, location, intensity, frequency))
+                                labels.append(expert_rule_score_exercise(exercise, goal, focus, location, intensity, frequency, day_index) / 99)
+                                groups.append(group)
+    schema = traincore_feature_schema()
+    names = [f"{key}:{value}" for key in ["goals", "locations", "intensities", "categories", "families"] for value in schema[key]]
+    names += ["frequency", "location_fit", "focus_fit", "goal_category_fit", "goal_muscle_fit", "expert_score", "has_focus"]
+    model = train_forest(features, labels, groups, names, "regression")
+    model.update(feature_schema=schema, label_source="expert-rule suitability scores, not measured fitness outcomes",
+                 input="user profile and exercise features", output="exercise suitability score (0 to 1)")
+    return model
 
 
 def train_model() -> Dict[str, Any]:
-    global NEURAL_MODEL_CACHE
+    global FOREST_MODEL_CACHE
     goals = ["lose_weight", "gain_muscle", "build_muscle", "gain_weight", "maintain", "running", "boxing", "swimming", "cycling", "martial_arts", "yoga_flexibility"]
     locations = ["gym", "home", "outdoor", "pool", "dryland", "studio"]
     intensities = ["light", "moderate", "heavy"]
@@ -745,8 +717,9 @@ def train_model() -> Dict[str, Any]:
     unique_exercises = {}
     failures = []
     goal_coverage: Dict[str, int] = {}
-    neural_network = train_neural_network()
-    NEURAL_MODEL_CACHE = neural_network
+    random_forest = train_random_forest()
+    FOREST_MODEL_CACHE = random_forest
+    predict_workout_features.cache_clear()
 
     for goal in goals:
         for location in locations:
@@ -782,8 +755,10 @@ def train_model() -> Dict[str, Any]:
     artifact = {
         "model": model_card(),
         "trained_at": datetime.now(timezone.utc).isoformat(),
-        "training_type": "Python offline local neural-network training plus profile-matrix validation",
-        "neural_network": neural_network,
+        "training_type": "scikit-learn Random Forest training, held-out profile evaluation, and plan-contract validation",
+        "random_forest": random_forest,
+        "trainingMetrics": random_forest["trainingMetrics"],
+        "validationMetrics": random_forest["validationMetrics"],
         "training_profiles_tested": profiles_tested,
         "plans_generated": plans_generated,
         "exercise_slots_ranked": exercise_slots,
@@ -797,12 +772,12 @@ def train_model() -> Dict[str, Any]:
             "external_api_disabled": True,
             "local_first": True,
             "python_model": True,
-            "neural_network": True,
+            "random_forest": True,
         },
         "notes": [
-            "TrainCore AI is a Python local neural-network ranker, not a generative API.",
-            "The neural network learns exercise suitability from expert-rule labels over profile/exercise pairs.",
-            "Hard injury and location filters remain outside the neural network for safety.",
+            "TrainCore AI evaluates learned Random Forest trees locally.",
+            "The forest learns exercise suitability from expert-rule labels, not observed fitness outcomes.",
+            "Hard injury and location filters remain outside the forest.",
             "The PHP backend only calls the Python model and stores the generated plan.",
         ],
     }

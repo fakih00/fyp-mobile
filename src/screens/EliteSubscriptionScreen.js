@@ -30,7 +30,7 @@ const EliteSubscriptionScreen = ({ navigation }) => {
 
                         <View style={styles.content}>
                             <View style={styles.badge}>
-                                <Text style={styles.badgeText}>ELITE ACCESS</Text>
+                                <Text style={styles.badgeText}>SUBSCRIPTION PREVIEW</Text>
                             </View>
                             <Text style={styles.title}>Unlock Your Full Potential</Text>
                             <Text style={styles.subtitle}>Get personalized AI coaching, advanced analytics, and exclusive content.</Text>
@@ -42,17 +42,17 @@ const EliteSubscriptionScreen = ({ navigation }) => {
                                 <FeatureItem text="Priority Support" />
                             </View>
 
-                            <TouchableOpacity style={styles.upgradeBtn}>
+                            <TouchableOpacity style={[styles.upgradeBtn, { opacity: 0.6 }]} disabled>
                                 <LinearGradient
                                     colors={['#10B981', '#059669']}
                                     style={styles.btnGradient}
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 0 }}
                                 >
-                                    <Text style={styles.btnText}>Upgrade to Elite - $9.99/mo</Text>
+                                    <Text style={styles.btnText}>Subscriptions Not Available</Text>
                                 </LinearGradient>
                             </TouchableOpacity>
-                            <Text style={styles.disclaimer}>Cancel anytime. Terms apply.</Text>
+                            <Text style={styles.disclaimer}>No billing or paid subscription is enabled.</Text>
                         </View>
                     </SafeAreaView>
                 </LinearGradient>

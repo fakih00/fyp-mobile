@@ -47,6 +47,8 @@ const SocialScreen = ({ navigation }) => {
     const [posts, setPosts] = useState([]);
     const [clubs, setClubs] = useState([]);
     const [friends, setFriends] = useState([]);
+    const [people, setPeople] = useState([]);
+    const [busyClubs, setBusyClubs] = useState([]);
     const [myClubs, setMyClubs] = useState([]);
     const [selectedPost, setSelectedPost] = useState(null);
     const [selectedClub, setSelectedClub] = useState(null);
@@ -73,10 +75,11 @@ const SocialScreen = ({ navigation }) => {
         if (!user?.user_id) return;
         console.log("Fetching community posts, clubs, and friend lists...");
         try {
-            const [feedRes, clubsRes, friendsRes] = await Promise.all([
+            const [feedRes, clubsRes, friendsRes, peopleRes] = await Promise.all([
                 api.getFeed(),
                 api.getClubs(),
-                api.getFriends()
+                api.getFriends(),
+                api.getAllUsers()
             ]);
 
             if (feedRes.status === 200) setPosts(feedRes.data.records || []);
@@ -87,8 +90,9 @@ const SocialScreen = ({ navigation }) => {
                 setMyClubs(memberClubs);
             }
             if (friendsRes.status === 200) {
-                setFriends(friendsRes.data.records);
+                setFriends(friendsRes.data.records || []);
             }
+            if (peopleRes.status === 200) setPeople(peopleRes.data.records || []);
 
         } catch (error) {
             console.error("Fetch Social Data Error:", error);
@@ -103,6 +107,25 @@ const SocialScreen = ({ navigation }) => {
             fetchSocialData();
         }, [user?.user_id])
     );
+
+    React.useEffect(() => {
+        setSelectedPost(current => current ? posts.find(post => post.id === current.id) || null : null);
+    }, [posts]);
+    React.useEffect(() => {
+        setSelectedClub(current => current ? clubs.find(club => club.id === current.id) || null : null);
+    }, [clubs]);
+
+    const friendIds = new Set(friends.map(friend => String(friend.id)));
+    const visiblePosts = posts.filter(post => {
+        const isOwn = String(post.user_id) === String(user?.user_id);
+        const isFriend = friendIds.has(String(post.user_id));
+        if (selectedCategory === 'Friends' && !isOwn && !isFriend) return false;
+        if (selectedCategory === 'Discover' && (isOwn || isFriend || post.visibility !== 'public')) return false;
+        return `${post.content || ''} ${post.user || ''}`.toLowerCase().includes(searchQuery.trim().toLowerCase());
+    });
+    const visibleFriends = friends.filter(friend => friend.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    const visibleClubs = clubs.filter(club => club.name.toLowerCase().includes(searchQuery.toLowerCase()) && (selectedCategory !== 'Discover' || !club.is_member));
+    const discoveredPeople = people.filter(person => person.friendship_status !== 'accepted' && person.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const onRefresh = () => {
         setRefreshing(true);
@@ -133,8 +156,11 @@ const SocialScreen = ({ navigation }) => {
             newPostData.visibility
         );
         if (res.status === 201) {
-            fetchSocialData();
+            await fetchSocialData();
+            return true;
         }
+        Alert.alert('Could not publish', res.data?.message || 'Please try again.');
+        return false;
     };
 
     const handleCreateClub = async (newClubData) => {
@@ -145,8 +171,11 @@ const SocialScreen = ({ navigation }) => {
             newClubData.image
         );
         if (res.status === 201) {
-            fetchSocialData();
+            await fetchSocialData();
+            return true;
         }
+        Alert.alert('Could not create club', res.data?.message || 'Please try again.');
+        return false;
     };
 
     const handleLike = async (id) => {
@@ -154,11 +183,11 @@ const SocialScreen = ({ navigation }) => {
         const res = await api.likePost(id);
         if (res.status === 200) {
             // Optimistic update
-            setPosts(posts.map(post =>
+            setPosts(current => current.map(post =>
                 post.id === id
                     ? {
                         ...post,
-                        likes: res.data.liked ? post.likes + 1 : post.likes - 1,
+                        likes: res.data.likes,
                         liked: res.data.liked
                     }
                     : post
@@ -178,8 +207,9 @@ const SocialScreen = ({ navigation }) => {
                     onPress: async () => {
                         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                         // Optimistic update
-                        setPosts(posts.filter(p => p.id !== postId));
-                        await api.deletePost(postId);
+                        const res = await api.deletePost(postId);
+                        if (res.status === 200) setPosts(current => current.filter(p => p.id !== postId));
+                        else Alert.alert('Could not delete', res.data?.message || 'Please try again.');
                     }
                 }
             ]
@@ -197,6 +227,10 @@ const SocialScreen = ({ navigation }) => {
     };
 
     const handleOpenShare = (post) => {
+        if (post.visibility === 'friends') {
+            Alert.alert('Squad-only post', 'This post cannot be forwarded outside its original audience.');
+            return;
+        }
         setSharingPost(post);
         setSentFriends({});
         setShowShareModal(true);
@@ -209,7 +243,7 @@ const SocialScreen = ({ navigation }) => {
         if (!sharingPost || !user?.user_id) return;
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         
-        const postAuthor = sharingPost.author_name || 'someone';
+        const postAuthor = sharingPost.user || 'someone';
         const postText = sharingPost.content || '';
         const postImage = sharingPost.image || '';
         const shareMessage = `📢 SHARED POST: ${postAuthor} | ${postText} | ${postImage}`;
@@ -229,15 +263,15 @@ const SocialScreen = ({ navigation }) => {
     };
 
     const handleJoinLeaveClub = async (clubId) => {
+        if (busyClubs.includes(clubId)) return;
+        setBusyClubs(current => [...current, clubId]);
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        const res = await api.joinClub(clubId);
-        if (res.status === 200) {
-            setMyClubs(prev =>
-                res.data.is_member
-                    ? [...prev, clubId]
-                    : prev.filter(id => id !== clubId)
-            );
-            fetchSocialData();
+        try {
+            const res = await api.joinClub(clubId);
+            if (res.status === 200) await fetchSocialData();
+            else Alert.alert('Could not update membership', res.data?.message || 'Please retry.');
+        } finally {
+            setBusyClubs(current => current.filter(id => id !== clubId));
         }
     };
 
@@ -268,24 +302,28 @@ const SocialScreen = ({ navigation }) => {
         }
     };
 
-    const handleAddComment = (postId, comment) => {
-        setPosts(posts.map(post =>
-            post.id === postId
-                ? {
-                    ...post,
-                    comments_count: (post.comments_count || 0) + 1,
-                    comments: [...(post.comments || []), comment]
-                }
-                : post
-        ));
-        // Update selected post if it's the one we're viewing
-        if (selectedPost && selectedPost.id === postId) {
-            setSelectedPost({
-                ...selectedPost,
-                comments_count: (selectedPost.comments_count || 0) + 1,
-                comments: [...(selectedPost.comments || []), comment]
-            });
+    const handleAddComment = async (postId, comment) => {
+        try {
+            const res = await api.addComment(postId, comment.text);
+            if (res.status === 201 && res.data.comment) {
+                const savedComment = res.data.comment;
+                setPosts(currentPosts => currentPosts.map(post =>
+                    post.id === postId
+                        ? {
+                            ...post,
+                            comments_count: (post.comments_count || 0) + 1,
+                            comments: [...(post.comments || []), savedComment]
+                        }
+                        : post
+                ));
+                return true;
+            }
+            Alert.alert('Could not comment', res.data?.message || 'Please retry.');
+        } catch (error) {
+            console.error("Add comment error:", error);
+            Alert.alert('Could not comment', 'Please retry.');
         }
+        return false;
     };
 
     const renderSearchBar = () => (
@@ -336,7 +374,9 @@ const SocialScreen = ({ navigation }) => {
     const renderFriends = () => (
         <View style={styles.sectionElite}>
             <View style={styles.sectionHeaderElite}>
-                <Text style={styles.sectionTitleElite}>Your Squad</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('MyFriends')}>
+                    <Text style={styles.sectionTitleElite}>Your Squad</Text>
+                </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.addFriendBtnElite, { backgroundColor: themeColors.accent + '22', borderColor: themeColors.accent + '33' }]}
                     onPress={() => navigation.navigate('FindFriends')}
@@ -346,7 +386,8 @@ const SocialScreen = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.friendsScrollContent}>
-                {(friends || []).filter(f => f.name.toLowerCase().includes(searchQuery.toLowerCase())).map((friend, index) => (
+                {visibleFriends.length === 0 && !loading && <Text style={styles.shortcutText}>{searchQuery ? 'No matching friends.' : 'No friends yet.'}</Text>}
+                {visibleFriends.map((friend, index) => (
                     <AnimatedCard key={friend.id} delay={100 + index * 50} style={styles.friendCardElite}>
                         <TouchableOpacity
                             activeOpacity={0.9}
@@ -373,13 +414,17 @@ const SocialScreen = ({ navigation }) => {
     const renderClubs = () => (
         <View style={styles.sectionElite}>
             <View style={styles.sectionHeaderElite}>
-                <Text style={styles.sectionTitleElite}>Featured Clubs</Text>
+                <Text style={styles.sectionTitleElite}>{selectedCategory === 'Discover' ? 'Discover Clubs' : 'Fitness Clubs'}</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('MyClubs')} accessibilityLabel="My clubs">
+                    <Ionicons name="bookmarks-outline" size={22} color={themeColors.accent} />
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => setShowClubModal(true)}>
                     <Text style={[styles.seeAllElite, { color: themeColors.accent }]}>CREATE CLUB</Text>
                 </TouchableOpacity>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.clubsScrollContent}>
-                {(clubs || []).filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase())).map((club, index) => (
+                {visibleClubs.length === 0 && !loading && <Text style={styles.shortcutText}>{searchQuery ? 'No matching clubs.' : selectedCategory === 'Discover' ? 'No new clubs to discover.' : 'No clubs yet.'}</Text>}
+                {visibleClubs.map((club, index) => (
                     <AnimatedCard key={club.id} delay={index * 100} style={styles.clubCardElite}>
                         <TouchableOpacity
                             activeOpacity={0.9}
@@ -401,12 +446,14 @@ const SocialScreen = ({ navigation }) => {
                                 </View>
                                 <TouchableOpacity
                                     style={[styles.clubJoinBtnElite, myClubs.includes(club.id) && { backgroundColor: themeColors.accent }]}
+                                    disabled={busyClubs.includes(club.id)}
                                     onPress={(e) => {
+                                        e.stopPropagation();
                                         handleJoinLeaveClub(club.id);
                                     }}
                                 >
                                     <Text style={[styles.joinBtnTextElite, myClubs.includes(club.id) ? { color: COLORS.white } : { color: themeColors.accent }]}>
-                                        {myClubs.includes(club.id) ? 'MEMBER' : 'JOIN CLUB'}
+                                        {myClubs.includes(club.id) ? 'LEAVE CLUB' : 'JOIN CLUB'}
                                     </Text>
                                 </TouchableOpacity>
                             </LinearGradient>
@@ -453,7 +500,6 @@ const SocialScreen = ({ navigation }) => {
                             }}
                         >
                             <Ionicons name="chatbubbles" size={24} color={themeColors.accent} />
-                            <View style={styles.notifDotBasic} />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -462,11 +508,34 @@ const SocialScreen = ({ navigation }) => {
                 {renderCategories()}
 
                 {(selectedCategory === 'All' || selectedCategory === 'Friends') && renderFriends()}
-                {(selectedCategory === 'All' || selectedCategory === 'Clubs') && renderClubs()}
+                {(selectedCategory === 'All' || selectedCategory === 'Clubs' || selectedCategory === 'Discover') && renderClubs()}
 
+                {selectedCategory === 'Discover' && (
+                    <View style={styles.sectionElite}>
+                        <View style={styles.sectionHeaderElite}>
+                            <Text style={styles.sectionTitleElite}>Discover People</Text>
+                            <TouchableOpacity onPress={() => navigation.navigate('FindFriends')}>
+                                <Text style={styles.seeAllElite}>VIEW ALL</Text>
+                            </TouchableOpacity>
+                        </View>
+                        {discoveredPeople.length === 0 && !loading && <Text style={styles.shortcutText}>No new people found.</Text>}
+                        {discoveredPeople.map(person => (
+                            <TouchableOpacity key={person.id} style={styles.friendShareRow} onPress={() => navigation.navigate('FindFriends', { initialQuery: person.name })}>
+                                <Image source={{ uri: person.avatar }} style={styles.friendShareAvatar} />
+                                <View style={styles.friendShareInfo}>
+                                    <Text style={styles.friendShareName}>{person.name}</Text>
+                                    <Text style={styles.friendShareLevel}>Level {person.level} · {person.xp || 0} XP</Text>
+                                </View>
+                                <Ionicons name="chevron-forward" size={22} color={themeColors.accent} />
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                )}
+
+                {selectedCategory !== 'Clubs' && (
                 <View style={styles.sectionElite}>
                     <View style={styles.sectionHeaderElite}>
-                        <Text style={styles.sectionTitleElite}>Global Feed</Text>
+                        <Text style={styles.sectionTitleElite}>{selectedCategory === 'Friends' ? 'Squad Feed' : selectedCategory === 'Discover' ? 'Discover Posts' : 'Community Feed'}</Text>
                         <View style={styles.sectionLine} />
                     </View>
 
@@ -492,10 +561,8 @@ const SocialScreen = ({ navigation }) => {
                     </TouchableOpacity>
 
                     <View style={styles.feedContainerElite}>
-                        {(posts || []).filter(p =>
-                            p?.content?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
-                            p?.user?.toLowerCase()?.includes(searchQuery.toLowerCase())
-                        ).map((post, index) => (
+                        {visiblePosts.length === 0 && <Text style={styles.shortcutText}>{searchQuery ? 'No matching posts.' : 'No posts here yet.'}</Text>}
+                        {visiblePosts.map((post, index) => (
                             <AnimatedCard key={post.id} delay={300 + index * 100} style={styles.postCardElite}>
                                 <TouchableOpacity
                                     activeOpacity={0.9}
@@ -565,6 +632,7 @@ const SocialScreen = ({ navigation }) => {
                     </View>
                 </View>
 
+                )}
                 <View style={{ height: 40 }} />
             </ScrollView>
 
@@ -707,7 +775,7 @@ const SocialScreen = ({ navigation }) => {
                                 }}
                             >
                                 <Ionicons name="flash-outline" size={24} color="#EF4444" />
-                                <Text style={[styles.friendActionBtnText, { color: '#EF4444' }]}>Challenge to Fitness Duel ⚔️</Text>
+                                <Text style={[styles.friendActionBtnText, { color: '#EF4444' }]}>Send Challenge Invite</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -724,7 +792,7 @@ const SocialScreen = ({ navigation }) => {
                 <BlurView intensity={40} tint="dark" style={styles.duelOverlay}>
                     <View style={styles.duelCard}>
                         <Text style={styles.duelTitle}>⚔️ Select Duel Challenge</Text>
-                        <Text style={styles.duelSubtitle}>Choose a 1-day showdown with {selectedSquadFriend?.name}</Text>
+                        <Text style={styles.duelSubtitle}>Choose an activity to invite {selectedSquadFriend?.name}</Text>
                         
                         <View style={styles.duelList}>
                             {[
